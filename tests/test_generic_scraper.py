@@ -265,3 +265,58 @@ def test_a_selector_wins_over_a_pattern_for_the_same_field() -> None:
     meeting = scraper.parse_meeting(ref, make_page("https://example.invalid/d/1", FLAT_DETAIL))
 
     assert meeting.title == "質問文書"
+
+
+INDEX_WITH_NOISE = """
+<html><body>
+<table class="result">
+  <tr><td class="date">令和7年6月10日</td><td><a href="/m/toc">【目次】</a></td></tr>
+  <tr><td class="date">令和7年6月10日</td><td><a href="/m/1">本会議</a></td></tr>
+</table>
+</body></html>
+"""
+
+
+def test_exclude_skips_links_by_text() -> None:
+    config = _config()
+    config.list.exclude = "目次"
+    config.list.next_page = None
+    scraper = GenericScraper(config)
+    client = _client({"https://example.invalid/index": INDEX_WITH_NOISE})
+
+    refs = list(scraper.list_meetings(client))
+
+    assert [str(r.url) for r in refs] == ["https://example.invalid/m/1"]
+
+
+def test_exclude_also_matches_the_url() -> None:
+    config = _config()
+    config.list.exclude = "/m/toc"
+    config.list.next_page = None
+    scraper = GenericScraper(config)
+    client = _client({"https://example.invalid/index": INDEX_WITH_NOISE})
+
+    assert [r.title for r in scraper.list_meetings(client)] == ["本会議"]
+
+
+ROSTER_DETAIL = """
+<html><body>
+<div id="notes">
+  <p>○出　席　議　員（六十七名）</p>
+  <p>一　番　山本彰彦君　二　番　菅沼泰久君</p>
+  <p>○議長（竹内良訓君）　会議を開きます。</p>
+</div>
+</body></html>
+"""
+
+
+def test_a_roster_line_is_not_mistaken_for_a_speech() -> None:
+    # 「○出　席　議　員（六十七名）」 has the same shape as a speech marker; requiring
+    # the 「君」 honorific is what separates a speaker from a headcount.
+    config = _flat_config()
+    config.detail.speech_split = r"○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]"
+    scraper = GenericScraper(config)
+    ref = MeetingRef(prefecture="静岡県", url="https://example.invalid/d/2")
+    meeting = scraper.parse_meeting(ref, make_page("https://example.invalid/d/2", ROSTER_DETAIL))
+
+    assert [s.speaker for s in meeting.speeches] == ["竹内良訓"]

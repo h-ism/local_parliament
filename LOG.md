@@ -38,13 +38,59 @@ whole 開催別 tree in one page, so there is nothing to paginate. Coverage runs
 member's question plus the answers to it, or a 報告事項 / 委員長報告. 令和7年6月定例会
 is 26 documents.
 
-**Verified**
+**Collected: 2025**
 
-Offline, from bytes fetched by hand, so no crawl was needed: 26 documents listed
-from 令和7年6月定例会; one document parsed to `date=2025-06-23`,
-`session='令和７年６月静岡県議会定例会'`, **39 speeches / 25,875 characters**, with
-roles and names split correctly (議長/竹内良訓, 六番/赤堀慎吾, 知事/鈴木康友).
-`ruff`, `mypy --strict` and `pytest` (42 passed) all clean.
+Scoped to the five 令和7年 sessions with a new `--start-url` override, 119 requests
+at 2s apart. `data/静岡県.jsonl` + `data/静岡県.csv`:
+
+```
+meetings : 113        speeches : 1,395
+chars    : 886,315    range    : 2025-02-18 .. 2025-12-15
+```
+
+Every record dated and attributed to a session; 88 distinct speakers; one document
+(教育委員会意見) legitimately has no speeches. `ruff`, `mypy --strict` and `pytest`
+(49 passed) all clean.
+
+**Three bugs the real data found, all fixed**
+
+- **Encoding.** These pages declare `charset=utf-8` in a `<meta>` tag, send
+  `Shift_JIS` in the HTTP header, and are actually **cp932**. Worse, base Shift_JIS
+  cannot decode the NEC/IBM extension characters in names like 河原﨑 and 髙梨, so
+  one member's name aborted a whole sitting's decode and the fallback silently
+  produced garbage — 8 documents parsed to zero speeches. Shift_JIS now normalises
+  to cp932, which is what browsers do. Recovered 1,263 → 1,395 speeches.
+  (EUC-JP has the same flaw and no fix: CPython ships no MS-extended EUC codec. An
+  `eucjp_ms` alias was written, and the test suite caught that no such codec
+  exists, so it was removed rather than shipped broken.)
+- **Cache lost the header charset.** Re-deriving the encoding on cache read is
+  right — a fix to `sniff_encoding` should reach pages already stored — but the
+  first attempt passed `None` for the header, and these pages have no truthful
+  meta tag, so cached pages decoded *worse* than fresh ones. `Page` now carries
+  `header_charset` and the cache round-trips it.
+- **`--no-cache` discarded what it fetched.** It gated the write as well as the
+  read, so a `--no-cache` run left nothing behind and the next run re-fetched
+  everything. It now means "don't serve me a stale copy", not "throw away a
+  response we already paid a request for".
+
+**Two site-specific traps, handled in the config**
+
+- 質問文書 label the date 質問日：; 議会補足文書 (報告事項 / 知事提案説明 / 委員長報告)
+  use 発言日：. Matching only the first left 60 of 113 records undated.
+- The attendance roster 「○出　席　議　員（六十七名）」 has exactly the shape of a speech
+  marker and was collected as a speech by 「六十七名」. Requiring the name to end in
+  「君」 separates them — over a 40-document sample, 632 markers matched and the only
+  four without 「君」 were rosters.
+
+**Also added**
+
+- `pt scrape --start-url` (repeatable) — overrides the config's entry points.
+  `--since/--until` cannot scope a crawl on a site whose index carries no dates:
+  the filter can only run after a page is fetched, which is too late to save the
+  request. Narrowing the entry points is what actually saves them.
+- `list.exclude` — regex; links whose text or URL match are not followed. Every
+  議会 here opens with a 【目次】 document that would otherwise enter the corpus as
+  an empty meeting.
 
 **Open question: meta robots**
 
@@ -57,9 +103,11 @@ These are indexing directives, not access rules — nothing here says "do not
 fetch", which is what a robots.txt `Disallow` would say. A research corpus is not
 a public index and republishes no cache. But `nofollow` does describe exactly the
 list-then-follow pattern this scraper uses, and `PoliteClient` reads robots.txt
-only, so nothing in the toolkit would stop a full run. Holding the archive crawl
-(平成11年 onwards, thousands of documents) until 議事課 is asked; a one-off
-verification fetch is no different from opening the page in a browser.
+only, so nothing in the toolkit would stop a full run.
+
+Asked, and the decision was to collect 2025 only. That is what was run: 119
+requests, one year, spaced 2s. The archive crawl (平成11年 onwards, thousands of
+documents) still waits on 議事課 — draft in `docs/inquiries/shizuoka.md`.
 
 **Not done yet**
 
@@ -98,13 +146,54 @@ Shift_JIS を通常の GET で配信。`WebView1?OpenView&ExpandView` で「開�
 注意点として、**1文書＝1発言単位**であり1開催日ではない（議員の質問とそれへの答弁、
 あるいは報告事項・委員長報告）。令和7年6月定例会で26文書。
 
-**検証したこと**
+**収集した結果：2025年分**
 
-手作業で取得済みのバイト列を使い、追加の収集を行わずにオフラインで確認した。
-令和7年6月定例会から26文書を一覧取得。1文書を解析して `date=2025-06-23`、
-`session='令和７年６月静岡県議会定例会'`、**発言39件・25,875文字**、役職と氏名の分割も
-正しい（議長/竹内良訓、六番/赤堀慎吾、知事/鈴木康友）。`ruff`・`mypy --strict`・
-`pytest`（42件成功）はいずれもクリーン。
+新設の `--start-url` で令和7年の5会期に限定し、2秒間隔で119リクエスト。
+`data/静岡県.jsonl` と `data/静岡県.csv`：
+
+```
+文書数 : 113        発言数 : 1,395
+文字数 : 886,315    期間   : 2025-02-18 〜 2025-12-15
+```
+
+全件に日付と会議名が付与され、発言者は88名。発言0件の文書1件（教育委員会意見）は
+書面の意見であり、正しく0件である。`ruff`・`mypy --strict`・`pytest`（49件成功）クリーン。
+
+**実データで見つかった不具合3件（いずれも修正済み）**
+
+- **文字コード。** これらのページは `<meta>` で `charset=utf-8` と宣言し、HTTP
+  ヘッダでは `Shift_JIS` を返し、実体は **cp932** である。さらに、河原﨑・髙梨のような
+  氏名に含まれる NEC/IBM 拡張文字は素の Shift_JIS では復号できず、議員1名の氏名で
+  1会議分の復号が中断し、フォールバックが文字化けを黙って生成していた（8文書が発言0件）。
+  Shift_JIS を cp932 に正規化するようにした（ブラウザと同じ挙動）。発言数が
+  1,263→1,395 に回復。
+  （EUC-JP も同じ弱点を持つが、CPython に MS 拡張版の EUC codec が無いため対処なし。
+  `eucjp_ms` という別名を書いたところ、そのような codec は存在しないとテストが検出した
+  ため、壊れたまま出荷せず削除した。）
+- **キャッシュがヘッダの charset を捨てていた。** 読み出し時に符号化を推定し直す方針
+  自体は正しい（`sniff_encoding` の修正が既存のキャッシュにも及ぶ）が、最初の実装は
+  ヘッダに `None` を渡しており、meta タグが嘘をついているこのサイトでは、キャッシュ
+  経由のほうが新規取得より悪い結果になった。`Page` に `header_charset` を持たせ、
+  キャッシュで往復させるようにした。
+- **`--no-cache` が取得結果を捨てていた。** 読み出しだけでなく書き込みも止めていたため、
+  次回実行時に再取得が必要になっていた。「古い写しを渡すな」であって「リクエストを
+  払って得た応答を捨てろ」ではない、という意味に修正。
+
+**サイト固有の落とし穴2件（設定側で対処）**
+
+- 質問文書は日付を `質問日：`、議会補足文書（報告事項・知事提案説明・委員長報告）は
+  `発言日：` と表記する。前者だけを見ていたため113件中60件が日付なしだった。
+- 出席議員名簿「○出　席　議　員（六十七名）」が発言マーカーと同一の形をしており、
+  「六十七名」という発言者として収録されていた。氏名末尾の「君」を必須にすることで
+  分離できる（40文書の標本で632件が一致し、「君」が無い4件はすべて名簿だった）。
+
+**あわせて追加したもの**
+
+- `pt scrape --start-url`（複数指定可）— 設定の起点を上書きする。一覧に日付が載って
+  いないサイトでは `--since/--until` では取得範囲を絞れない（取得後にしか日付が
+  分からないため、リクエストの節約にならない）。起点を絞ることが実際の節約になる。
+- `list.exclude` — リンクのテキストまたは URL が一致したら辿らない正規表現。各会期の
+  冒頭にある【目次】文書が、発言0件の記録として混入するのを防ぐ。
 
 **未解決：meta robots**
 
@@ -116,9 +205,11 @@ CMS 側のホストには無いので、このアプリ固有の設定である�
 のは robots.txt の `Disallow` であり、それは存在しない）。研究用コーパスは公開検索
 サービスでもキャッシュの再配布でもない。ただし `nofollow` は、一覧をたどって文書
 リンクを開くという本スクレイパーの動作そのものを指しており、`PoliteClient` は
-robots.txt しか見ないため、実行を止めるものは何も無い。したがって全件取得
-（平成11年以降・数千文書）は議事課への確認まで保留する。1件だけの動作確認は
-ブラウザで開くのと変わらないと判断している。
+robots.txt しか見ないため、実行を止めるものは何も無い。
+
+確認のうえ、2025年分のみを収集する判断となり、そのとおり実行した（119リクエスト、
+1年分、2秒間隔）。全件取得（平成11年以降・数千文書）は議事課への確認まで保留。
+文面は `docs/inquiries/shizuoka.md`。
 
 **未着手**
 

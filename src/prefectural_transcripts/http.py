@@ -55,6 +55,13 @@ class Page:
     encoding: str
     fetched_at: datetime
     from_cache: bool
+    header_charset: str | None = None
+    """What the HTTP header claimed, kept so a cached body can be re-sniffed.
+
+    Some of these pages carry no `<meta charset>` at all, and the header is then
+    the only signal there is — dropping it on the way into the cache would make
+    a cached page decode worse than a freshly fetched one.
+    """
 
     @property
     def text(self) -> str:
@@ -82,9 +89,28 @@ def sniff_encoding(body: bytes, header_charset: str | None) -> str:
     return "utf-8"
 
 
+# A page that declares Shift_JIS almost always contains cp932, Microsoft's
+# superset of it. The NEC/IBM extension characters cp932 adds are not
+# exotic here: they are the ones Japanese personal names use — 﨑, 髙, 桒 — so a
+# single member's name is enough to make the base codec fail on a whole sitting.
+# Decoding as cp932 is safe (it is a strict extension of Shift_JIS) and is what
+# every browser does with these pages.
+_ALIASES = {
+    "shift-jis": "cp932",
+    "shift_jis": "cp932",
+    "sjis": "cp932",
+    "x-sjis": "cp932",
+    "windows-31j": "cp932",
+    "ms_kanji": "cp932",
+    # EUC-JP has the same problem and no equivalent fix here: CPython ships no
+    # MS-extended EUC codec, so a EUC-JP page carrying those characters still
+    # falls through to charset-normalizer. Left alone until a real page needs it.
+}
+
+
 def _normalise(enc: str) -> str:
-    alias = {"shift-jis": "shift_jis", "x-sjis": "shift_jis", "sjis": "shift_jis"}
-    return alias.get(enc.lower().strip(), enc.lower().strip())
+    key = enc.lower().strip()
+    return _ALIASES.get(key, key)
 
 
 def _is_usable(body: bytes, enc: str) -> bool:
@@ -111,11 +137,18 @@ class ResponseCache:
         if not (body_path.exists() and meta_path.exists()):
             return None
         meta = json.loads(meta_path.read_text())
+        body = body_path.read_bytes()
         return Page(
             url=url,
             status=meta["status"],
-            body=body_path.read_bytes(),
-            encoding=meta["encoding"],
+            body=body,
+            # The bytes are the truth; the encoding is a conclusion drawn from
+            # them. Re-deriving it on read means a fix to `sniff_encoding` reaches
+            # everything already cached, instead of only pages fetched afterwards.
+            # Entries written before `header_charset` existed fall back to the
+            # encoding they concluded at the time, which is re-validated anyway.
+            encoding=sniff_encoding(body, meta.get("header_charset") or meta.get("encoding")),
+            header_charset=meta.get("header_charset"),
             fetched_at=datetime.fromisoformat(meta["fetched_at"]),
             from_cache=True,
         )
@@ -130,6 +163,7 @@ class ResponseCache:
                     "url": page.url,
                     "status": page.status,
                     "encoding": page.encoding,
+                    "header_charset": page.header_charset,
                     "fetched_at": page.fetched_at.isoformat(),
                 },
                 ensure_ascii=False,
@@ -229,8 +263,11 @@ class PoliteClient:
 
         self._check_robots(url)
         page = self._get_with_retries(url)
-        if self.settings.use_cache:
-            self.cache.put(page)
+        # Written even when the cache is switched off for reading: `use_cache=False`
+        # means "don't hand me a stale copy", not "throw away what you just paid a
+        # request for". Discarding it makes the next run re-fetch a page we already
+        # have, which is the opposite of polite.
+        self.cache.put(page)
         return page
 
     def _get_with_retries(self, url: str) -> Page:
@@ -269,6 +306,7 @@ class PoliteClient:
                         status=resp.status_code,
                         body=body,
                         encoding=sniff_encoding(body, resp.charset_encoding),
+                        header_charset=resp.charset_encoding,
                         fetched_at=datetime.now(UTC),
                         from_cache=False,
                     )

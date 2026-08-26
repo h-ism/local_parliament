@@ -59,19 +59,56 @@ Dates arrive as `06/23/2025` — Domino's month-first format, now handled in
 `dates.py`. Day-first is deliberately *not* accepted, since the two are
 indistinguishable for the first twelve days of a month.
 
-## Verified
+## Collected: 2025 (令和7年)
 
-The config was checked against the real pages, offline, from bytes already fetched
-by hand:
+The five 令和7年 sessions were collected on 2026-08-26, scoped with `--start-url`
+rather than crawling the whole archive:
 
-- listing: 26 documents found in 令和7年6月定例会, titles like
-  `赤堀　慎吾（自民改革会議）（代表質問）`
-- one document parsed: `date=2025-06-23`,
-  `session='令和７年６月静岡県議会定例会'`, **39 speeches, 25,875 characters**,
-  roles and names split correctly (`議長/竹内良訓`, `六番/赤堀慎吾`, `知事/鈴木康友`)
+```
+meetings : 113        # documents, i.e. 発言単位
+speeches : 1,395
+chars    : 886,315
+range    : 2025-02-18 .. 2025-12-15
+speakers : 88 distinct
+```
 
-The 「君」 that the minutes append to every name is stripped, so speakers join
-across records.
+| 会期 | documents |
+| --- | ---: |
+| 令和７年２月定例会 | 23 |
+| 令和７年５月臨時会 | 12 |
+| 令和７年６月定例会 | 25 |
+| 令和７年９月定例会 | 26 |
+| 令和７年12月定例会 | 27 |
+
+Every record has a date and a session. One document (教育委員会意見) has no
+speeches, correctly — it is a written opinion with no spoken content.
+
+Output: `data/静岡県.jsonl` (2.8 MB) and `data/静岡県.csv` (10,112 speech rows).
+
+### Three things the real data taught us
+
+**1. The pages lie about their encoding.** The `<meta>` tag says `charset=utf-8`;
+the HTTP header says `Shift_JIS`; the bytes are actually **cp932**. `sniff_encoding`
+prefers the meta tag, and only survives here because utf-8 decoding fails outright
+and it falls through to the header.
+
+Then Shift_JIS itself is not enough: 「河原﨑」 and 「髙梨」 use NEC/IBM extension
+characters that base Shift_JIS cannot decode, so a single member's name aborted the
+decode of a whole sitting and the fallback silently produced garbage — 8 documents
+came back with zero speeches. Shift_JIS now normalises to cp932, its Microsoft
+superset, which is what browsers do with these pages. That recovered 1,263 → 1,395
+speeches and 793,801 → 886,315 characters.
+
+**2. Report documents label their date differently.** 質問文書 use 質問日：;
+議会補足文書 (報告事項, 知事提案説明, 委員長報告) use 発言日：. Matching only the
+first left 60 of 113 records undated.
+
+**3. The attendance roster looks exactly like a speech.** 議会補足文書 open with
+「○出　席　議　員（六十七名）」, which has the same shape as 「○知事（鈴木康友君）」 and
+landed in the corpus as a speech by 「六十七名」. Requiring the name to end in 「君」
+separates them: across a 40-document sample, 632 markers matched and the only four
+without 「君」 were rosters. The 「君」 is then stripped, so speakers join across
+records.
 
 ## The courtesy question — read before crawling
 
@@ -104,10 +141,10 @@ What it does and does not mean:
   like template accumulation rather than a considered policy, much like 千葉's
   robots.txt gap. That is a guess, though, not a finding.
 
-**Recommendation.** Treat a one-off verification fetch as fine — it is what any
-reader's browser does — and send a short note before collecting the full archive,
-which is 平成11年 to the present and runs to thousands of documents. The
-secretariat is on the page itself:
+**Recommendation.** A scoped run is proportionate — 2025 took 119 requests at
+2s apart, and is what a diligent reader could do by hand. Send a short note before
+collecting the full archive, which is 平成11年 to the present and runs to thousands
+of documents. The secretariat is on the page itself:
 
 > 静岡県議会事務局議事課　〒420-8601 静岡市葵区追手町9-6
 > 電話 054-221-3482 / ファクス 054-221-3179 / gikai_giji@pref.shizuoka.lg.jp
@@ -116,16 +153,27 @@ Draft: `docs/inquiries/shizuoka.md`. It asks whether the meta tags are meant to
 cover research collection, and offers a bulk export as the easier alternative for
 both sides.
 
-## Running it, once that is settled
+## Running it
+
+The configured `start_urls` uses `&ExpandView`, which opens the entire archive —
+fine once the question above is settled, but not what you want for a single year.
+To scope a run, pass the per-session view URLs instead. `Expand=N` is the Nth
+category in the 開催別 view, newest first, so the indices shift as sessions are
+added; read them off `WebView1?OpenView` before using them.
 
 ```bash
-uv run pt scrape shizuoka --limit 1 -v     # one document, check the output
-uv run pt scrape shizuoka --csv            # full run, JSONL + CSV
+# 2025 = 令和7年 = the five sessions at Expand=2..6 as of 2026-08-26
+B='https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&Start=1&Count=30&Expand='
+uv run pt scrape shizuoka --csv --since 2025-01-01 --until 2025-12-31 \
+  --start-url "${B}2" --start-url "${B}3" --start-url "${B}4" \
+  --start-url "${B}5" --start-url "${B}6"
+
 uv run pt stats data/静岡県.jsonl
 ```
 
-`--limit` is worth using generously here: `&ExpandView` returns the entire tree,
-so the listing page alone is large and the document count is in the thousands.
+`--since/--until` alone is not enough to scope a crawl here: the index carries no
+dates, so every document has to be fetched before its date is known. Narrowing the
+start URLs is what actually saves the requests.
 
 ## Not done yet
 

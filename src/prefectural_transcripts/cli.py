@@ -60,6 +60,13 @@ def scrape(
     since: Annotated[str | None, typer.Option(help="Only meetings on/after YYYY-MM-DD.")] = None,
     until: Annotated[str | None, typer.Option(help="Only meetings on/before YYYY-MM-DD.")] = None,
     limit: Annotated[int | None, typer.Option(help="Stop after N meetings.")] = None,
+    start_url: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--start-url",
+            help="Index page to crawl instead of the config's. Repeatable.",
+        ),
+    ] = None,
     out: Annotated[Path | None, typer.Option(help="Output directory. Default: ./data")] = None,
     delay: Annotated[float | None, typer.Option(help="Min seconds between requests.")] = None,
     resume: Annotated[bool, typer.Option(help="Skip meetings already in the output file.")] = True,
@@ -81,6 +88,12 @@ def scrape(
         settings.use_cache = False
 
     scraper = load_scraper(name)
+    if start_url:
+        # Narrowing the entry points is the only way to scope a crawl on a site
+        # whose index carries no dates: --since/--until can only filter after a
+        # page has been fetched, which is too late to save the request.
+        scraper.config.start_urls = list(start_url)
+        typer.echo(f"Crawling {len(start_url)} given start URL(s) instead of the configured ones.")
     written = 0
     with ExitStack() as stack:
         store = stack.enter_context(TranscriptStore(settings.data_dir, scraper.prefecture))

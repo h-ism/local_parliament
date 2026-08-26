@@ -38,6 +38,14 @@ class ListSelectors:
     next_page: str | None = None
     max_pages: int = 50
 
+    exclude: str | None = None
+    """Regex; links whose text or URL matches are not followed.
+
+    Index pages mix transcripts with things that merely sit in the same list —
+    a 【目次】 entry, a notice, a PDF of the agenda. Skipping them at listing time
+    keeps them out of the corpus and saves the fetch.
+    """
+
 
 @dataclass(slots=True)
 class DetailSelectors:
@@ -152,12 +160,16 @@ class GenericScraper(BaseScraper):
                 if url in seen:
                     continue
                 seen.add(url)
+                label = _text(link)
+                if sel.exclude and (re.search(sel.exclude, label) or re.search(sel.exclude, url)):
+                    log.debug("excluded %s (%s)", url, label)
+                    continue
                 row_date = parse_japanese_date(_select_text(scope, sel.date)) if sel.date else None
                 yield MeetingRef(
                     prefecture=self.prefecture,
                     url=url,  # type: ignore[arg-type]
-                    date=row_date or parse_japanese_date(_text(link)),
-                    title=_text(link) or None,
+                    date=row_date or parse_japanese_date(label),
+                    title=label or None,
                 )
 
     def _next_page(self, soup: BeautifulSoup, base_url: str) -> str | None:
