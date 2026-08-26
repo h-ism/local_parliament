@@ -71,7 +71,7 @@ survey made against the system.
 
 1. **Ask 青森県議会事務局.** 議事課 017-734-9794 (会議録), 調査課 017-734-9797
    (the system is linked from a 調査課 page), FAX 017-734-8235,
-   〒030-8570 青森市長島一丁目1番1号. Draft: `docs/aomori-inquiry.md`. Worth
+   〒030-8570 青森市長島一丁目1番1号. Draft: `docs/inquiries/aomori.md`. Worth
    asking in the same breath whether the data can be had from the vendor.
 2. **Override robots deliberately** — `PT_RESPECT_ROBOTS=0`. A research-owner
    decision, contradicts the convention in CLAUDE.md, and here it means ignoring

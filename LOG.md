@@ -2,6 +2,82 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-26 — Inquiry drafts for every blocked assembly (`survey/all-prefectures`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The survey said which assemblies need to be asked. This writes the asking.
+
+**Added**
+
+- `docs/inquiries/` — 27 drafts plus a README index. The two existing drafts moved
+  here (`docs/hokkaido-inquiry.md` → `docs/inquiries/hokkaido.md`, same for aomori);
+  older LOG entries still name the old paths, which is where they were at the time.
+
+**Four kinds of letter, because the situations differ**
+
+- **Blocked, ask for access (23)** — 15 DB-Search prefectures and 8 gijiroku VOICES
+  ones. Same structure as the 北海道 draft: bulk data first, crawl permission
+  second, vendor referral third; each names its own system and quotes its own
+  robots.txt rule, since a letter that misdescribes the site invites a brush-off.
+- **千葉, ask what was meant (1)** — its CGI sits at `/kaigiroku/` and matches none
+  of the boilerplate Disallow rules. The letter says plainly that this looks like
+  an omission rather than an invitation, and offers to stay away if so.
+- **SSP, ask how (2)** — a vendor letter and an assembly template. Not a permission
+  request: robots already allows `/tenant/`. What is needed is the data endpoint,
+  which is defined in a disallowed script. One vendor reply covers 18 prefectures.
+- **`kensakusystem.jp`, courtesy notice (3)** — 三重・兵庫・愛媛 have no robots.txt,
+  so nothing needs permission. These say what will be run and offer to stop, rather
+  than asking whether it may start.
+
+**Contacts**
+
+Some phone numbers were taken from search results and are **not verified** — each
+is marked 未検証・要確認 in the file. Confirm on the assembly's own site, or use its
+contact form, before sending.
+
+**Verified**
+
+No code changed; suite untouched at 34 passing. Nothing was sent to anyone — these
+are drafts on disk.
+
+### 日本語
+
+調査で「照会が必要」と分かった相手ごとに、実際の文面を用意した。
+
+**追加したもの**
+
+- `docs/inquiries/` — 27通の下書きと索引の README。既存の2通もここへ移動
+  （`docs/hokkaido-inquiry.md` → `docs/inquiries/hokkaido.md`、青森も同様）。
+  過去の LOG は当時のパスのままにしてある。
+
+**状況が違うので4種類に分けた**
+
+- **取得不可、許可を依頼（23通）** — DB-Search 系15県と gijiroku VOICES 系8県。
+  構成は北海道の下書きと同じで、①一括提供 ②取得許可 ③事業者への照会要否 の順。
+  各通に当該システム名と当該 robots.txt の記述を書き入れてある。実態と違うことを
+  書いた依頼は相手にされないため。
+- **千葉、設定の意図を確認（1通）** — CGI が `/kaigiroku/` にあり、定型の Disallow
+  記述のどれにも該当しない。「許可の趣旨か、記載漏れか」を率直に尋ね、記載漏れ
+  なら直ちに見合わせる旨を明記した。
+- **SSP、取得方法を尋ねる（2通）** — 事業者宛と議会宛の雛形。許可の依頼ではない。
+  robots.txt は既に `/tenant/` を許可しており、必要なのは Disallow 対象の
+  スクリプト内にあるデータ取得先の情報。事業者から1件回答が得られれば18県が動く。
+- **`kensakusystem.jp`、事前連絡（3通）** — 三重・兵庫・愛媛は robots.txt が無く、
+  許可を求める必要がない。「これから何をするか」を知らせ、支障があれば止める、
+  という趣旨の文面にしてある。
+
+**連絡先**
+
+一部の電話番号は検索結果から拾ったもので**未検証**。各ファイルに「未検証・要確認」と
+明記した。送信前に各議会のサイトで確認するか、問い合わせフォームを使うこと。
+
+**確認したこと**
+
+コード変更なし、テストは34件成功のまま。いずれも手元の下書きであり、送信はしていない。
+
 ## 2026-08-26 — All-47 robots survey (`survey/all-prefectures`)
 
 *English and Japanese. / 英語と日本語で併記する。*
