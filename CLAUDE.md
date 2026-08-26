@@ -51,8 +51,12 @@ Modules under `src/prefectural_transcripts/`:
   transcripts. `scrape()` applies the date filter twice: once on the listing date,
   again after parsing when the real date is known.
 - `scrapers/generic.py` — the config-driven scraper and the `SiteConfig` dataclasses
-  that mirror the TOML schema.
-- `dates.py` — 和暦 parsing (`令和7年6月10日`, `令和元年`, `R7.6.10`) plus western forms.
+  that mirror the TOML schema. Two escape hatches for markup CSS cannot express:
+  `detail.speech_split` (regex on the 「○発言者」 convention, for transcripts with no
+  per-speech elements) and `detail.patterns` (regex per field, for legacy tables
+  that label cells by text).
+- `dates.py` — 和暦 parsing (`令和7年6月10日`, `令和元年`, `R7.6.10`), western forms, and
+  Domino's month-first `06/23/2025`.
   Assembly pages almost never use ISO dates; always parse through here.
 - `models.py` — `Speech` / `MeetingRef` / `Meeting`. Note `datetime` is imported as
   `dt` because both models have a field named `date`, which would otherwise shadow

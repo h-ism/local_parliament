@@ -29,6 +29,10 @@ date = "td.date"
 # Optional: link to the next page of results. Omit for single-page indexes.
 next_page = "a.next"
 
+# Optional: regex; links whose text or URL matches are not followed. For index
+# pages that mix transcripts with 【目次】 entries, notices and the like.
+# exclude = '目次|お知らせ'
+
 # Safety cap on pagination.
 max_pages = 50
 
@@ -43,8 +47,22 @@ speaker = "span.speaker"
 role    = "span.role"
 text    = "p"
 
+# For pages with no per-speech markup at all: a regex marking where each speech
+# starts, with a `speaker` group and optionally a `role` one. Japanese minutes
+# prefix every utterance with 「○」 plus the speaker's office and name, so this
+# usually looks like the line below. Ignored when `speech` is set.
+# speech_split = '○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24})[）)]'
+
 # Optional metadata, read from within `container`.
 date      = "span.date"
 session   = "span.session"
 committee = "span.committee"
 title     = "h1"
+
+# Regex fallbacks for the same four fields, matched against the container's text.
+# Only consulted when the selector above is absent or matches nothing. Use these
+# for legacy table layouts that label fields by the neighbouring cell's text,
+# which CSS cannot express.
+# [detail.patterns]
+# date    = '質問日：\s*(\d{1,2}/\d{1,2}/\d{4})'
+# session = '(?:令和|平成)\s*\d{1,2}年\s*\d{1,2}月.*?(?:定例会|臨時会)'

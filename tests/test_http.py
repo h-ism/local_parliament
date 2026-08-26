@@ -11,7 +11,7 @@ def test_meta_charset_beats_a_wrong_http_header() -> None:
     # utf-8 on every response regardless of the real bytes.
     html = '<html><head><meta charset="shift_jis"></head><body>東京都議会</body></html>'
     body = html.encode("shift_jis")
-    assert sniff_encoding(body, "utf-8") == "shift_jis"
+    assert sniff_encoding(body, "utf-8") == "cp932"
 
 
 def test_falls_back_to_header_when_no_meta_tag() -> None:
@@ -70,3 +70,90 @@ def test_cache_keys_are_per_url(tmp_path: Path) -> None:
     b = cache.get("https://example.invalid/b")
     assert a is not None and b is not None
     assert a.body != b.body
+
+
+def test_shift_jis_is_decoded_as_its_microsoft_superset() -> None:
+    # 﨑 (U+FA11) is a NEC/IBM extension: common in names, absent from base
+    # Shift_JIS. A page carrying one must not fall back to some other encoding.
+    html = '<meta charset="Shift_JIS"><p>○六番（河原﨑　全君）　質問します。</p>'
+    body = html.encode("cp932")
+
+    encoding = sniff_encoding(body, "Shift_JIS")
+
+    assert encoding == "cp932"
+    assert "河原﨑" in body.decode(encoding)
+
+
+def test_cached_pages_are_re_sniffed_rather_than_trusting_stored_encoding(
+    tmp_path: Path,
+) -> None:
+    body = '<meta charset="Shift_JIS"><p>○知事（鈴木康友君）　お答えします。</p>'.encode("cp932")
+    cache = ResponseCache(tmp_path)
+    cache.put(
+        Page(
+            url="https://example.invalid/1",
+            status=200,
+            body=body,
+            encoding="utf-8",  # a wrong conclusion, as an older run might have stored
+            fetched_at=datetime.now(UTC),
+            from_cache=False,
+        )
+    )
+
+    cached = cache.get("https://example.invalid/1")
+
+    assert cached is not None
+    assert cached.encoding == "cp932"
+    assert "鈴木康友" in cached.text
+
+
+def test_cache_keeps_the_header_charset_for_pages_with_no_meta_tag(tmp_path: Path) -> None:
+    # 静岡's minutes pages declare their charset only in the HTTP header, so a
+    # cache that forgets it decodes worse on the second run than on the first.
+    body = "<html><body><p>○知事（鈴木康友君）　お答えします。</p></body></html>".encode("cp932")
+    cache = ResponseCache(tmp_path)
+    cache.put(
+        Page(
+            url="https://example.invalid/2",
+            status=200,
+            body=body,
+            encoding="cp932",
+            fetched_at=datetime.now(UTC),
+            from_cache=False,
+            header_charset="Shift_JIS",
+        )
+    )
+
+    cached = cache.get("https://example.invalid/2")
+
+    assert cached is not None
+    assert cached.encoding == "cp932"
+    assert "鈴木康友" in cached.text
+
+
+def test_no_cache_still_stores_what_it_fetched(tmp_path: Path) -> None:
+    # --no-cache means "don't serve me a stale copy", not "discard the response".
+    import httpx
+
+    from prefectural_transcripts.config import Settings
+    from prefectural_transcripts.http import PoliteClient
+
+    settings = Settings()
+    settings.cache_dir = tmp_path
+    settings.use_cache = False
+    settings.min_interval = 0.0
+    settings.respect_robots = False
+
+    body = "<html><body>会議録</body></html>".encode("cp932")
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            200, content=body, headers={"Content-Type": "text/html; charset=Shift_JIS"}
+        )
+    )
+    with PoliteClient(settings, client=httpx.Client(transport=transport)) as client:
+        client.get("https://example.invalid/page")
+
+    stored = ResponseCache(tmp_path).get("https://example.invalid/page")
+    assert stored is not None
+    assert stored.encoding == "cp932"
+    assert (stored.header_charset or "").lower() == "shift_jis"

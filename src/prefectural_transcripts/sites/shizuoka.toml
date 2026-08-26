@@ -1,0 +1,51 @@
+# 静岡県議会 — 本会議会議録
+#
+# A Lotus Domino application (`ggiji.nsf`) on www2.pref.shizuoka.jp, serving
+# Shift_JIS HTML over plain GET. One document is one 発言単位: a member's question
+# with the answers to it, or a 報告事項 / 委員長報告. Coverage starts at
+# 平成11年5月臨時会; 目次 documents exist from 平成19年2月定例会.
+#
+# There is no robots.txt on this host, but every page of the application carries
+# `<meta name="robots" content="none">` (plus noindex,nofollow and noarchive).
+# That is an indexing directive rather than an access rule, and it is not what
+# `PoliteClient` checks — so read `docs/shizuoka.md` before running this.
+#
+# The markup is 1990s Domino: no classes, no ids inside the document, fields
+# labelled only by the text of the neighbouring table cell. Hence `patterns`
+# for the metadata and `speech_split` for the body.
+
+prefecture = "静岡県"
+name = "shizuoka"
+
+# `ExpandView` opens every 議会 in the 開催別 view, so the whole tree of documents
+# arrives in one page and there is nothing to paginate.
+start_urls = [
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView",
+]
+
+[list]
+meeting_link = 'a[href*="OpenDocument"]'
+max_pages = 1
+
+# Every 議会 opens with a 【目次】 document: a table of contents with no speeches
+# and no 質問日, which would otherwise land in the corpus as an empty meeting.
+exclude = '目次'
+
+[detail]
+container = "div#notes"
+
+# 「○知事（鈴木康友君）　…」 — office in the first group, name in the second.
+# Members appear as their seat number (「○六番（赤堀慎吾君）」), which is what the
+# minutes print, so that is what lands in `role`.
+#
+# The name must end in 「君」. The attendance roster that opens a 議会補足文書 is
+# 「○出　席　議　員（六十七名）」 — structurally identical to a speech marker, and
+# without this it lands in the corpus as a speech by 「六十七名」. Over a 40-document
+# sample, 632 markers matched and the only four lacking 「君」 were rosters.
+speech_split = '○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]'
+
+[detail.patterns]
+# 質問文書 label this 質問日, 議会補足文書 (報告事項, 知事提案説明, 委員長報告) use
+# 発言日. Domino writes both month-first; `dates.py` handles that form explicitly.
+date = '(?:質問日|発言日)：\s*(\d{1,2}/\d{1,2}/\d{4})'
+session = '(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月静岡県議会(?:定例会|臨時会)'

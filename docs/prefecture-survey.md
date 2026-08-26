@@ -171,9 +171,8 @@ prefecture-hosted system at `www3.pref.iwate.jp/gikai/user/www/Kensaku/`
    our side. Load a tenant in a browser once and read the network tab, or ask.
 2. **Build 愛媛 (or 三重/兵庫) against `kensakusystem.jp`** — the only platform where
    today's scraper could work almost as-is. Proves the pipeline end to end.
-3. **Ask, for the blocked ones.** `docs/hokkaido-inquiry.md` and
-   `docs/aomori-inquiry.md` are reusable templates; 15 + 8 prefectures are
-   reachable only this way.
+3. **Ask, for the blocked ones.** Drafts for every one of them are in
+   `docs/inquiries/` — see its README for who gets which letter.
 4. **Look at existing corpora before re-collecting anything.** The
    地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already publishes a
    都道府県議会 corpus for 2011–2014 and 2015–2019, and `yonalog`
