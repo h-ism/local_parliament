@@ -70,9 +70,75 @@ Modules under `src/prefectural_transcripts/`:
 - **Crawl politely.** Defaults (2s per host, robots respected, everything cached)
   are a deliberate choice about small public-sector servers, not a placeholder.
   Don't lower them to make a run faster.
-- **Don't invent selectors or URLs.** `sites/` ships only `_example.toml`; no real
-  assembly site has been verified yet. Work them out against live markup with
-  `uv run pt inspect <url> --selector <css>`, then confirm with `pt scrape <name> --limit 1`.
+- **Don't invent selectors or URLs.** A config goes into `sites/` only once its
+  selectors have been checked against the real markup. Work them out with
+  `uv run pt inspect <url> --selector <css>`, then confirm with
+  `pt scrape <name> --limit 1`. Drafts for sites we may not crawl yet live in
+  `docs/`, not in `sites/`, so `pt sites` never lists something that cannot run.
 - Tests use `FakeClient` and inline HTML fixtures from `tests/conftest.py`; keep the
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
+
+## Where this stands (updated 2026-08-26)
+
+Read `docs/prefecture-survey.md` first — it maps all 47 assemblies to their
+minutes system, the `robots.txt` verdict, and whether the pages are scrapeable.
+Per-site detail is in `docs/<prefecture>.md`; drafted letters are in
+`docs/inquiries/` with a README index.
+
+**Collectable today**
+
+- **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
+  The full archive (平成11年 onwards) waits on a question about the site's
+  `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
+- **三重・兵庫・愛媛** (`kensakusystem.jp`) — no robots.txt, server-rendered CGI,
+  nothing written yet. The likeliest next config, and `speech_split` / `patterns`
+  should carry over.
+
+**Blocked, and why it is not a scraping problem**
+
+24 assemblies forbid crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
+gijiroku VOICES' CGI directory). No amount of selector work changes that; the way
+through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it —
+that is the researcher's call, not ours, and it contradicts the politeness
+convention above.
+
+**The single highest-value open task**
+
+18 prefectures sit on SSP (`ssp.kaigiroku.net`), whose robots.txt *allows*
+`/tenant/`. They are unreachable only because the pages are a JavaScript app whose
+data endpoint is defined in `/tenant/js/release/config.js` — one of the four
+disallowed directories, so it has not been read. Getting that endpoint another way
+(a browser's network tab, or asking the vendor) unlocks 18 assemblies through one
+implementation. See `docs/inquiries/ssp-vendor.md`.
+
+## Things that will bite again
+
+Learned from 静岡; expect them on other sites rather than treating them as local
+quirks.
+
+- **Encoding lies, and fails silently.** Those pages declare `charset=utf-8` in a
+  meta tag, send `Shift_JIS` in the header, and contain cp932. Base Shift_JIS
+  cannot decode the NEC/IBM characters ordinary names use (河原﨑, 髙梨), and the
+  failure surfaces as *plausible garbage*, not an exception — it was caught only
+  because 8 documents parsed to zero speeches. `sniff_encoding` maps Shift_JIS to
+  cp932 for this reason. When a parse comes back suspiciously empty, check the
+  decoded text before touching the selectors.
+- **One label is rarely enough.** 静岡 labels the date 質問日 on question
+  documents and 発言日 on report documents; matching one left 60 of 113 records
+  undated. Check a sample of *each document type*, not just the interesting one.
+- **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
+  roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
+  the 「君」 honorific separated them. Verify a split rule against a sample and
+  count what it catches.
+- **A date filter is not a crawl limit.** `--since/--until` are applied after a
+  page is fetched, so on an index carrying no dates they save nothing. Narrow
+  `--start-url` instead.
+- **Check `robots.txt` before writing any config.** It is one request and it
+  decides whether the rest of the work is worth doing.
+
+## Working notes
+
+`JOURNAL.md` (untracked, gitignored) holds the running diary: decisions, dead
+ends, mistakes, and contacts not yet verified. `LOG.md` stays the tracked record,
+newest first, one entry per branch.

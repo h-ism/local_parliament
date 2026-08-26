@@ -9,3 +9,6 @@ __pycache__/
 # Scraped output and HTTP cache — data, not source
 data/
 cache/
+
+# Personal working diary — notes, not source
+JOURNAL.md
