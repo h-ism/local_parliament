@@ -1,0 +1,50 @@
+# Template for a prefectural assembly site.
+#
+# Copy to `<prefecture>.toml` (e.g. `tokyo.toml`) and fill in the selectors by
+# inspecting the real pages. Nothing here is guessed for you: every selector
+# below is a placeholder and WILL need to be checked against the live site.
+#
+# Workflow for adding a site:
+#   1. Find the minutes search system (会議録検索システム) for the assembly.
+#   2. Run a search that lists sittings; that result URL is a `start_urls` entry.
+#   3. `uv run pt inspect <url>` prints the fetched page so you can find selectors.
+#   4. Fill in below, then `uv run pt scrape <name> --limit 1` and check the output.
+
+prefecture = "○○県"          # printed into every record, e.g. "東京都"
+name = "example"              # optional; defaults to the filename stem
+
+# One or more index/search-result pages to start from.
+start_urls = [
+    "https://example.invalid/gikai/search?year=2025",
+]
+
+[list]
+# Selector for links pointing at a single sitting's transcript page.
+meeting_link = "table.result a"
+
+# Optional: if each result sits in its own row, scope the link and its date cell.
+row  = "table.result tr"
+date = "td.date"
+
+# Optional: link to the next page of results. Omit for single-page indexes.
+next_page = "a.next"
+
+# Safety cap on pagination.
+max_pages = 50
+
+[detail]
+# Optional: narrow to the transcript region before extracting anything.
+container = "div#honbun"
+
+# Selector for one speech block. If omitted, the whole container is stored as a
+# single speech — useful for sites that publish minutes as one flat blob.
+speech  = "div.speech"
+speaker = "span.speaker"
+role    = "span.role"
+text    = "p"
+
+# Optional metadata, read from within `container`.
+date      = "span.date"
+session   = "span.session"
+committee = "span.committee"
+title     = "h1"
