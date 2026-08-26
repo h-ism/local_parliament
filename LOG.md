@@ -2,6 +2,108 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-26 — Aomori survey (`feat/aomori-survey`)
+
+*This entry is written in English and Japanese. / この記録は英語と日本語で併記する。*
+
+### English
+
+Asked to take on 青森県議会 (Aomori). Surveyed it; it is blocked, like Hokkaido,
+and again by robots.txt rather than by anything the scraper could be taught.
+
+**Added**
+
+- `docs/aomori.md` — the survey: where the minutes live, the URL scheme, the
+  coverage table by 会議 type, the blocker, and what to do next.
+- `docs/aomori-inquiry.md` — Japanese draft of the access request to
+  青森県議会事務局, matching the Hokkaido one.
+
+**What is there**
+
+Neither the prefectural site nor the assembly's own pages publish transcripts.
+Both link to one external system, 青森県議会会議録検索システム
+(`https://www.pref.aomori.dbsr.jp/index.php/`) — a DB-Search tenant, UTF-8,
+GET navigation, regular URLs of the form
+`/index.php/100000?Template=list&Cabinet=<n>`. Coverage is good: 定例会 and
+臨時会 from 昭和58年度, 決算特別委員会 from 昭和58年度, 予算特別委員会 from 平成9年度,
+常任委員会 from 平成12年度, 議員発議 back to 昭和22年度. Committees are spread over
+`Cabinet` ids 5–20 because the committees themselves were renamed over the
+years, so a committee crawl has to enumerate all of them.
+
+**Why there is no `sites/aomori.toml`**
+
+`https://www.pref.aomori.dbsr.jp/robots.txt` is:
+
+```
+User-agent: *
+Disallow: /
+Allow: /$
+Allow: /index.php$
+Allow: /index.php/$
+```
+
+The `Allow` rules are `$`-anchored and match only the bare landing page, so
+every list, search result and transcript page falls under `Disallow: /`. That is
+stricter than Hokkaido, where the navigation pages were open and only
+`/voices/cgi/` was closed. The crawlable surface here is one page with no
+minutes on it, so no selector could be verified and no config is shipped.
+
+**Verified**
+
+The two prefectural pages linking to the system, the system's landing page and
+its robots.txt were fetched once each on 2026-08-26. Nothing under a disallowed
+path was requested. No code changed, so the suite is untouched at 34 passing.
+
+**Next**
+
+Two prefectures, two robots.txt walls, different vendors and different reasons.
+Before more site configs, run the cheap check first — fetch only `robots.txt`
+for each prefecture's minutes system — and pick targets from what is actually
+collectable.
+
+### 日本語
+
+青森県議会を担当することになったので調査した。結論は北海道と同じく「取得不可」で、
+理由もまたスクレイパー側の工夫では解決できない robots.txt である。
+
+**追加したもの**
+
+- `docs/aomori.md` — 調査結果。会議録の所在、URL の規則、会議種別ごとの登録範囲、
+  阻害要因、次の手。
+- `docs/aomori-inquiry.md` — 青森県議会事務局への依頼文の下書き（北海道と同趣旨）。
+
+**分かったこと**
+
+県のサイトにも議会のページにも会議録本体はなく、いずれも外部の
+「青森県議会会議録検索システム」（`https://www.pref.aomori.dbsr.jp/index.php/`）に
+リンクしているだけである。DB-Search 系のテナントで、UTF-8、遷移は GET、URL は
+`/index.php/100000?Template=list&Cabinet=<n>` という規則的な形をしている。
+登録範囲は広く、定例会・臨時会は昭和58年度以降、決算特別委員会も昭和58年度以降、
+予算特別委員会は平成9年度以降、常任委員会は平成12年度以降、議員発議は昭和22年度以降。
+常任委員会が `Cabinet` 5〜20 に分かれているのは委員会名の改称によるもので、
+委員会を網羅するには全 id を列挙する必要がある。
+
+**`sites/aomori.toml` を作らなかった理由**
+
+同システムの robots.txt は上記のとおり `Disallow: /` で、`Allow` は `$` 付きの
+完全一致であるため、トップページ以外はすべて対象外となる。一覧・検索結果・
+会議録本文のいずれも取得が認められていない。北海道は `/voices/cgi/` のみが
+Disallow で遷移用ページは開いていたが、青森はより厳しい。取得してよいのは
+会議録が載っていないトップページ1枚だけなので、セレクタを確認する手段がなく、
+推測で設定ファイルを置くことはしない。
+
+**確認したこと**
+
+2026年8月26日、システムへリンクしている県側の2ページ、システムのトップページ、
+robots.txt を各1回ずつ取得した。Disallow 配下は一切取得していない。
+コードは変更していないため、テストは34件成功のまま。
+
+**次にやること**
+
+2県続けて robots.txt で止まった。ベンダーも理由も異なる。個別に設定ファイルを
+書き始める前に、各県の会議録システムの `robots.txt` だけを取得する軽い調査を行い、
+実際に収集できる県から着手する方が早い。
+
 ## 2026-08-26 — Hokkaido survey + CSV output (`feat/hokkaido-2025`)
 
 Asked to collect 北海道 for 2025 from
