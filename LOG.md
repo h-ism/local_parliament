@@ -2,6 +2,99 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-26 — All-47 robots survey (`survey/all-prefectures`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+After 北海道 and 青森 both dead-ended on robots.txt, surveyed all 47 prefectures at
+once instead of finding the wall one at a time: locate each assembly's minutes
+system, fetch its robots.txt, and look at what the pages actually are.
+
+**Added**
+
+- `docs/prefecture-survey.md` — all 47, grouped by platform, with the robots
+  verdict and page architecture for each, and a ranked list of what to do next.
+
+**Result: five platforms, and nothing collectable with today's scraper**
+
+- **DB-Search (`*.dbsr.jp`) — 15, blocked.** Identical `Disallow: /` with
+  `$`-anchored Allows for the landing page only. Includes 東京 on its own domain.
+- **gijiroku VOICES — 9, blocked.** The 北海道 product; CGI directory disallowed.
+  One exception: **千葉** installs at `/kaigiroku/` while the boilerplate robots.txt
+  only names `/voices/cgi/`, `/gikai/cgi/` and friends, so its
+  `/kaigiroku/cgi/voiweb.exe` is not covered by any rule. Permitted as written,
+  plainly an oversight rather than an invitation — worth asking before using.
+- **SSP (`ssp.kaigiroku.net`) — 18, permitted but architectural.** robots.txt
+  explicitly allows `/tenant/`. The tenant pages are a client-side app, though:
+  no server-rendered links, data over an API whose endpoint lives in
+  `/tenant/js/release/config.js` — one of the four disallowed directories, so it
+  was not read. 18 prefectures behind one implementation, blocked on one unknown.
+- **`kensakusystem.jp` — 3 (三重・兵庫・愛媛), permitted.** No robots.txt at all
+  (404), server-rendered Shift_JIS CGI pages. The closest thing to a working
+  target; wrinkles are a `Code=` session token (stable, sits in `index.html`) and
+  POST-based navigation.
+- **Own CMS — 2 (静岡・和歌山), permitted, format unverified.** Expect PDF.
+
+**Recommended order**: get the SSP API path (one browser session or one email —
+18 prefectures ride on it); build 愛媛 or 三重 on `kensakusystem.jp` to prove the
+pipeline; keep asking for the blocked ones; and before collecting anything, check
+whether 地方議会会議録コーパスプロジェクト (local-politics.jp, 都道府県議会 corpus for
+2011–2014 and 2015–2019) already covers the research window.
+
+**Verified**
+
+Every robots.txt in the table was fetched directly; systems were identified from
+each prefecture's own assembly pages or from search. Requests spaced 2–3s and
+serialised per service. One early parallel pass over `dbsr.jp` hosts drew
+`429 Too Many Requests` — my error, redone sequentially. Nothing under a Disallow
+rule was fetched, including the SSP config script, which is exactly why the API
+path is still open. No code changed; suite untouched at 34 passing.
+
+### 日本語
+
+北海道・青森が続けて robots.txt で行き止まりになったため、1県ずつ確かめるのをやめ、
+47都道府県を一度に調査した。各議会の会議録システムを特定し、robots.txt を取得し、
+ページが実際にどういう作りかを確認した。
+
+**追加したもの**
+
+- `docs/prefecture-survey.md` — 47都道府県をプラットフォーム別にまとめ、robots の
+  可否とページ構造、次に着手すべき順序を記載。
+
+**結果：5系統、いずれも現在のスクレイパーでは収集できない**
+
+- **DB-Search（`*.dbsr.jp`）15県：不可。** すべて同一の `Disallow: /` で、`Allow` は
+  `$` 付きのトップページのみ。東京都（独自ドメイン）も同じ。
+- **gijiroku VOICES 9県：不可。** 北海道と同じ製品で、CGI ディレクトリが Disallow。
+  ただし**千葉**のみ設置パスが `/kaigiroku/` であり、robots.txt が挙げるのは
+  `/voices/cgi/` や `/gikai/cgi/` 等だけなので、`/kaigiroku/cgi/voiweb.exe` は
+  どの規則にも該当しない。文面上は許可だが、他テナントの設定を見れば設定漏れと
+  考えるのが自然で、利用前に照会すべき。
+- **SSP（`ssp.kaigiroku.net`）18県：robots は許可、構造が壁。** `/tenant/` は明示的に
+  Allow。ただしテナントページは JavaScript アプリで、サーバ側で描画されたリンクが
+  なく、データは API 経由。その API のパスは `/tenant/js/release/config.js` に
+  あるが、これは Disallow 対象の4ディレクトリの一つなので取得していない。
+  18県が一実装で賄える一方、未知の1点で止まっている。
+- **`kensakusystem.jp` 3県（三重・兵庫・愛媛）：許可。** robots.txt が存在しない（404）。
+  Shift_JIS のサーバ描画 CGI ページで、現行スクレイパーに最も近い。難点は
+  `Code=` というセッショントークン（安定、`index.html` に埋め込み）と POST 遷移。
+- **県の CMS 2県（静岡・和歌山）：許可、形式未確認。** PDF の可能性が高い。
+
+**推奨する順序**：SSP の API パスを入手する（ブラウザ1回か問い合わせ1通で18県が動く）、
+`kensakusystem.jp` で愛媛か三重を作ってパイプラインを実証する、不可の県は照会を続ける、
+そして収集前に地方議会会議録コーパスプロジェクト（local-politics.jp、2011–2014年・
+2015–2019年の都道府県議会コーパス）が研究対象期間を満たしていないか確認する。
+
+**確認したこと**
+
+表中の robots.txt はすべて直接取得した。システムの特定は各県議会のページまたは
+検索による。リクエストは2〜3秒間隔、サービスごとに直列化した。初回に `dbsr.jp` へ
+並列アクセスして `429 Too Many Requests` を招いたのは当方の誤りで、逐次実行で
+やり直した。Disallow 配下は SSP の設定スクリプトを含め一切取得していない
+（API パスが未解明なのはそのため）。コード変更なし、テストは34件成功のまま。
+
 ## 2026-08-26 — Aomori survey (`feat/aomori-survey`)
 
 *This entry is written in English and Japanese. / この記録は英語と日本語で併記する。*
