@@ -1,0 +1,46 @@
+[project]
+name = "prefectural-transcripts"
+version = "0.1.0"
+description = "Collect transcripts of Japanese prefectural assembly (都道府県議会) proceedings."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.2",
+    "charset-normalizer>=3.3",
+    "pydantic>=2.7",
+    "typer>=0.12",
+]
+
+[project.scripts]
+pt = "prefectural_transcripts.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/prefectural_transcripts"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["prefectural_transcripts"]
+strict = true
