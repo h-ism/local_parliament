@@ -17,6 +17,7 @@ uv sync
 uv run pt sites                       # list configured assembly sites
 uv run pt scrape tokyo --limit 5      # collect into data/<prefecture>.jsonl
 uv run pt stats data/東京都.jsonl      # summarise a collected corpus
+uv run pt export data/東京都.jsonl     # rewrite the corpus as CSV
 ```
 
 ### Adding a prefecture
@@ -48,6 +49,25 @@ One JSONL file per prefecture, one meeting per line — see `Meeting` in
 `src/prefectural_transcripts/models.py`. Re-running a scrape resumes: meetings
 already in the file are skipped, and every fetched page is cached under `cache/`,
 so tuning selectors costs no extra requests.
+
+### CSV
+
+JSONL is the canonical store, but a flat table is easier for most analysis, so
+the same records can be written as CSV — **one row per speech**, with the
+meeting-level fields (date, session, committee, title, url) repeated on each row:
+
+```bash
+uv run pt scrape tokyo --csv          # writes data/東京都.jsonl and data/東京都.csv
+uv run pt export data/東京都.jsonl     # or rebuild the CSV from the JSONL later
+```
+
+Columns: `prefecture, date, session, committee, title, url, speech_order,
+speaker, role, text, retrieved_at, source_html_sha256`. Files are utf-8-sig so
+Excel opens Japanese text correctly; a meeting that yielded no speeches still
+gets one row, with the speech columns blank, rather than vanishing from the table.
+
+`--csv` on a resumed run only appends the meetings fetched by that run — use
+`pt export` to rebuild the whole table from the JSONL.
 
 ## Crawling politely
 

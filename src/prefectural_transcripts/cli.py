@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import ExitStack
 from datetime import date
 from pathlib import Path
 from typing import Annotated
@@ -12,7 +13,12 @@ import typer
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
 from prefectural_transcripts.scrapers import available_sites, load_scraper
-from prefectural_transcripts.storage import TranscriptStore, read_meetings
+from prefectural_transcripts.storage import (
+    SpeechCsvWriter,
+    TranscriptStore,
+    read_meetings,
+    write_csv,
+)
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -57,6 +63,10 @@ def scrape(
     out: Annotated[Path | None, typer.Option(help="Output directory. Default: ./data")] = None,
     delay: Annotated[float | None, typer.Option(help="Min seconds between requests.")] = None,
     resume: Annotated[bool, typer.Option(help="Skip meetings already in the output file.")] = True,
+    csv_out: Annotated[
+        bool,
+        typer.Option("--csv", help="Also write data/<prefecture>.csv, one row per speech."),
+    ] = False,
     no_cache: Annotated[bool, typer.Option("--no-cache", help="Bypass the HTTP cache.")] = False,
     verbose: Annotated[bool, typer.Option("-v", "--verbose")] = False,
 ) -> None:
@@ -72,22 +82,38 @@ def scrape(
 
     scraper = load_scraper(name)
     written = 0
-    with TranscriptStore(settings.data_dir, scraper.prefecture) as store:
+    with ExitStack() as stack:
+        store = stack.enter_context(TranscriptStore(settings.data_dir, scraper.prefecture))
+        # The CSV is a second view of the same records, written as they arrive so
+        # an interrupted run still leaves both files consistent with each other.
+        csv_writer = (
+            stack.enter_context(SpeechCsvWriter(settings.data_dir, scraper.prefecture))
+            if csv_out
+            else None
+        )
         skip = store.seen_keys() if resume else set()
         if skip:
             typer.echo(f"Resuming: {len(skip)} meetings already collected.")
-        with PoliteClient(settings) as client:
-            for meeting in scraper.scrape(
-                client,
-                since=_parse_date(since),
-                until=_parse_date(until),
-                limit=limit,
-                skip=skip,
-            ):
-                store.write(meeting)
-                written += 1
-                typer.echo(f"[{written}] {meeting.date} {meeting.title or meeting.url}")
+            if csv_writer:
+                typer.echo(
+                    "Note: --csv only appends the new meetings; `pt export` rebuilds it all."
+                )
+        client = stack.enter_context(PoliteClient(settings))
+        for meeting in scraper.scrape(
+            client,
+            since=_parse_date(since),
+            until=_parse_date(until),
+            limit=limit,
+            skip=skip,
+        ):
+            store.write(meeting)
+            if csv_writer:
+                csv_writer.write(meeting)
+            written += 1
+            typer.echo(f"[{written}] {meeting.date} {meeting.title or meeting.url}")
     typer.echo(f"Wrote {written} meetings to {store.path}")
+    if csv_out:
+        typer.echo(f"CSV written to {settings.data_dir / (store.path.stem + '.csv')}")
 
 
 @app.command()
@@ -115,6 +141,18 @@ def inspect(
     typer.echo(f"{len(matches)} match(es) for {selector!r}")
     for i, node in enumerate(matches[:20]):
         typer.echo(f"--- [{i}] {node.get_text(' ', strip=True)[:300]}")
+
+
+@app.command()
+def export(
+    path: Annotated[Path, typer.Argument(help="A data/<prefecture>.jsonl file.")],
+    out: Annotated[Path | None, typer.Option(help="CSV to write. Default: alongside, .csv")] = None,
+) -> None:
+    """Rewrite a collected corpus as CSV, one row per speech."""
+    meetings = read_meetings(path)
+    target = out or path.with_suffix(".csv")
+    rows = write_csv(meetings, target)
+    typer.echo(f"Wrote {rows} speech rows from {len(meetings)} meetings to {target}")
 
 
 @app.command()

@@ -23,6 +23,7 @@ uv run pytest tests/test_dates.py::test_parses_known_forms   # single test
 uv run ruff check . && uv run ruff format .
 uv run mypy                   # strict; must stay clean
 uv run pt --help              # the CLI
+uv run pt export data/<pref>.jsonl   # JSONL corpus -> CSV (one row per speech)
 ```
 
 ## Architecture
@@ -56,7 +57,9 @@ Modules under `src/prefectural_transcripts/`:
 - `models.py` — `Speech` / `MeetingRef` / `Meeting`. Note `datetime` is imported as
   `dt` because both models have a field named `date`, which would otherwise shadow
   the type inside the class body and break pydantic's annotation evaluation.
-- `storage.py` — JSONL writer, one file per prefecture. `seen_keys()` drives resume.
+- `storage.py` — JSONL writer, one file per prefecture; `seen_keys()` drives resume.
+  `SpeechCsvWriter` / `write_csv` render the same records as a flat CSV (one row
+  per speech) for analysis; JSONL stays canonical.
 
 ## Conventions
 
