@@ -42,7 +42,15 @@ JavaScript で構成されており、データ取得先が Disallow 対象の�
 [三重](mie.md) ・ [兵庫](hyogo.md) ・ [愛媛](ehime.md) — robots.txt が存在せず制限は
 ないが、継続的にアクセスする以上、先に知らせて条件があれば従う。
 
+## 5. meta robots の趣旨を確認する
+
+[静岡](shizuoka.md) — robots.txt は無いが、会議録アプリの全ページに
+`<meta name="robots" content="none">`（noindex, nofollow, noarchive）が付いている。
+索引付けに関する指示であって取得の禁止ではないが、研究目的の収集まで含む趣旨かを
+確認する。設定ファイルは動く状態にあるので、返答を待って全件取得に進む。
+詳細は `docs/shizuoka.md`。
+
 ## 照会が不要なところ
 
-静岡・和歌山は県の CMS で公開しており、robots.txt に会議録を妨げる記載はない。
+和歌山は県の CMS で公開しており、robots.txt に会議録を妨げる記載はない。
 ただし本文が HTML か PDF かを未確認のため、まず形式を確かめてから判断する。

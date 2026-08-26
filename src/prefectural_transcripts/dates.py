@@ -27,12 +27,18 @@ _WAREKI = re.compile(
 )
 _WAREKI_NUMERIC = re.compile(r"([RHS])\s*(\d{1,2})[./-](\d{1,2})[./-](\d{1,2})")
 _SEIREKI = re.compile(r"(\d{4})\s*[年./-]\s*(\d{1,2})\s*[月./-]\s*(\d{1,2})\s*日?")
+# Lotus Domino prints its date fields as MM/DD/YYYY (静岡 does this). Tried last,
+# after the year-first forms, so it can never steal a match from them. Day-first
+# readings are NOT accepted: a site that means DD/MM would need its own pattern,
+# because the two are indistinguishable for the first twelve days of a month.
+_US_SLASH = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
 
 
 def parse_japanese_date(text: str) -> date | None:
     """Extract the first date found in `text`, or None.
 
-    Handles 「令和7年6月10日」, 「R7.6.10」, 「2025年6月10日」 and 「2025-06-10」.
+    Handles 「令和7年6月10日」, 「R7.6.10」, 「2025年6月10日」, 「2025-06-10」 and
+    Domino's 「06/23/2025」 (month first).
     """
     if not text:
         return None
@@ -48,6 +54,10 @@ def parse_japanese_date(text: str) -> date | None:
 
     if m := _SEIREKI.search(text):
         western, month, day = m.groups()
+        return _safe_date(int(western), int(month), int(day))
+
+    if m := _US_SLASH.search(text):
+        month, day, western = m.groups()
         return _safe_date(int(western), int(month), int(day))
 
     return None

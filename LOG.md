@@ -2,6 +2,129 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-26 — 静岡: the first working site config (`feat/shizuoka`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Asked to collect 静岡. It works — this is the first `sites/*.toml` in the project,
+verified against real markup. One courtesy question is outstanding before a full
+crawl (see below), so no live run has been made.
+
+**Added**
+
+- `sites/shizuoka.toml` — 本会議会議録, driven off the 開催別 view.
+- `docs/shizuoka.md` — site notes, what was verified, and the meta-robots question.
+- `docs/inquiries/shizuoka.md` — draft note to 議事課 about that question.
+- `dates.py` — Domino's month-first `06/23/2025`. Tried last, after the year-first
+  forms, so it can never steal a match from them; day-first is deliberately not
+  accepted, being indistinguishable for the first twelve days of a month.
+- `generic.py` — two escape hatches, both general rather than 静岡-specific:
+  - `detail.speech_split`: a regex marking where each speech starts, for pages
+    whose transcript is one run of text with 「○知事（鈴木康友君）　…」 markers and no
+    per-speech elements. The 「君」 suffix is stripped so speakers join across records.
+  - `detail.patterns`: regex per field (date/session/committee/title) matched on
+    the container text, for legacy tables that label fields by the neighbouring
+    cell — something CSS cannot express. A selector still wins when both are set.
+- 8 tests for the above; `_example.toml` and CLAUDE.md document both options.
+
+**The site**
+
+Lotus Domino (`ggiji.nsf`) on `www2.pref.shizuoka.jp` — a different host from the
+CMS — serving Shift_JIS over plain GET. `WebView1?OpenView&ExpandView` opens the
+whole 開催別 tree in one page, so there is nothing to paginate. Coverage runs from
+平成11年5月臨時会. Note that **one document is one 発言単位**, not one sitting: a
+member's question plus the answers to it, or a 報告事項 / 委員長報告. 令和7年6月定例会
+is 26 documents.
+
+**Verified**
+
+Offline, from bytes fetched by hand, so no crawl was needed: 26 documents listed
+from 令和7年6月定例会; one document parsed to `date=2025-06-23`,
+`session='令和７年６月静岡県議会定例会'`, **39 speeches / 25,875 characters**, with
+roles and names split correctly (議長/竹内良訓, 六番/赤堀慎吾, 知事/鈴木康友).
+`ruff`, `mypy --strict` and `pytest` (42 passed) all clean.
+
+**Open question: meta robots**
+
+There is no robots.txt on `www2.pref.shizuoka.jp` (404), but every page of the
+minutes application carries `<meta name="robots" content="none">` plus
+`noindex,nofollow` and `noarchive`. The CMS host carries none of that, so it is
+specific to this application.
+
+These are indexing directives, not access rules — nothing here says "do not
+fetch", which is what a robots.txt `Disallow` would say. A research corpus is not
+a public index and republishes no cache. But `nofollow` does describe exactly the
+list-then-follow pattern this scraper uses, and `PoliteClient` reads robots.txt
+only, so nothing in the toolkit would stop a full run. Holding the archive crawl
+(平成11年 onwards, thousands of documents) until 議事課 is asked; a one-off
+verification fetch is no different from opening the page in a browser.
+
+**Not done yet**
+
+委員会会議録 (`comgiji.nsf`, same host) — almost certainly the same shape, not yet
+opened. And the size of the expanded view is unmeasured, because measuring it
+means fetching it.
+
+### 日本語
+
+静岡県の収集を担当した。**動く。** 本プロジェクトで最初の `sites/*.toml` であり、
+実際のマークアップに対して検証済み。ただし全件取得の前に確認したい点が1つ残って
+いるため（後述）、実サイトへの収集は実行していない。
+
+**追加したもの**
+
+- `sites/shizuoka.toml` — 本会議会議録。「開催別」ビューを起点とする。
+- `docs/shizuoka.md` — サイトの構造、検証内容、meta robots の論点。
+- `docs/inquiries/shizuoka.md` — 議事課への確認の下書き。
+- `dates.py` — Domino の月先行表記 `06/23/2025` に対応。年先行の各形式を試した後に
+  適用するため、既存の解釈を奪うことはない。日先行は月の1〜12日で区別できないため
+  意図的に採用していない。
+- `generic.py` — 静岡専用ではなく汎用の逃げ道を2つ追加。
+  - `detail.speech_split`：発言の開始位置を示す正規表現。「○知事（鈴木康友君）　…」の
+    ように、発言ごとの要素が無くテキストが一続きのページ向け。名前末尾の「君」は
+    除去し、記録間で発言者を突き合わせられるようにした。
+  - `detail.patterns`：日付・会議名・委員会名・表題を、コンテナのテキストに対する
+    正規表現で拾う。隣接セルの文字列でしか項目を特定できない旧来の表組みは CSS では
+    表現できないため。両方指定された場合はセレクタを優先する。
+- 上記に対するテスト8件。`_example.toml` と CLAUDE.md にも記載。
+
+**サイトの構造**
+
+`www2.pref.shizuoka.jp`（CMS とは別ホスト）の Lotus Domino アプリ（`ggiji.nsf`）。
+Shift_JIS を通常の GET で配信。`WebView1?OpenView&ExpandView` で「開催別」の全階層が
+1ページに展開されるため、ページ送りの処理は不要。掲載は平成11年5月臨時会以降。
+注意点として、**1文書＝1発言単位**であり1開催日ではない（議員の質問とそれへの答弁、
+あるいは報告事項・委員長報告）。令和7年6月定例会で26文書。
+
+**検証したこと**
+
+手作業で取得済みのバイト列を使い、追加の収集を行わずにオフラインで確認した。
+令和7年6月定例会から26文書を一覧取得。1文書を解析して `date=2025-06-23`、
+`session='令和７年６月静岡県議会定例会'`、**発言39件・25,875文字**、役職と氏名の分割も
+正しい（議長/竹内良訓、六番/赤堀慎吾、知事/鈴木康友）。`ruff`・`mypy --strict`・
+`pytest`（42件成功）はいずれもクリーン。
+
+**未解決：meta robots**
+
+`www2.pref.shizuoka.jp` に robots.txt は無い（404）が、会議録アプリの全ページに
+`<meta name="robots" content="none">` と `noindex,nofollow`・`noarchive` が付いている。
+CMS 側のホストには無いので、このアプリ固有の設定である。
+
+これらは索引付けに関する指示であって取得の可否を定めるものではない（取得を禁じる
+のは robots.txt の `Disallow` であり、それは存在しない）。研究用コーパスは公開検索
+サービスでもキャッシュの再配布でもない。ただし `nofollow` は、一覧をたどって文書
+リンクを開くという本スクレイパーの動作そのものを指しており、`PoliteClient` は
+robots.txt しか見ないため、実行を止めるものは何も無い。したがって全件取得
+（平成11年以降・数千文書）は議事課への確認まで保留する。1件だけの動作確認は
+ブラウザで開くのと変わらないと判断している。
+
+**未着手**
+
+委員会会議録（同一ホストの `comgiji.nsf`）。ほぼ同じ構造と思われるが未確認。
+展開後のビューの大きさも未計測（計測すること自体が取得になるため）。
+
 ## 2026-08-26 — Inquiry drafts for every blocked assembly (`survey/all-prefectures`)
 
 *English and Japanese. / 英語と日本語で併記する。*
