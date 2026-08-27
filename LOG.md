@@ -2,6 +2,159 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — Re-opening the leads: four prefectures are collectable (`survey/collectable-targets`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Docs only; no code and no corpus collected. Asked to read yesterday's log and work
+out where minutes can actually be collected. Two of the four leads turned out
+better than the survey recorded, and they are blocked by the same missing feature.
+
+**Added**
+
+- `docs/collection-targets.md` — the ranked answer, with cost per target.
+- `docs/wakayama.md`, `docs/kensakusystem.md` — verified site notes.
+- A supersession banner on `docs/prefecture-survey.md`; two of its verdicts are now
+  wrong in our favour and it should not be read alone.
+
+**和歌山 — the best target in the survey, and it was written off**
+
+The survey guessed PDF "on the evidence of 北海道". It is plain UTF-8 HTML: one
+index page listing ~150 sessions from 平成2年 to 令和8年, each session page listing
+its sittings, each sitting one page carrying the full text (~186 KB, ~60k chars,
+98 speech markers in the sample). robots.txt is 404 and the pages carry
+`index, follow`, so none of 静岡's `meta robots` question applies.
+
+The survey's entry point was also wrong: `/gijiroku/` returns 403, which is the
+directory index being off, not a block — documents under it are 200. Correct entry
+is `/gijiroku/d00203238.html`.
+
+The trap here is the mirror image of 静岡's. Office-holders are `○知事（岸本周平君）`
+but members are bare `○濱口太史君`, with no parentheses. 静岡's split rule would have
+silently dropped most of the corpus — the same failure mode as the 質問日/発言日 label
+(one form is not all forms), caught this time by reading a sample first.
+
+**愛媛・三重・兵庫 — both open questions resolved in our favour**
+
+The survey left "the tree navigates by POST" and "the result-list parameters were
+not pinned down". Both are answered:
+
+- `See.exe` takes as a GET query string what the page submits as a POST.
+  `See.exe?Code=<code>&treedepth=<label>`, the label percent-encoded **in cp932**
+  and carrying a significant trailing space at session level. No POST support
+  needed anywhere.
+- The page's own ダウンロード button posts to `GetPerson.exe` — and it accepts GET
+  with a repeated `downloadPos`, returning the whole sitting as **plain text**. So
+  a sitting costs two requests (speaker index + download) rather than one per
+  speech. `GetText3.exe` returns one speech, `GetPage.exe` one printed page; both
+  are strictly worse.
+
+`fileName=R080225A` encodes the date, so `--since/--until` actually saves requests
+here — the opposite of 静岡, where the index carries no dates.
+
+兵庫 reaches back to **昭和61年 (1986)**, the deepest archive found. All three carry
+`<meta name="robots" CONTENT="follow,index">`.
+
+**The one change that unlocks all four**
+
+`GenericScraper` models a listing as one level plus pagination. Both targets are
+year/index → session → sitting. An intermediate listing level is a real shape in
+this domain rather than a per-site hack, and it is the highest-value code change
+open. 愛媛 needs two smaller things after that: `speech_split` against a body that
+is not HTML, and a listing step that gathers `downloadPos` values into the next URL
+— the second may be cheaper as a small `BaseScraper` subclass than as config.
+
+**SSP — no breakthrough, but the ground is prepared**
+
+Collected all 18 numeric tenant ids (大阪 315, 沖縄 632, …) from
+`/tenant/<tenant>/js/*.js`, which is **not** disallowed: `Disallow: /tenant/js/`
+matches the shared directory only, not `/tenant/prefosaka/js/`. Confirmed the
+permalink form `MinuteView.html?council_id=&schedule_id=` and confirmed those pages
+are a pure client-side shell, so no server-rendered route exists and the API really
+is required. The endpoint stays in `/tenant/js/release/config.js`, which is under
+`Disallow` and was not fetched.
+
+Also found a second condition that robots.txt says nothing about: 大阪's own page
+states the data rights belong to the assembly and that reuse for other purposes
+should be cleared with 議会事務局. That applies even once the API is known, and it
+belongs in the letters for these 18.
+
+**Check before crawling**
+
+The 地方議会会議録コーパスプロジェクト already covers all 47 assemblies for 2011–2014
+and 2015–2019 (~134M sentences, ~80 GB). If the research window sits inside that,
+most of this crawl is redundant. The genuine gap is 2020 onwards — which is also
+where the Tier-1 targets are cheapest. Settle this before any large run.
+
+**Method**
+
+Roughly 40 requests total, all through `PoliteClient` or `curl` at 2s spacing,
+serialised per host, everything cached. No URL under any `Disallow` was fetched.
+
+### 日本語
+
+ドキュメントのみ。コードの変更と収集は行っていない。昨日のログを読んだうえで、
+実際にどこが収集可能かを詰めた。4つの懸案のうち2つが、記録より良い結果だった。
+しかも両者は**同じ一つの機能不足**で止まっている。
+
+**和歌山 — 調査で切り捨てられていたが、最良の対象だった**
+
+前回は「北海道の例から PDF だろう」と推測していた。実際は素の UTF-8 HTML で、
+索引1ページに平成2年〜令和8年の約150会期が並び、会期ページが各号を、各号が
+全文1ページ（約186KB・本文6万字・発言標識98件）を持つ。robots.txt は404、
+ページは `index, follow`。静岡の `meta robots` の懸案はここには当てはまらない。
+
+入口も誤っていた。`/gijiroku/` の403はディレクトリ一覧が無効なだけで、配下の
+文書は200を返す。正しい入口は `/gijiroku/d00203238.html`。
+
+罠は静岡の裏返し。理事者は `○知事（岸本周平君）` だが、議員は括弧なしの
+`○濱口太史君`。静岡の分割規則をそのまま当てれば、コーパスの大半を黙って
+取りこぼしていた。質問日／発言日と同じ「1つの形式では足りない」型の失敗で、
+今回は先にサンプルを読んだので事前に捕まえられた。
+
+**愛媛・三重・兵庫 — 未解決だった2点が両方とも解決**
+
+- `See.exe` は POST で送っている項目を **GET のクエリ文字列でも受ける**。
+  `treedepth` は **cp932** でパーセントエンコードし、会期階層では末尾の空白が
+  意味を持つ。POST 対応は不要。
+- ページ自身の「ダウンロード」ボタンの送信先 `GetPerson.exe` が **GET を受け付け**、
+  `downloadPos` を複数渡すと**その会議の全文をプレーンテキストで返す**。
+  1会議あたり2リクエスト（発言索引＋ダウンロード）で済む。
+
+`fileName=R080225A` に日付が入っているため、静岡と違い日付フィルタが実際に
+リクエストを節約する。兵庫は**昭和61年**まで遡れ、今回の調査で最も深い。
+
+**4県を一度に開ける唯一の変更**
+
+`GenericScraper` の一覧は1階層＋ページ送りのみ。両対象とも「年/索引 → 会期 →
+会議」の2階層で、中間の一覧階層はこの領域に実在する形であって場当たりではない。
+これが今いちばん効くコード変更。
+
+**SSP — 突破はないが下ごしらえは済んだ**
+
+18テナントの数値IDを `/tenant/<tenant>/js/*.js` から取得した。ここは Disallow
+対象ではない（`Disallow: /tenant/js/` は共有ディレクトリだけに一致し、
+`/tenant/prefosaka/js/` には一致しない）。`MinuteView.html?council_id=&schedule_id=`
+という固定URL形式と、そのページが完全なクライアント描画であることも確認した。
+API は依然 `/tenant/js/release/config.js` の中で、取得していない。
+
+robots.txt とは別の条件も見つけた。大阪のページに「このデータの権利は大阪府議会に
+帰属します。転用、その他の用途への利用については…お問い合わせください」とある。
+API が判明しても残る条件なので、18県への文面に含めること。
+
+**収集前の確認**
+
+地方議会会議録コーパスプロジェクトが47都道府県の2011–2014・2015–2019を既に
+整備している。研究対象期間がその中なら、この収集の大半は不要。空白は2020年以降で、
+そこは今回の対象がいちばん安く取れる範囲でもある。
+
+**方法**
+
+計約40リクエスト。すべて `PoliteClient` または2秒間隔の `curl`、ホストごとに直列、
+全件キャッシュ。`Disallow` 配下のURLは一件も取得していない。
+
 ## 2026-08-26 — 静岡: the first working site config (`feat/shizuoka`)
 
 *English and Japanese. / 英語と日本語で併記する。*

@@ -1,5 +1,13 @@
 # 47 都道府県議会 — where the minutes are, and whether we may crawl them
 
+> **Superseded in part, 2026-08-27.** Classes D and E were re-opened and both are
+> better than described here: the `kensakusystem.jp` browse tree navigates by GET,
+> not only POST, and 和歌山 publishes per-sitting full text as plain UTF-8 HTML.
+> The claim below that "nothing is collectable with `GenericScraper` as it stands"
+> is still true, but the gap is one missing feature rather than four unknowns.
+> Read `docs/collection-targets.md` for the current picture, then
+> `docs/kensakusystem.md` and `docs/wakayama.md`.
+
 Surveyed 2026-08-26, after 北海道 and 青森 both turned out to be blocked. The point
 of this pass was to stop discovering blockers one prefecture at a time: for all 47,
 find the minutes system, read its `robots.txt`, and see what the pages actually are.
