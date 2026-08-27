@@ -91,11 +91,11 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 - **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
   The full archive (平成11年 onwards) waits on a question about the site's
   `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **和歌山** — `sites/wakayama.toml`. **2020–2025 is collected**: 30 sessions,
-  199 sittings, 14,366 speeches. Plain UTF-8 HTML on the prefecture's CMS,
-  robots.txt 404, pages marked `index, follow`; one index page → ~150 sessions →
-  per-sitting full text, 平成2年 to 令和8年. The rest of the archive is reachable
-  with the same config; 平成2–10年 has not been opened. `docs/wakayama.md`.
+- **和歌山** — `sites/wakayama.toml`. **Collected: 907 sittings, 46,839 speeches,
+  1989-02-27 .. 2025-12-19.** Plain UTF-8 HTML on the prefecture's CMS,
+  robots.txt 404, pages marked `index, follow`; one index page → 167 sessions →
+  per-sitting full text. 2011-04 .. 2019-03 is deliberately absent: the
+  地方議会会議録コーパス already covers it. `docs/wakayama.md`.
 - **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
   the whole flow works over GET. Two requests per sitting, because the site's own
   download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
@@ -133,8 +133,11 @@ See `docs/inquiries/ssp-vendor.md`.
 **Before any large crawl**
 
 The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already covers all
-47 assemblies for 2011–2014 and 2015–2019. If the research window sits inside that,
-most of this work is redundant; the genuine gap is 2020 onwards. Settle this first.
+47 assemblies for **2011-04 to 2019-03** — fiscal years, so the boundaries are not
+where you would guess. Anything inside that window is worth asking them for rather
+than crawling. Note the gap it leaves: **2019-04 .. 2019-12** falls between that
+corpus and any collection that starts at a calendar year. 和歌山 was scoped this
+way; do the same for the next prefecture.
 
 ## Things that will bite again
 
@@ -156,6 +159,18 @@ quirks.
   parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
   A split rule copied from another prefecture will match the minority form and drop
   the rest silently. Count what a rule catches against a sample before trusting it.
+- **Nonsense output is a third failure mode, and nothing warns about it.** A
+  sitting that parses to zero speeches warns; an index that yields nothing does
+  not; and a rule that yields *plausible garbage* does not either. 和歌山's greedy
+  speaker group produced 21-character "speakers" made of speech text, and 〇-as-a-
+  numeral produced four more. Found only by sorting the speaker list by length and
+  grepping it for digits and punctuation. **Do that on every corpus before
+  trusting it.**
+- **Judge a candidate rule by what it loses, not only by what it fixes.** Three
+  fixes for the same four false positives lost 7, 15 and 0 real speeches
+  respectively; all three looked reasonable written down. Re-parsing the whole
+  corpus to compare costs zero requests because every response is cached — which
+  is what the cache is for.
 - **A listing-level miss has no smoke test.** 和歌山 labels the whole-sitting link
   「◎第３号全文」 in most sessions and 「◎第１号本文」 in others; filtering on 全文
   dropped three entire sessions in silence. A detail page that parses to zero

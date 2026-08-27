@@ -98,6 +98,52 @@ Following the broken link is harmless — it resolves to a document already coll
 from its own session page, and the record dates and titles itself correctly from
 its own content — but it is worth raising with 議事課.
 
+## Collected
+
+| Range | Meetings | Speeches | Note |
+| --- | ---: | ---: | --- |
+| 1989-02-27 .. 2011-02 | 673 | — | not in the 地方議会会議録コーパス (starts 2011-04) |
+| 2011-04 .. 2019-03 | — | — | **skipped** — covered by that corpus |
+| 2019-05 .. 2019-12 | 25 | — | not in it either (that corpus ends 2019-03) |
+| 2020-02-20 .. 2025-12-19 | 199 | 14,366 | |
+| **total on disk** | **907** | **46,839** | 27,358,983 chars, 410 speakers |
+
+The 2019 gap is easy to miss: the corpus runs on fiscal years (2011-04 .. 2019-03),
+so 2019年5月臨時会 onwards falls between it and any collection that starts at 2020.
+
+**Known gap: one undated record.** 平成8年6月第6号 (`p042602`) prints its date as
+「平成八年**七年**十日（水曜日）」 — a typo for 七**月** in the source. The date filter
+is deliberately anchored on 「（…曜日）」 to avoid picking up a date mentioned in
+passing, and loosening it to rescue this one record would risk mis-dating others.
+The true date is **1996-07-10**, which the same page gives correctly elsewhere as
+「平成８年７月10日」.
+
+## Two more found by parsing 907 documents
+
+**6. The name must be matched lazily.** Greedy `{1,24}` runs past the real name to
+a later 「君」 in the speech itself — 「○林　隆一君　知事、大変失礼いたしました。林君」
+became a single 21-character speaker. Lazy matching fixed 3 records and changed the
+speech count by **zero**, so it is strictly better.
+
+**7. 〇 is a numeral and 「君」 is an ordinary word.** The 「君」 suffix rejects
+「二〇〇三年度」 but not 「例えば二〇年後、三〇年後、君が四〇歳を過ぎ」 or
+「子供一一〇番の家であるきしゅう君の家」 — 4 false speakers over 907 documents. A real
+marker never follows a digit, so a negative lookbehind on
+`[0-9０-９一二三四五六七八九十百千〇]` settles it: 46,843 → 46,839, and all four
+removed matches are false positives.
+
+Two alternatives were measured over the whole corpus and **rejected**:
+
+| Rule | False positives killed | Real speeches lost |
+| --- | ---: | ---: |
+| Anchor marker to line start | 4 | **7** — 「〔「異議なし」と呼ぶ者あり〕 ○議長（濱口太史君）…」 |
+| Require whitespace after marker | 4 | **15** — 「○浜本　収君（続）」, and older sittings with no space |
+| **Lookbehind on numerals** | **4** | **0** |
+
+The lesson is the measurement, not the regex: each candidate looked reasonable, and
+only counting what it caught *and what it lost* across the whole corpus separated
+them.
+
 ## Three traps this site set, all of the same kind
 
 Each is a case of "one form is not all forms", and each fails *silently*.

@@ -496,3 +496,47 @@ def test_extra_meeting_urls_reach_what_a_broken_index_does_not(fake_client) -> N
     assert urls[0] == "https://x.test/g/d9.html"
     # and it is not fetched during listing — only when the meeting is parsed
     assert "https://x.test/g/d9.html" not in client.requested
+
+
+# --- what 907 real documents taught the split rule -----------------------------
+
+WAKAYAMA_SPLIT = (
+    r"(?<![0-9０-９一二三四五六七八九十百千〇])[○〇]"
+    r"(?:(?P<role>[^（(\n]{1,24})[（(])?(?P<speaker>[^（()）\n]{1,24}?君)[）)]?"
+)
+
+
+def _split(text: str) -> list[tuple[str | None, str]]:
+    from prefectural_transcripts.scrapers.generic import _split_speeches
+
+    return [(s.role, s.speaker) for s in _split_speeches(text, WAKAYAMA_SPLIT)]
+
+
+def test_speaker_is_matched_lazily_not_greedily() -> None:
+    """Greedy matching ran past the real name to a 「君」 inside the speech:
+    「○林　隆一君　知事、大変失礼いたしました。林君」 became one 21-char speaker."""
+    got = _split("○林　隆一君　知事、大変失礼いたしました。林君は続けます。\n")
+    assert got == [(None, "林　隆一")]
+
+
+def test_a_numeral_circle_is_not_a_speech_marker() -> None:
+    """〇 is also a digit and 「君」 is also an ordinary word, so the 「君」 suffix
+    alone is not enough: these two produced false speakers over the corpus."""
+    assert _split("例えば二〇年後、三〇年後、君が四〇歳を過ぎたとき。\n") == []
+    assert _split("子供一一〇番の家であるきしゅう君の家を設置し、\n") == []
+    # …while the numeral rule must not reject 〇 used as a real marker.
+    assert _split("〇議長（濱口太史君）　御異議なしと認めます。\n") == [("議長", "濱口太史")]
+
+
+def test_a_speech_may_begin_mid_line() -> None:
+    """Anchoring the marker to a line start would have killed the false positives
+    above, but it loses 7 real speeches like this one."""
+    text = "〔「異議なし」と呼ぶ者あり〕 ○議長（濱口太史君）　御異議なしと認めます。\n"
+    assert _split(text) == [("議長", "濱口太史")]
+
+
+def test_a_marker_need_not_be_followed_by_a_space() -> None:
+    """Requiring whitespace after the marker loses 15 real speeches: the 「（続）」
+    continuation form, and older sittings that run straight on."""
+    assert _split("○浜本　収君（続）　わかっております。\n") == [(None, "浜本　収")]
+    assert _split("○議長（橋本　進君）保健環境部長鈴木英明君。\n") == [("議長", "橋本　進")]

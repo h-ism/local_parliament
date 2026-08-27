@@ -2,6 +2,176 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — 和歌山: everything the 地方議会会議録コーパス does not cover (`feat/wakayama-archive`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Asked to collect the rest of 和歌山, at least the part not already in the
+地方議会会議録コーパス. Verified that corpus's range first, collected the two gaps
+either side of it, then fixed the split rule with what 907 documents revealed.
+
+**What that corpus covers, and what it leaves**
+
+都道府県議会 runs **2011-04 to 2019-03** — fiscal years. So two gaps:
+
+- 1989 .. 2011-03 (the archive's whole first two decades)
+- **2019-04 .. 2019-12** — easy to miss, and it falls between that corpus and any
+  collection starting at 2020. Four sessions.
+
+2011-04 .. 2019-03 was deliberately **not** collected. 102 of the index's 167
+sessions were in scope.
+
+**Collected**
+
+```
+meetings : 907          speeches : 46,839
+chars    : 27,358,983   range    : 1989-02-27 .. 2025-12-19
+```
+
+708 new sittings on top of the 199 from the earlier run. Every record titled and
+attributed to a session, one undated (below); 410 speakers, no speech without a
+speaker, no zero-speech sitting, no duplicate URL. Year coverage is continuous
+1989–2011 and 2019–2025, with 2012–2018 absent by design.
+
+**Checked before running, because the journal said to**
+
+The `◎` rule and the 漢数字 dates had been decided without opening a single
+1990s document. Surveying all 102 session pages first found **a third label form,
+「◎会議録全文」** (7 of 708) — sittings of 臨時会 that carry no 号 number. `^◎` covers
+it, and no session page yielded zero links. Spot-checking 平成元年, 平成6年 and
+平成15年 documents confirmed the container, the dates (「平成元年二月二十七日」 →
+1989-02-27) and the markers all parse.
+
+That survey cost 102 requests that the crawl needed anyway. Had it been skipped and
+the 全文-only filter still been in place, three sessions would have vanished in
+silence — exactly the failure this project already made once.
+
+**Two split-rule faults, visible only at 907 documents**
+
+Both produced *nonsense speakers*, not missing text, so nothing warned.
+
+- **Greedy matching.** `{1,24}` ran past the real name to a later 「君」 in the
+  speech: 「○林　隆一君　知事、大変失礼いたしました。林君」 became one 21-character
+  speaker. Lazy matching fixed 3 records and changed the speech count by **zero**.
+- **〇 is a numeral, 「君」 is an ordinary word.** The 「君」 suffix rejects
+  「二〇〇三年度」 but not 「例えば二〇年後、三〇年後、君が四〇歳を過ぎ」 or
+  「子供一一〇番の家であるきしゅう君の家」 — 4 false speakers. A real marker never
+  follows a digit, so a negative lookbehind settles it.
+
+Two other candidates were measured over the whole corpus and **rejected**, which is
+the part worth keeping:
+
+| Rule | False positives killed | Real speeches lost |
+| --- | ---: | ---: |
+| Anchor marker to line start | 4 | **7** — speeches do begin mid-line, after 「〔「異議なし」と呼ぶ者あり〕」 |
+| Require whitespace after marker | 4 | **15** — 「○浜本　収君（続）」, and older sittings with no space at all |
+| **Lookbehind on numerals** | **4** | **0** |
+
+All three looked reasonable in the abstract. Only counting what each caught *and
+what it lost*, across all 907 documents, separated them. Re-parsing to compare cost
+**zero requests** — every page was already cached, which is the whole point of
+caching every response.
+
+**One record left undated, deliberately**
+
+平成8年6月第6号 (`p042602`) prints 「平成八年**七年**十日（水曜日）」 — a typo for
+七**月** in the source. The date pattern is anchored on 「（…曜日）」 so it cannot pick
+up a date mentioned in passing; loosening it to rescue one record would risk
+mis-dating others. True date **1996-07-10**, given correctly elsewhere on the same
+page. Recorded in `docs/wakayama.md` rather than papered over.
+
+**Also**
+
+- 4 regression tests carrying the rejected alternatives, so the reasoning is not
+  lost the next time the rule looks over-complicated.
+- `ruff`, `mypy --strict`, `pytest` (63) clean.
+
+**Not done**
+
+2011-04 .. 2019-03 (available from the 地方議会会議録コーパス — worth confirming what
+they can actually share before deciding to crawl it). 委員会会議録 (`/gijiroku2/`).
+
+### 日本語
+
+「地方議会会議録コーパスにない分」を収集するよう指示。まず当該コーパスの収録範囲を
+確定し、その前後2区間を取得したうえで、907文書が明らかにした問題で分割規則を直した。
+
+**当該コーパスの範囲と、残る空白**
+
+都道府県議会は **2011年4月〜2019年3月**（年度区切り）。したがって空白は2つ:
+
+- 1989年〜2011年3月
+- **2019年4月〜12月** — 見落としやすい。当該コーパスの終わりと、2020年開始の収集の
+  あいだに落ちる4会期。
+
+2011年4月〜2019年3月は**意図的に取得していない**。索引167会期のうち102会期が対象。
+
+**収集結果**
+
+```
+会議 : 907          発言 : 46,839
+文字 : 27,358,983   期間 : 1989-02-27 .. 2025-12-19
+```
+
+既存199件に708件を追加。全件に表題と会期あり（日付なし1件は後述）。発言者410名、
+発言者が空の発言なし、発言0件の会議なし、重複URLなし。年別の欠落は2012〜2018のみで
+これは設計どおり。
+
+**走らせる前に確認したこと（日誌に自分で書いた警告に従って）**
+
+`◎` 判定も漢数字日付も、1990年代の文書を1件も開かずに決めていた。先に102会期の
+一覧ページを調べたところ、**第3のラベル「◎会議録全文」**（708件中7件）が見つかった。
+号番号を持たない臨時会である。`^◎` なら拾え、ゼロ件の会期もなかった。平成元年・
+平成6年・平成15年の文書で容器・日付（「平成元年二月二十七日」→1989-02-27）・標識も確認。
+
+この調査の102リクエストは、どのみちクロールで必要なもの。**省略していて、かつ
+「全文」限定のままだったら、3会期が無警告で消えていた** — 本プロジェクトが既に一度
+やった失敗そのもの。
+
+**907文書規模で初めて見えた分割規則の欠陥2つ**
+
+どちらも**でたらめな発言者名**を作るだけで、本文が欠けるわけではないので何も警告しない。
+
+- **貪欲マッチ。** `{1,24}` が本来の氏名を越えて発言本文中の「君」まで走る。
+  「○林　隆一君　知事、大変失礼いたしました。林君」が21字の発言者1名になっていた。
+  最短一致で3件修正、発言数の変化は**ゼロ**。
+- **〇 は数字、「君」は普通名詞。** 末尾「君」は「二〇〇三年度」を弾くが、
+  「例えば二〇年後、三〇年後、君が四〇歳を過ぎ」や「子供一一〇番の家であるきしゅう君の家」
+  は弾けない（4件）。本物の標識が数字に続くことはないので、否定後読みで解決。
+
+**却下した2案**も全コーパスで計測した。残す価値があるのはこちら:
+
+| 案 | 消える偽陽性 | 失う本物の発言 |
+| --- | ---: | ---: |
+| 標識を行頭に限定 | 4 | **7** — 「〔「異議なし」と呼ぶ者あり〕 ○議長（…）」等、行の途中から始まる発言は実在する |
+| 標識の直後に空白を要求 | 4 | **15** — 「○浜本　収君（続）」、および空白なしの古い会議録 |
+| **数字の否定後読み** | **4** | **0** |
+
+3案とも机上ではもっともらしい。**「何を捕まえるか」と「何を失うか」の両方を全907件で
+数えて初めて**差がついた。比較のための再解析は**リクエスト0件** — 全ページが
+キャッシュ済みで、全応答をキャッシュする方針の意義がここに出た。
+
+**1件、意図的に日付なしのまま残した**
+
+平成8年6月第6号（`p042602`）は「平成八年**七年**十日（水曜日）」と印刷されている。
+原本の誤植（七**月**）。日付パターンは「（…曜日）」に固定して本文中の日付を拾わない
+ようにしてあり、1件のために緩めれば他を誤る危険がある。正しくは **1996-07-10**で、
+同じページの別箇所には正しく「平成８年７月10日」とある。糊塗せず `docs/wakayama.md`
+に記録した。
+
+**その他**
+
+- 却下した案を含む回帰テスト4件。次に規則が「複雑すぎる」に見えたとき、理由が
+  失われないように。
+- `ruff` / `mypy --strict` / `pytest`（63件）通過。
+
+**未実施**
+
+2011年4月〜2019年3月（地方議会会議録コーパスにある。クロールを決める前に、
+先方が実際に何を共有できるか確認する価値がある）。委員会会議録（`/gijiroku2/`）。
+
 ## 2026-08-27 — 和歌山 2020–2025, and a second listing level (`feat/wakayama`)
 
 *English and Japanese. / 英語と日本語で併記する。*
