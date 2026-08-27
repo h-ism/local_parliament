@@ -12,3 +12,7 @@ cache/
 
 # Personal working diary — notes, not source
 JOURNAL.md
+
+# Third-party vendor script fetched for inspection — not ours to redistribute
+config.js
+config.js.js
