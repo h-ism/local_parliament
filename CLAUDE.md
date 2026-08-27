@@ -91,11 +91,11 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 - **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
   The full archive (平成11年 onwards) waits on a question about the site's
   `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **和歌山** — `sites/wakayama.toml`, verified against live pages on both the
-  modern and the 平成-era generation. Plain UTF-8 HTML on the prefecture's CMS,
+- **和歌山** — `sites/wakayama.toml`. **2020–2025 is collected**: 30 sessions,
+  199 sittings, 14,366 speeches. Plain UTF-8 HTML on the prefecture's CMS,
   robots.txt 404, pages marked `index, follow`; one index page → ~150 sessions →
-  per-sitting full text, 平成2年 to 令和8年. **No full crawl run yet.**
-  `docs/wakayama.md`.
+  per-sitting full text, 平成2年 to 令和8年. The rest of the archive is reachable
+  with the same config; 平成2–10年 has not been opened. `docs/wakayama.md`.
 - **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
   the whole flow works over GET. Two requests per sitting, because the site's own
   download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
@@ -156,6 +156,16 @@ quirks.
   parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
   A split rule copied from another prefecture will match the minority form and drop
   the rest silently. Count what a rule catches against a sample before trusting it.
+- **A listing-level miss has no smoke test.** 和歌山 labels the whole-sitting link
+  「◎第３号全文」 in most sessions and 「◎第１号本文」 in others; filtering on 全文
+  dropped three entire sessions in silence. A detail page that parses to zero
+  speeches at least warns — an index page that yields no links looks exactly like
+  one that was never asked for. After a scoped run, **count what you got against
+  what the index lists**, per session, rather than trusting the total.
+- **Indexes are hand-maintained and they break.** 和歌山's 令和7年6月 page links its
+  第6号 with a truncated label and an href pointing into the previous year, so a
+  real sitting is unreachable from the site's own navigation. `list.extra_meeting_urls`
+  exists for this; verify the URL against the live page before adding it.
 - **The 「○」 is not always the same character.** 和歌山 marks most sittings with
   ○ (U+25CB) but one with 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO), and 〇 is *also* the
   numeral in 「二〇〇三年度」. Match both circles and require the 「君」 suffix; the

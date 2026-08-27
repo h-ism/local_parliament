@@ -32,15 +32,31 @@ max_depth = 2
 index_link = 'div.article a[href*="/gijiroku/"]'
 index_include = '(定例会|臨時会)$'
 
-# Level 2 → transcript: 「◎第３号全文」. The session page also links each member's
-# question separately, but those are *slices of the same document* — the site says
-# so — and taking only 全文 keeps them out of the corpus without losing anything.
-# Verified: 平成12年12月第2号 全文 is 58,107 chars and contains every member page.
+# Level 2 → transcript. The session page also links each member's question
+# separately, but those are *slices of the same document* — the site says so — and
+# taking only the whole sitting keeps them out of the corpus without losing
+# anything. Verified: 平成12年12月第2号 is 58,107 chars and contains every member
+# page.
+#
+# Match on the leading 「◎」, not on the word: the label is 「◎第３号全文」 in most
+# sessions but 「◎第１号本文」 in others (令和2年2月, 令和2年4月, …). Filtering on 全文
+# silently dropped 12 of the 199 sittings in 2020–2025 — three whole sessions —
+# with no warning, because a session that yields no links looks exactly like a
+# session that was not asked for. 「◎」 prefixes the whole-sitting link in every
+# generation checked and never prefixes a member slice.
 #
 # Old-generation links carry an anchor (`p040078.html#00`); fragments are dropped
 # when the URL is resolved, so the same page is not fetched twice.
 meeting_link = 'div.article a[href*="/gijiroku/"]'
-include = '全文'
+include = '^◎'
+
+# 令和7年6月第6号. The session page (`d00220752`) links it as a truncated 「◎第」
+# pointing at `d00217979` — a 令和6年 document — so the real page is unreachable
+# from the site's own index. Verified 2026-08-27: this URL returns
+# 「令和7年6月　和歌山県議会定例会会議録　第6号（全文）」. Worth raising with 議事課.
+extra_meeting_urls = [
+    "https://www.pref.wakayama.lg.jp/gijiroku/d00220760.html",
+]
 
 [detail]
 # div#content rather than div.article: identical transcript (98 markers either

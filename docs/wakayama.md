@@ -74,6 +74,30 @@ Verified against live pages, three ways:
 37 distinct speakers in the first run, no empty speaker, roles correctly separated
 from names.
 
+## Two more found by collecting 2020–2025
+
+**4. The whole-sitting link is labelled two different ways.** Most sessions call it
+「◎第３号全文」, but 令和2年2月, 令和2年4月 and 令和2年5月 call it 「◎第１号本文」.
+Filtering on 全文 dropped **12 of the 199 sittings in 2020–2025 — three entire
+sessions — with no warning**, because a session page that yields no links is
+indistinguishable from a session that was never asked for. There is no
+"zero speeches" smoke test at the listing level.
+
+The fix is to match the leading 「◎」 rather than the word. 「◎」 prefixes the
+whole-sitting link in every generation checked (199/199 across the 30 sessions of
+2020–2025) and never prefixes a member slice.
+
+**5. One index link is simply broken.** The 令和7年6月 session page (`d00220752`)
+links its 第6号 as a truncated 「◎第」 whose href points at `d00217979` — a 令和6年
+document — so 令和7年6月第6号 is unreachable from the site's own index. The document
+exists: `d00220760.html` returns 「令和7年6月　和歌山県議会定例会会議録　第6号（全文）」,
+verified 2026-08-27. It is listed in `list.extra_meeting_urls` so the corpus stays
+complete and still reproducible from the config.
+
+Following the broken link is harmless — it resolves to a document already collected
+from its own session page, and the record dates and titles itself correctly from
+its own content — but it is worth raising with 議事課.
+
 ## Three traps this site set, all of the same kind
 
 Each is a case of "one form is not all forms", and each fails *silently*.

@@ -81,6 +81,17 @@ class ListSelectors:
     max_depth: int = 3
     """How many listing levels to walk, counting the start URL as level 1."""
 
+    extra_meeting_urls: list[str] = field(default_factory=list)
+    """Transcript pages to include that the site's own index does not reach.
+
+    These indexes are hand-maintained and they do break: 和歌山's 令和7年6月 page
+    links its 第6号 with a truncated label and an href pointing at a document from
+    the previous year, leaving the real one unreachable. Listing such a page here
+    keeps the corpus complete *and* reproducible from the config, which appending
+    a record by hand would not be. Each entry must be verified against the live
+    page before it is added, and the reason recorded in the site's `docs/` notes.
+    """
+
 
 @dataclass(slots=True)
 class DetailSelectors:
@@ -193,6 +204,11 @@ class GenericScraper(BaseScraper):
         sel = self.config.list
         seen: set[str] = set()
         visited: set[str] = set()
+
+        for extra in sel.extra_meeting_urls:
+            seen.add(extra)
+            yield MeetingRef(prefecture=self.prefecture, url=extra)  # type: ignore[arg-type]
+
         # (url, depth); the start URLs are depth 1.
         pending: list[tuple[str, int]] = [(u, 1) for u in self.config.start_urls]
 
@@ -244,11 +260,16 @@ class GenericScraper(BaseScraper):
                 url = _resolve(base_url, href)
                 if url in seen:
                     continue
-                seen.add(url)
                 label = _text(link)
                 if not _wanted(label, url, sel.include, sel.exclude):
+                    # Deliberately *not* added to `seen`: several links can resolve
+                    # to one URL once the fragment is dropped (和歌山 anchors each
+                    # member's question into the whole-sitting page), and marking it
+                    # seen here would let a rejected link decide for an accepted one
+                    # that comes later in the document.
                     log.debug("skipped %s (%s)", url, label)
                     continue
+                seen.add(url)
                 row_date = parse_japanese_date(_select_text(scope, sel.date)) if sel.date else None
                 yield MeetingRef(
                     prefecture=self.prefecture,

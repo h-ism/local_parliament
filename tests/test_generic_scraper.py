@@ -456,3 +456,43 @@ def test_bare_member_names_are_split_alongside_parenthesised_offices(fake_client
     ]
     assert meeting.date == date(2026, 2, 10)  # 令和八年二月十日, in 漢数字
     assert meeting.title == "令和8年2月　和歌山県議会定例会会議録　第1号（全文）"
+
+
+# --- broken and ambiguous index links ------------------------------------------
+
+SESSION_MIXED_HTML = """
+<div class="article">
+  <a href="/g/d1.html#01">山下直也議員</a>
+  <a href="/g/d1.html">◎第１号本文</a>
+  <a href="/g/d2.html">◎第２号全文</a>
+  <a href="/g/help.html">人名等の正しい表記</a>
+</div>
+"""
+
+
+def test_a_rejected_link_does_not_decide_for_a_later_accepted_one(fake_client) -> None:
+    """The member anchor and the sitting link resolve to one URL once the fragment
+    is dropped, and the anchor comes first in the document."""
+    pages = dict(_wakayama_pages())
+    pages["https://x.test/g/s1.html"] = SESSION_MIXED_HTML
+    client = fake_client(pages)
+    cfg = _wakayama_config()
+    cfg.list.include = "^◎"  # 全文 *and* 本文, which is why the circle is matched
+
+    urls = [str(r.url) for r in GenericScraper(cfg).list_meetings(client)]
+    assert "https://x.test/g/d1.html" in urls
+    assert urls.count("https://x.test/g/d1.html") == 1
+    assert "https://x.test/g/help.html" not in urls
+
+
+def test_extra_meeting_urls_reach_what_a_broken_index_does_not(fake_client) -> None:
+    """和歌山's 令和7年6月 page links its 第6号 with a truncated label and the wrong
+    href, so the real page is unreachable from the site's own index."""
+    client = fake_client(_wakayama_pages())
+    cfg = _wakayama_config()
+    cfg.list.extra_meeting_urls = ["https://x.test/g/d9.html"]
+
+    urls = [str(r.url) for r in GenericScraper(cfg).list_meetings(client)]
+    assert urls[0] == "https://x.test/g/d9.html"
+    # and it is not fetched during listing — only when the meeting is parsed
+    assert "https://x.test/g/d9.html" not in client.requested
