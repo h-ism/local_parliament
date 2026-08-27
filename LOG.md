@@ -2,6 +2,331 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — 和歌山 2020–2025, and a second listing level (`feat/wakayama`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Second config in the project, the first general listing feature, and 2020–2025
+collected.
+
+**Collected: 2020–2025**
+
+30 sessions, 199 sittings, `data/和歌山県.jsonl` + `.csv`:
+
+```
+meetings : 199          speeches : 14,366
+chars    : 5,680,229    range    : 2020-02-20 .. 2025-12-19
+```
+
+Every record dated, titled and attributed to a session; 124 distinct speakers; no
+speech without a speaker; no sitting-number gap in any of the 30 sessions; no
+duplicate URL; nothing outside the requested range. 154 requests this run at 2s
+apart (the rest served from cache), two transient DNS failures both recovered by
+the existing retry.
+
+Scoped with `--start-url` per session, not with `--since/--until`: this index
+carries no dates, so a date filter cannot save a request here — the same lesson
+静岡 taught. The date range was passed as well, purely as a backstop, and caught
+nothing.
+
+**Added**
+
+- `list.index_link` / `index_include` / `index_exclude` / `max_depth` — an
+  intermediate listing level, for sites shaped index → session → sitting. Both
+  和歌山 and 愛媛 are this shape, so it is the domain's shape rather than a
+  per-site hack. `meeting_link` and `index_link` are applied at every level and
+  usually separate themselves; `max_depth` bounds the walk regardless.
+- `list.include` — the symmetric counterpart to `exclude`.
+- `list.extra_meeting_urls` — transcript pages the site's own index fails to
+  reach. Keeps the corpus complete *and* reproducible from the config, which
+  appending a record by hand would not be.
+- Fragment-stripping on link resolution, plus the fix below.
+- `dates.py`: 漢数字 和暦 (`kanji_to_int`), for 「平成十二年十二月八日（金曜日）」.
+  Tried after the ordinary 和暦 pattern so it cannot steal a match. Also reads
+  「昭和六十一年」, which 兵庫 will need.
+- `sites/wakayama.toml`, `docs/wakayama.md`; new options in `_example.toml`.
+
+`ruff`, `mypy --strict`, `pytest` (59) clean.
+
+**Five traps, all silent, all the same kind: one form is not all forms**
+
+The first three were found before collecting, the last two only by collecting.
+
+1. **Bare member names.** Office-holders are 「○知事（岸本周平君）」 but members are
+   「○濱口太史君」 with no parentheses. 静岡's rule scores 72 of 98 markers on
+   令和6年6月第3号 and drops *every member speech*. Caught by counting what the
+   rule matched against a sample.
+
+2. **The circle is two characters.** 令和6年6月第1号 marks all 21 of its speeches
+   with 〇 (U+3007), not ○ (U+25CB). Not caught by reading — the first live run
+   parsed that sitting to zero speeches and warned. Same signature as the 静岡
+   encoding bug.
+
+3. **〇 is also a numeral.** 平成12年12月第2号 has 53 inside body text
+   (「二〇〇三年度」). The 「君」 requirement rejects all of them, and the roster too.
+
+4. **The whole-sitting link has two labels.** Most sessions say 「◎第３号全文」;
+   令和2年2月, 令和2年4月 and 令和2年5月 say 「◎第１号本文」. `include = '全文'`
+   dropped **12 of 199 sittings — three whole sessions — with no warning at all**,
+   because a session page that yields no links looks exactly like a session that
+   was never asked for. There is no "zero speeches" smoke test at the *listing*
+   level, which is what makes this class worse than 2 and 3. Now matched on the
+   leading 「◎」: 199 of 199 whole-sitting links carry it, no member slice does.
+
+5. **One index link is simply broken.** 令和7年6月's page links its 第6号 as a
+   truncated 「◎第」 pointing at `d00217979`, a 令和6年 document, leaving
+   令和7年6月第6号 unreachable from the site's own index. It exists — `d00220760`
+   returns 「令和7年6月…第6号（全文）」, verified — and is now in
+   `extra_meeting_urls`; the collected sitting has 84 speeches. Worth raising
+   with 議事課.
+
+**One latent bug, found while fixing 4**
+
+`seen` was populated before the include/exclude check. Several links resolve to
+one URL once the fragment is dropped — 和歌山 anchors each member's question into
+the whole-sitting page — so whichever came first in the document decided for the
+rest, and a rejected member anchor could suppress the sitting itself. A link is
+now marked seen only once it passes the filter.
+
+**Checked at scale, and not a problem — but do not assume it elsewhere**
+
+和歌山's 議長 addresses women as さん aloud (「６番森礼子さん」), which a 「君」-only
+rule would break. The *markers* use 君 regardless of gender: 森　礼子 is the fourth
+most frequent speaker in this corpus with 1,319 speeches. On a site that marks
+women さん, a 「君」-only rule would drop their speeches wholesale — a corpus-bias
+problem, not a parsing detail. Noted in CLAUDE.md.
+
+**Not done**
+
+平成2年–令和元年 (1990–2019) — the config reaches it and 平成12年12月 was verified
+end to end, but the oldest generation (平成2–10年) has not been opened. 委員会会議録
+(`/gijiroku2/`) untouched.
+
+### 日本語
+
+本プロジェクト2つ目の設定、最初の汎用一覧機能、そして2020–2025の収集。
+
+**収集結果: 2020–2025**
+
+30会期・199会議。`data/和歌山県.jsonl` ＋ `.csv`:
+
+```
+会議 : 199          発言 : 14,366
+文字 : 5,680,229    期間 : 2020-02-20 .. 2025-12-19
+```
+
+全件に日付・表題・会期あり。発言者124名、発言者が空の発言ゼロ、30会期すべてで
+号数の欠番なし、重複URLなし、範囲外なし。今回のリクエストは154件（残りはキャッシュ）、
+2秒間隔。DNS一時失敗2件はいずれもリトライで復旧。
+
+絞り込みは `--since/--until` ではなく会期ごとの `--start-url`。この索引は日付を
+持たないので日付フィルタではリクエストを節約できない — 静岡と同じ教訓。日付範囲は
+保険として併用したが、何も捕まえなかった。
+
+**追加**
+
+- `list.index_link` ほか — 「索引 → 会期 → 会議」型のための中間一覧階層。和歌山も
+  愛媛も同じ形なので、場当たりではなくこの領域の形。
+- `list.include` — `exclude` の対。
+- `list.extra_meeting_urls` — サイト側の索引が到達できない会議録ページ。手作業で
+  レコードを足すのと違い、**設定から再現できる**形でコーパスを完全に保てる。
+- リンク解決時のフラグメント除去と、下記のバグ修正。
+- `dates.py` に漢数字和暦（`kanji_to_int`）。「昭和六十一年」も読めるので兵庫でも要る。
+- `sites/wakayama.toml`、`docs/wakayama.md`、`_example.toml`。
+
+`ruff` / `mypy --strict` / `pytest`（59件）通過。
+
+**5つの罠 — すべて黙って失敗する同種のもの**
+
+1〜3は収集前に、4と5は**収集して初めて**判明した。
+
+1. **括弧なしの議員名。** 静岡の規則では98件中72件で、議員発言を全部落とす。
+2. **丸が2種類。** 令和6年6月第1号は21発言すべてが 〇(U+3007)。実収集の
+   「発言0件」警告で判明。静岡の文字コードバグと同じ兆候。
+3. **〇 は数字でもある。** 「二〇〇三年度」等53件。末尾「君」の要求が全部弾く。
+4. **全文リンクのラベルが2種類。** 多くは「◎第３号全文」だが、令和2年の2月・4月・
+   5月は「◎第１号**本文**」。`include = '全文'` は**199件中12件（3会期まるごと）を
+   完全に無警告で取りこぼす**。会議0件の会期ページは「指定されなかった会期」と
+   区別がつかず、**一覧段階には「発言0件」に相当する検出手段がない**。ここが2・3より
+   質が悪い。先頭の「◎」で判定に変更（199件すべてに付き、議員別リンクには付かない）。
+5. **索引のリンクが1本壊れている。** 令和7年6月の第6号が「◎第」という切れたラベルで
+   令和6年の文書に向いており、実体（`d00220760`・84発言）に索引から到達できない。
+   `extra_meeting_urls` で補った。議事課への確認事項。
+
+**4の修正中に見つかった潜在バグ**
+
+`seen` への登録が include/exclude 判定より前だった。フラグメント除去後に同一URLへ
+解決されるリンクが複数ある（議員別アンカーが全文ページ内を指す）ため、**文書中で
+先に現れたリンクが後続の判定を奪い**、除外された議員別リンクが会議本体を握り潰し得た。
+フィルタ通過後にのみ `seen` に入れるよう修正。
+
+**実データで確認済み・ただし他県で前提にしないこと**
+
+和歌山の議長は発言中で女性を「さん」と呼ぶが、**標識**は性別によらず「君」。
+森　礼子議員は本コーパスで発言数4位（1,319件）。標識に「さん」を使うサイトでは
+「君」限定の規則は女性議員の発言を丸ごと落とす。解析の細部ではなくコーパスの
+偏りの問題。CLAUDE.md に記載。
+
+**未実施**
+
+平成2年〜令和元年（1990–2019）。設定は到達できるし平成12年12月は端から端まで
+検証済みだが、最古の世代（平成2〜10年）は未開封。委員会会議録（`/gijiroku2/`）は未着手。
+
+## 2026-08-27 — Re-opening the leads: four prefectures are collectable (`survey/collectable-targets`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Docs only; no code and no corpus collected. Asked to read yesterday's log and work
+out where minutes can actually be collected. Two of the four leads turned out
+better than the survey recorded, and they are blocked by the same missing feature.
+
+**Added**
+
+- `docs/collection-targets.md` — the ranked answer, with cost per target.
+- `docs/wakayama.md`, `docs/kensakusystem.md` — verified site notes.
+- A supersession banner on `docs/prefecture-survey.md`; two of its verdicts are now
+  wrong in our favour and it should not be read alone.
+
+**和歌山 — the best target in the survey, and it was written off**
+
+The survey guessed PDF "on the evidence of 北海道". It is plain UTF-8 HTML: one
+index page listing ~150 sessions from 平成2年 to 令和8年, each session page listing
+its sittings, each sitting one page carrying the full text (~186 KB, ~60k chars,
+98 speech markers in the sample). robots.txt is 404 and the pages carry
+`index, follow`, so none of 静岡's `meta robots` question applies.
+
+The survey's entry point was also wrong: `/gijiroku/` returns 403, which is the
+directory index being off, not a block — documents under it are 200. Correct entry
+is `/gijiroku/d00203238.html`.
+
+The trap here is the mirror image of 静岡's. Office-holders are `○知事（岸本周平君）`
+but members are bare `○濱口太史君`, with no parentheses. 静岡's split rule would have
+silently dropped most of the corpus — the same failure mode as the 質問日/発言日 label
+(one form is not all forms), caught this time by reading a sample first.
+
+**愛媛・三重・兵庫 — both open questions resolved in our favour**
+
+The survey left "the tree navigates by POST" and "the result-list parameters were
+not pinned down". Both are answered:
+
+- `See.exe` takes as a GET query string what the page submits as a POST.
+  `See.exe?Code=<code>&treedepth=<label>`, the label percent-encoded **in cp932**
+  and carrying a significant trailing space at session level. No POST support
+  needed anywhere.
+- The page's own ダウンロード button posts to `GetPerson.exe` — and it accepts GET
+  with a repeated `downloadPos`, returning the whole sitting as **plain text**. So
+  a sitting costs two requests (speaker index + download) rather than one per
+  speech. `GetText3.exe` returns one speech, `GetPage.exe` one printed page; both
+  are strictly worse.
+
+`fileName=R080225A` encodes the date, so `--since/--until` actually saves requests
+here — the opposite of 静岡, where the index carries no dates.
+
+兵庫 reaches back to **昭和61年 (1986)**, the deepest archive found. All three carry
+`<meta name="robots" CONTENT="follow,index">`.
+
+**The one change that unlocks all four**
+
+`GenericScraper` models a listing as one level plus pagination. Both targets are
+year/index → session → sitting. An intermediate listing level is a real shape in
+this domain rather than a per-site hack, and it is the highest-value code change
+open. 愛媛 needs two smaller things after that: `speech_split` against a body that
+is not HTML, and a listing step that gathers `downloadPos` values into the next URL
+— the second may be cheaper as a small `BaseScraper` subclass than as config.
+
+**SSP — no breakthrough, but the ground is prepared**
+
+Collected all 18 numeric tenant ids (大阪 315, 沖縄 632, …) from
+`/tenant/<tenant>/js/*.js`, which is **not** disallowed: `Disallow: /tenant/js/`
+matches the shared directory only, not `/tenant/prefosaka/js/`. Confirmed the
+permalink form `MinuteView.html?council_id=&schedule_id=` and confirmed those pages
+are a pure client-side shell, so no server-rendered route exists and the API really
+is required. The endpoint stays in `/tenant/js/release/config.js`, which is under
+`Disallow` and was not fetched.
+
+Also found a second condition that robots.txt says nothing about: 大阪's own page
+states the data rights belong to the assembly and that reuse for other purposes
+should be cleared with 議会事務局. That applies even once the API is known, and it
+belongs in the letters for these 18.
+
+**Check before crawling**
+
+The 地方議会会議録コーパスプロジェクト already covers all 47 assemblies for 2011–2014
+and 2015–2019 (~134M sentences, ~80 GB). If the research window sits inside that,
+most of this crawl is redundant. The genuine gap is 2020 onwards — which is also
+where the Tier-1 targets are cheapest. Settle this before any large run.
+
+**Method**
+
+Roughly 40 requests total, all through `PoliteClient` or `curl` at 2s spacing,
+serialised per host, everything cached. No URL under any `Disallow` was fetched.
+
+### 日本語
+
+ドキュメントのみ。コードの変更と収集は行っていない。昨日のログを読んだうえで、
+実際にどこが収集可能かを詰めた。4つの懸案のうち2つが、記録より良い結果だった。
+しかも両者は**同じ一つの機能不足**で止まっている。
+
+**和歌山 — 調査で切り捨てられていたが、最良の対象だった**
+
+前回は「北海道の例から PDF だろう」と推測していた。実際は素の UTF-8 HTML で、
+索引1ページに平成2年〜令和8年の約150会期が並び、会期ページが各号を、各号が
+全文1ページ（約186KB・本文6万字・発言標識98件）を持つ。robots.txt は404、
+ページは `index, follow`。静岡の `meta robots` の懸案はここには当てはまらない。
+
+入口も誤っていた。`/gijiroku/` の403はディレクトリ一覧が無効なだけで、配下の
+文書は200を返す。正しい入口は `/gijiroku/d00203238.html`。
+
+罠は静岡の裏返し。理事者は `○知事（岸本周平君）` だが、議員は括弧なしの
+`○濱口太史君`。静岡の分割規則をそのまま当てれば、コーパスの大半を黙って
+取りこぼしていた。質問日／発言日と同じ「1つの形式では足りない」型の失敗で、
+今回は先にサンプルを読んだので事前に捕まえられた。
+
+**愛媛・三重・兵庫 — 未解決だった2点が両方とも解決**
+
+- `See.exe` は POST で送っている項目を **GET のクエリ文字列でも受ける**。
+  `treedepth` は **cp932** でパーセントエンコードし、会期階層では末尾の空白が
+  意味を持つ。POST 対応は不要。
+- ページ自身の「ダウンロード」ボタンの送信先 `GetPerson.exe` が **GET を受け付け**、
+  `downloadPos` を複数渡すと**その会議の全文をプレーンテキストで返す**。
+  1会議あたり2リクエスト（発言索引＋ダウンロード）で済む。
+
+`fileName=R080225A` に日付が入っているため、静岡と違い日付フィルタが実際に
+リクエストを節約する。兵庫は**昭和61年**まで遡れ、今回の調査で最も深い。
+
+**4県を一度に開ける唯一の変更**
+
+`GenericScraper` の一覧は1階層＋ページ送りのみ。両対象とも「年/索引 → 会期 →
+会議」の2階層で、中間の一覧階層はこの領域に実在する形であって場当たりではない。
+これが今いちばん効くコード変更。
+
+**SSP — 突破はないが下ごしらえは済んだ**
+
+18テナントの数値IDを `/tenant/<tenant>/js/*.js` から取得した。ここは Disallow
+対象ではない（`Disallow: /tenant/js/` は共有ディレクトリだけに一致し、
+`/tenant/prefosaka/js/` には一致しない）。`MinuteView.html?council_id=&schedule_id=`
+という固定URL形式と、そのページが完全なクライアント描画であることも確認した。
+API は依然 `/tenant/js/release/config.js` の中で、取得していない。
+
+robots.txt とは別の条件も見つけた。大阪のページに「このデータの権利は大阪府議会に
+帰属します。転用、その他の用途への利用については…お問い合わせください」とある。
+API が判明しても残る条件なので、18県への文面に含めること。
+
+**収集前の確認**
+
+地方議会会議録コーパスプロジェクトが47都道府県の2011–2014・2015–2019を既に
+整備している。研究対象期間がその中なら、この収集の大半は不要。空白は2020年以降で、
+そこは今回の対象がいちばん安く取れる範囲でもある。
+
+**方法**
+
+計約40リクエスト。すべて `PoliteClient` または2秒間隔の `curl`、ホストごとに直列、
+全件キャッシュ。`Disallow` 配下のURLは一件も取得していない。
+
 ## 2026-08-26 — 静岡: the first working site config (`feat/shizuoka`)
 
 *English and Japanese. / 英語と日本語で併記する。*

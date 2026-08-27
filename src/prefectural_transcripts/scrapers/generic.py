@@ -18,7 +18,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urldefrag, urljoin
 
 from bs4 import BeautifulSoup, Tag
 
@@ -44,6 +44,52 @@ class ListSelectors:
     Index pages mix transcripts with things that merely sit in the same list —
     a 【目次】 entry, a notice, a PDF of the agenda. Skipping them at listing time
     keeps them out of the corpus and saves the fetch.
+    """
+
+    include: str | None = None
+    """Regex; when set, only links whose text or URL matches are followed.
+
+    The counterpart to `exclude`, for pages where the transcripts are the
+    exception rather than the rule. `exclude` still wins where both match.
+    """
+
+    index_link: str | None = None
+    """Selector for links leading to *another listing page* rather than a
+    transcript.
+
+    Assemblies commonly publish an index of sessions, each session listing its
+    sittings, and only the sitting carrying the transcript — 和歌山 and 愛媛 are
+    both this shape. Without an intermediate level, every session page has to be
+    written out by hand as a `start_url`.
+
+    `meeting_link` and `index_link` are both applied at every level, so the two
+    sets usually separate themselves: a session index holds no transcript links
+    and a session page holds no further index links. `max_depth` bounds the walk
+    regardless.
+    """
+
+    index_include: str | None = None
+    """Regex filter for `index_link`, matched on link text or URL.
+
+    Needed where the two levels are told apart by the link's text rather than by
+    its markup — a CMS that renders both as a bare `<a>` in the same block.
+    """
+
+    index_exclude: str | None = None
+    """Regex; index links whose text or URL matches are not followed."""
+
+    max_depth: int = 3
+    """How many listing levels to walk, counting the start URL as level 1."""
+
+    extra_meeting_urls: list[str] = field(default_factory=list)
+    """Transcript pages to include that the site's own index does not reach.
+
+    These indexes are hand-maintained and they do break: 和歌山's 令和7年6月 page
+    links its 第6号 with a truncated label and an href pointing at a document from
+    the previous year, leaving the real one unreachable. Listing such a page here
+    keeps the corpus complete *and* reproducible from the config, which appending
+    a record by hand would not be. Each entry must be verified against the live
+    page before it is added, and the reason recorded in the site's `docs/` notes.
     """
 
 
@@ -118,6 +164,28 @@ def _select_text(root: Tag, selector: str | None) -> str:
     return _text(root.select_one(selector))
 
 
+def _resolve(base_url: str, href: str) -> str:
+    """Absolute URL with any `#fragment` dropped.
+
+    Index pages often link the same document several times at different anchors
+    (和歌山 links 「◎第二号全文」 and each member's question into one page). The
+    fragment never selects a different document server-side, so dropping it is
+    what makes the `seen` set deduplicate correctly instead of refetching.
+    """
+    return urldefrag(urljoin(base_url, href)).url
+
+
+def _wanted(label: str, url: str, include: str | None, exclude: str | None) -> bool:
+    """Whether a link passes the config's include/exclude regexes.
+
+    Both are matched against the link's text *or* its URL, because index pages
+    label some links only by text and others only by href. `exclude` wins.
+    """
+    if exclude and (re.search(exclude, label) or re.search(exclude, url)):
+        return False
+    return not (include and not (re.search(include, label) or re.search(include, url)))
+
+
 def _first_group(pattern: str, text: str) -> str:
     m = re.search(pattern, text)
     if not m:
@@ -133,16 +201,49 @@ class GenericScraper(BaseScraper):
         self.prefecture = config.prefecture
 
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:
+        sel = self.config.list
         seen: set[str] = set()
-        for start in self.config.start_urls:
+        visited: set[str] = set()
+
+        for extra in sel.extra_meeting_urls:
+            seen.add(extra)
+            yield MeetingRef(prefecture=self.prefecture, url=extra)  # type: ignore[arg-type]
+
+        # (url, depth); the start URLs are depth 1.
+        pending: list[tuple[str, int]] = [(u, 1) for u in self.config.start_urls]
+
+        while pending:
+            start, depth = pending.pop(0)
             url: str | None = start
-            for _ in range(self.config.list.max_pages):
-                if url is None:
+            for _ in range(sel.max_pages):
+                if url is None or url in visited:
                     break
+                visited.add(url)
                 page = client.get(url)
                 soup = _soup(page)
                 yield from self._refs_on_page(soup, page.url, seen)
+                if depth < sel.max_depth:
+                    for child in self._index_links(soup, page.url, visited):
+                        pending.append((child, depth + 1))
                 url = self._next_page(soup, page.url)
+
+    def _index_links(self, soup: BeautifulSoup, base_url: str, visited: set[str]) -> list[str]:
+        """Links on this page that lead to another listing page."""
+        sel = self.config.list
+        if not sel.index_link:
+            return []
+        out: list[str] = []
+        for link in soup.select(sel.index_link):
+            href = link.get("href")
+            if not isinstance(href, str):
+                continue
+            url = _resolve(base_url, href)
+            if url in visited:
+                continue
+            if not _wanted(_text(link), url, sel.index_include, sel.index_exclude):
+                continue
+            out.append(url)
+        return out
 
     def _refs_on_page(
         self, soup: BeautifulSoup, base_url: str, seen: set[str]
@@ -156,14 +257,19 @@ class GenericScraper(BaseScraper):
                 href = link.get("href")
                 if not isinstance(href, str):
                     continue
-                url = urljoin(base_url, href)
+                url = _resolve(base_url, href)
                 if url in seen:
                     continue
-                seen.add(url)
                 label = _text(link)
-                if sel.exclude and (re.search(sel.exclude, label) or re.search(sel.exclude, url)):
-                    log.debug("excluded %s (%s)", url, label)
+                if not _wanted(label, url, sel.include, sel.exclude):
+                    # Deliberately *not* added to `seen`: several links can resolve
+                    # to one URL once the fragment is dropped (和歌山 anchors each
+                    # member's question into the whole-sitting page), and marking it
+                    # seen here would let a rejected link decide for an accepted one
+                    # that comes later in the document.
+                    log.debug("skipped %s (%s)", url, label)
                     continue
+                seen.add(url)
                 row_date = parse_japanese_date(_select_text(scope, sel.date)) if sel.date else None
                 yield MeetingRef(
                     prefecture=self.prefecture,

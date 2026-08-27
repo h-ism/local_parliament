@@ -79,21 +79,36 @@ Modules under `src/prefectural_transcripts/`:
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
 
-## Where this stands (updated 2026-08-26)
+## Where this stands (updated 2026-08-27)
 
-Read `docs/prefecture-survey.md` first — it maps all 47 assemblies to their
-minutes system, the `robots.txt` verdict, and whether the pages are scrapeable.
-Per-site detail is in `docs/<prefecture>.md`; drafted letters are in
-`docs/inquiries/` with a README index.
+Read `docs/collection-targets.md` first — it is the ranked answer to "where can we
+collect", with the cost of each target. `docs/prefecture-survey.md` still maps all
+47 assemblies but two of its verdicts are now superseded. Per-site detail is in
+`docs/<prefecture>.md`; drafted letters are in `docs/inquiries/`.
 
 **Collectable today**
 
 - **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
   The full archive (平成11年 onwards) waits on a question about the site's
   `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **三重・兵庫・愛媛** (`kensakusystem.jp`) — no robots.txt, server-rendered CGI,
-  nothing written yet. The likeliest next config, and `speech_split` / `patterns`
-  should carry over.
+- **和歌山** — `sites/wakayama.toml`. **2020–2025 is collected**: 30 sessions,
+  199 sittings, 14,366 speeches. Plain UTF-8 HTML on the prefecture's CMS,
+  robots.txt 404, pages marked `index, follow`; one index page → ~150 sessions →
+  per-sitting full text, 平成2年 to 令和8年. The rest of the archive is reachable
+  with the same config; 平成2–10年 has not been opened. `docs/wakayama.md`.
+- **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
+  the whole flow works over GET. Two requests per sitting, because the site's own
+  download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
+  text. 兵庫 reaches 昭和61年. `docs/kensakusystem.md`.
+
+**The next code change**
+
+The intermediate listing level is done: `list.index_link` / `index_include` /
+`index_exclude` / `max_depth`, a symmetric `list.include`, and fragment-stripping
+when a link is resolved. 愛媛 can now reuse all of it and needs two things more —
+`speech_split` against a body that is not HTML, and a listing step that gathers
+`downloadPos` values into a `GetPerson.exe` URL. The second may be cheaper as a
+small `BaseScraper` subclass than as config. See `docs/kensakusystem.md`.
 
 **Blocked, and why it is not a scraping problem**
 
@@ -103,14 +118,23 @@ through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it �
 that is the researcher's call, not ours, and it contradicts the politeness
 convention above.
 
-**The single highest-value open task**
+**SSP — 18 prefectures, one fact short**
 
-18 prefectures sit on SSP (`ssp.kaigiroku.net`), whose robots.txt *allows*
-`/tenant/`. They are unreachable only because the pages are a JavaScript app whose
-data endpoint is defined in `/tenant/js/release/config.js` — one of the four
-disallowed directories, so it has not been read. Getting that endpoint another way
-(a browser's network tab, or asking the vendor) unlocks 18 assemblies through one
-implementation. See `docs/inquiries/ssp-vendor.md`.
+`ssp.kaigiroku.net` robots.txt *allows* `/tenant/`, and all 18 numeric tenant ids
+are now recorded in `docs/collection-targets.md` (read from per-tenant scripts,
+which are not under `Disallow: /tenant/js/` — that rule matches the shared
+directory only). What is still missing is the API endpoint, defined in
+`/tenant/js/release/config.js`, which *is* disallowed and has not been fetched.
+The pages are a pure client-side shell, so there is no server-rendered fallback.
+Note a second condition robots says nothing about: 大阪's page states the data
+rights belong to the assembly and reuse should be cleared with 議会事務局.
+See `docs/inquiries/ssp-vendor.md`.
+
+**Before any large crawl**
+
+The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already covers all
+47 assemblies for 2011–2014 and 2015–2019. If the research window sits inside that,
+most of this work is redundant; the genuine gap is 2020 onwards. Settle this first.
 
 ## Things that will bite again
 
@@ -127,6 +151,31 @@ quirks.
 - **One label is rarely enough.** 静岡 labels the date 質問日 on question
   documents and 発言日 on report documents; matching one left 60 of 113 records
   undated. Check a sample of *each document type*, not just the interesting one.
+- **Speech markers come in more than one form on the same page.** 和歌山 writes
+  office-holders as 「○知事（岸本周平君）」 but members as bare 「○濱口太史君」, with no
+  parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
+  A split rule copied from another prefecture will match the minority form and drop
+  the rest silently. Count what a rule catches against a sample before trusting it.
+- **A listing-level miss has no smoke test.** 和歌山 labels the whole-sitting link
+  「◎第３号全文」 in most sessions and 「◎第１号本文」 in others; filtering on 全文
+  dropped three entire sessions in silence. A detail page that parses to zero
+  speeches at least warns — an index page that yields no links looks exactly like
+  one that was never asked for. After a scoped run, **count what you got against
+  what the index lists**, per session, rather than trusting the total.
+- **Indexes are hand-maintained and they break.** 和歌山's 令和7年6月 page links its
+  第6号 with a truncated label and an href pointing into the previous year, so a
+  real sitting is unreachable from the site's own navigation. `list.extra_meeting_urls`
+  exists for this; verify the URL against the live page before adding it.
+- **The 「○」 is not always the same character.** 和歌山 marks most sittings with
+  ○ (U+25CB) but one with 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO), and 〇 is *also* the
+  numeral in 「二〇〇三年度」. Match both circles and require the 「君」 suffix; the
+  suffix rejects the numerals and the roster in one rule. This one surfaced only
+  as a sitting that parsed to zero speeches — the same signature as the 静岡
+  encoding bug, and worth treating as the standard smoke test.
+- **Honorifics are not uniform across prefectures.** 和歌山 marks every member
+  「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud. A 「君」-only
+  rule would drop women's speeches wholesale on any site that marks them 「さん」.
+  Verify per site — it is a corpus-bias problem, not a parsing detail.
 - **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
   roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
   the 「君」 honorific separated them. Verify a split rule against a sample and

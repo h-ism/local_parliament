@@ -320,3 +320,179 @@ def test_a_roster_line_is_not_mistaken_for_a_speech() -> None:
     meeting = scraper.parse_meeting(ref, make_page("https://example.invalid/d/2", ROSTER_DETAIL))
 
     assert [s.speaker for s in meeting.speeches] == ["竹内良訓"]
+
+
+# --- multi-level listing -------------------------------------------------------
+#
+# 和歌山 and 愛媛 both publish index → session → sitting, and on 和歌山 the two
+# listing levels are told apart only by the link's text. These fixtures mirror
+# that shape: every link is a bare <a> in the same block.
+
+INDEX_HTML = """
+<div class="article">
+  <h2>2026年(令和8年)</h2>
+  <div><a href="/g/s1.html">2月定例会</a> <a href="/g/s2.html">5月臨時会</a></div>
+  <div><a href="/other/help.html">人名等の正しい表記</a></div>
+</div>
+"""
+
+SESSION1_HTML = """
+<div class="article">
+  <a href="/g/d1.html#00">◎第１号全文</a>
+  <a href="/g/d2.html#00">◎第２号全文</a>
+  <a href="/g/d2.html#01">山下直也議員</a>
+</div>
+"""
+
+SESSION2_HTML = """<div class="article"><a href="/g/d3.html#00">◎第３号全文</a></div>"""
+
+DETAIL_HTML = """
+<div id="content">
+<div class="title"><h1>令和8年2月　和歌山県議会定例会会議録　第1号（全文）</h1></div>
+<div class="article">
+  <p>議事日程　第一号</p>
+  <p>令和八年二月十日（火曜日）午前十時開議</p>
+  <p>○議長（鈴木太雄君）　これより本日の会議を開きます。</p>
+  <p>○濱口太史君　皆さん、おはようございます。</p>
+  <p>○知事（岸本周平君）　お答え申し上げます。</p>
+  <p>〇教育長（宮﨑　泉君）　二〇〇三年度の実績を申し上げます。</p>
+</div>
+</div>
+"""
+
+
+def _wakayama_config() -> SiteConfig:
+    return SiteConfig(
+        prefecture="和歌山県",
+        start_urls=["https://x.test/g/index.html"],
+        list=ListSelectors(
+            meeting_link='div.article a[href*="/g/"]',
+            include="全文",
+            index_link='div.article a[href*="/g/"]',
+            index_include="(定例会|臨時会)$",
+            max_pages=1,
+            max_depth=2,
+        ),
+        detail=DetailSelectors(
+            container="div#content",
+            title="div.title h1",
+            speech_split=r"[○〇](?:(?P<role>[^（(\n]{1,24})[（(])?"
+            r"(?P<speaker>[^（()）\n]{1,24}君)[）)]?",
+            patterns={
+                "date": r"((?:令和|平成)[０-９0-9元一二三四五六七八九十]{1,4}年\s*"
+                r"[０-９0-9一二三四五六七八九十]{1,3}月\s*"
+                r"[０-９0-9一二三四五六七八九十]{1,3}日)\s*（[日月火水木金土]曜日）",
+            },
+        ),
+    )
+
+
+def _wakayama_pages() -> dict[str, str]:
+    return {
+        "https://x.test/g/index.html": INDEX_HTML,
+        "https://x.test/g/s1.html": SESSION1_HTML,
+        "https://x.test/g/s2.html": SESSION2_HTML,
+        "https://x.test/g/d1.html": DETAIL_HTML,
+        "https://x.test/g/d2.html": DETAIL_HTML,
+        "https://x.test/g/d3.html": DETAIL_HTML,
+    }
+
+
+def test_index_link_walks_a_second_listing_level(fake_client) -> None:
+    client = fake_client(_wakayama_pages())
+    refs = list(GenericScraper(_wakayama_config()).list_meetings(client))
+
+    # Transcripts from *both* session pages, reached through the index.
+    assert [str(r.url) for r in refs] == [
+        "https://x.test/g/d1.html",
+        "https://x.test/g/d2.html",
+        "https://x.test/g/d3.html",
+    ]
+    # The session pages themselves are never yielded as meetings.
+    assert "https://x.test/g/s1.html" not in [str(r.url) for r in refs]
+
+
+def test_include_keeps_out_the_per_member_slices(fake_client) -> None:
+    """`/g/d2.html#01` is the same document sliced by member; only 全文 is taken."""
+    client = fake_client(_wakayama_pages())
+    refs = list(GenericScraper(_wakayama_config()).list_meetings(client))
+    assert len(refs) == 3
+    assert client.requested.count("https://x.test/g/d2.html") == 0  # listing only
+
+
+def test_fragments_are_dropped_so_one_page_is_listed_once(fake_client) -> None:
+    """Both 「◎第２号全文」(#00) and the member link (#01) point at one document."""
+    client = fake_client(_wakayama_pages())
+    cfg = _wakayama_config()
+    cfg.list.include = None  # take every link, so the duplicate would show
+    refs = list(GenericScraper(cfg).list_meetings(client))
+    urls = [str(r.url) for r in refs]
+    assert urls.count("https://x.test/g/d2.html") == 1
+    assert all("#" not in u for u in urls)
+
+
+def test_max_depth_bounds_the_walk(fake_client) -> None:
+    client = fake_client(_wakayama_pages())
+    cfg = _wakayama_config()
+    cfg.list.max_depth = 1  # never leave the index
+    assert list(GenericScraper(cfg).list_meetings(client)) == []
+    assert client.requested == ["https://x.test/g/index.html"]
+
+
+def test_bare_member_names_are_split_alongside_parenthesised_offices(fake_client) -> None:
+    """静岡's rule would drop 「○濱口太史君」 — the member speeches — in silence."""
+    client = fake_client(_wakayama_pages())
+    scraper = GenericScraper(_wakayama_config())
+    ref = next(iter(scraper.list_meetings(client)))
+    meeting = scraper.parse_meeting(ref, client.get(str(ref.url)))
+
+    assert [(s.role, s.speaker) for s in meeting.speeches] == [
+        ("議長", "鈴木太雄"),
+        (None, "濱口太史"),
+        ("知事", "岸本周平"),
+        # 〇 (U+3007) also marks speeches — 令和6年6月第1号 uses it throughout —
+        # while 「二〇〇三年度」 in the body must not become a fourth speaker.
+        ("教育長", "宮﨑　泉"),
+    ]
+    assert meeting.date == date(2026, 2, 10)  # 令和八年二月十日, in 漢数字
+    assert meeting.title == "令和8年2月　和歌山県議会定例会会議録　第1号（全文）"
+
+
+# --- broken and ambiguous index links ------------------------------------------
+
+SESSION_MIXED_HTML = """
+<div class="article">
+  <a href="/g/d1.html#01">山下直也議員</a>
+  <a href="/g/d1.html">◎第１号本文</a>
+  <a href="/g/d2.html">◎第２号全文</a>
+  <a href="/g/help.html">人名等の正しい表記</a>
+</div>
+"""
+
+
+def test_a_rejected_link_does_not_decide_for_a_later_accepted_one(fake_client) -> None:
+    """The member anchor and the sitting link resolve to one URL once the fragment
+    is dropped, and the anchor comes first in the document."""
+    pages = dict(_wakayama_pages())
+    pages["https://x.test/g/s1.html"] = SESSION_MIXED_HTML
+    client = fake_client(pages)
+    cfg = _wakayama_config()
+    cfg.list.include = "^◎"  # 全文 *and* 本文, which is why the circle is matched
+
+    urls = [str(r.url) for r in GenericScraper(cfg).list_meetings(client)]
+    assert "https://x.test/g/d1.html" in urls
+    assert urls.count("https://x.test/g/d1.html") == 1
+    assert "https://x.test/g/help.html" not in urls
+
+
+def test_extra_meeting_urls_reach_what_a_broken_index_does_not(fake_client) -> None:
+    """和歌山's 令和7年6月 page links its 第6号 with a truncated label and the wrong
+    href, so the real page is unreachable from the site's own index."""
+    client = fake_client(_wakayama_pages())
+    cfg = _wakayama_config()
+    cfg.list.extra_meeting_urls = ["https://x.test/g/d9.html"]
+
+    urls = [str(r.url) for r in GenericScraper(cfg).list_meetings(client)]
+    assert urls[0] == "https://x.test/g/d9.html"
+    # and it is not fetched during listing — only when the meeting is parsed
+    assert "https://x.test/g/d9.html" not in client.requested

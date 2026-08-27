@@ -1,0 +1,93 @@
+# 和歌山県議会 — 本会議会議録
+#
+# Published straight from the prefecture's own CMS, not a search vendor: UTF-8
+# HTML, plain GET, no session token, nothing to paginate. `robots.txt` is 404 and
+# every page carries `<meta name="robots" content="index, follow">`, so none of
+# the question raised in `docs/shizuoka.md` applies here.
+#
+# Three levels — index → session → sitting — which is why this config uses
+# `index_link`. Coverage runs 平成2年 to 令和8年 from the one index page.
+#
+# NOTE: `/gijiroku/` itself returns 403. That is the directory listing being
+# switched off, not a block; documents under it are 200.
+#
+# See `docs/wakayama.md`.
+
+prefecture = "和歌山県"
+name = "wakayama"
+
+# 会議録の検索と閲覧 — every session, all years, one page.
+start_urls = [
+    "https://www.pref.wakayama.lg.jp/gijiroku/d00203238.html",
+]
+
+[list]
+max_pages = 1
+max_depth = 2
+
+# Both levels render as a bare <a> inside div.article, so only the link text
+# tells them apart — hence the regexes rather than finer selectors.
+#
+# Level 1 → 2: 「2月定例会」「5月臨時会」.
+index_link = 'div.article a[href*="/gijiroku/"]'
+index_include = '(定例会|臨時会)$'
+
+# Level 2 → transcript. The session page also links each member's question
+# separately, but those are *slices of the same document* — the site says so — and
+# taking only the whole sitting keeps them out of the corpus without losing
+# anything. Verified: 平成12年12月第2号 is 58,107 chars and contains every member
+# page.
+#
+# Match on the leading 「◎」, not on the word: the label is 「◎第３号全文」 in most
+# sessions but 「◎第１号本文」 in others (令和2年2月, 令和2年4月, …). Filtering on 全文
+# silently dropped 12 of the 199 sittings in 2020–2025 — three whole sessions —
+# with no warning, because a session that yields no links looks exactly like a
+# session that was not asked for. 「◎」 prefixes the whole-sitting link in every
+# generation checked and never prefixes a member slice.
+#
+# Old-generation links carry an anchor (`p040078.html#00`); fragments are dropped
+# when the URL is resolved, so the same page is not fetched twice.
+meeting_link = 'div.article a[href*="/gijiroku/"]'
+include = '^◎'
+
+# 令和7年6月第6号. The session page (`d00220752`) links it as a truncated 「◎第」
+# pointing at `d00217979` — a 令和6年 document — so the real page is unreachable
+# from the site's own index. Verified 2026-08-27: this URL returns
+# 「令和7年6月　和歌山県議会定例会会議録　第6号（全文）」. Worth raising with 議事課.
+extra_meeting_urls = [
+    "https://www.pref.wakayama.lg.jp/gijiroku/d00220760.html",
+]
+
+[detail]
+# div#content rather than div.article: identical transcript (98 markers either
+# way on 令和6年6月第3号), but it also encloses div.title, which is where the only
+# usable title lives — the link text is just 「◎第３号全文」.
+container = "div#content"
+title = "div.title h1"
+
+# Three things vary that a single-form rule would get wrong:
+#
+# 1. Office-holders are parenthesised — 「○議長（鈴木太雄君）」, 「○知事（岸本周平君）」 —
+#    but members are bare: 「○濱口太史君」. 静岡's parenthesised-only rule finds 72 of
+#    the 98 markers on 令和6年6月第3号 and silently drops *every member speech*,
+#    which is the substance of the corpus. Hence the optional office prefix.
+#
+# 2. The circle is not always the same character. Most documents use ○ (U+25CB),
+#    but 令和6年6月第1号 uses 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO) for all 21 of its
+#    speeches. Matching one character alone loses whole sittings without an error
+#    — it was caught only because the sitting parsed to zero speeches. Both are
+#    accepted; over a six-document sample this recovered 21 speeches and changed
+#    no other document's count.
+#
+# 3. 〇 is also a *numeral* in body text (「二〇〇三年度」 — 53 occurrences in
+#    平成12年12月第2号). Requiring the name to end in 「君」 rejects every one of
+#    them, and does the same work of keeping the attendance roster out.
+speech_split = '[○〇](?:(?P<role>[^（(\n]{1,24})[（(])?(?P<speaker>[^（()）\n]{1,24}君)[）)]?'
+
+[detail.patterns]
+# The archive changes numeral form partway through: 「令和６年６月19日（水曜日）」 in
+# recent years, 「平成十二年十二月八日（金曜日）」 before that. `dates.py` reads both.
+# The 曜日 suffix anchors on the sitting's own date rather than the first date
+# that happens to appear in the text.
+date = '((?:令和|平成|昭和)[０-９0-9元一二三四五六七八九十]{1,4}年\s*[０-９0-9一二三四五六七八九十]{1,3}月\s*[０-９0-9一二三四五六七八九十]{1,3}日)\s*（[日月火水木金土]曜日）'
+session = '(?:令和|平成|昭和)[０-９0-9元一二三四五六七八九十]{1,4}年\s*[０-９0-9一二三四五六七八九十]{1,3}月\s*和歌山県議会(?:定例会|臨時会)'
