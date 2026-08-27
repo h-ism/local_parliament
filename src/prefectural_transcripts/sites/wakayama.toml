@@ -65,7 +65,8 @@ extra_meeting_urls = [
 container = "div#content"
 title = "div.title h1"
 
-# Three things vary that a single-form rule would get wrong:
+# Four things vary that a single-form rule would get wrong. Every one of them
+# fails silently, and the last two were found only by parsing 907 documents.
 #
 # 1. Office-holders are parenthesised — 「○議長（鈴木太雄君）」, 「○知事（岸本周平君）」 —
 #    but members are bare: 「○濱口太史君」. 静岡's parenthesised-only rule finds 72 of
@@ -75,14 +76,24 @@ title = "div.title h1"
 # 2. The circle is not always the same character. Most documents use ○ (U+25CB),
 #    but 令和6年6月第1号 uses 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO) for all 21 of its
 #    speeches. Matching one character alone loses whole sittings without an error
-#    — it was caught only because the sitting parsed to zero speeches. Both are
-#    accepted; over a six-document sample this recovered 21 speeches and changed
-#    no other document's count.
+#    — it was caught only because the sitting parsed to zero speeches.
 #
-# 3. 〇 is also a *numeral* in body text (「二〇〇三年度」 — 53 occurrences in
-#    平成12年12月第2号). Requiring the name to end in 「君」 rejects every one of
-#    them, and does the same work of keeping the attendance roster out.
-speech_split = '[○〇](?:(?P<role>[^（(\n]{1,24})[（(])?(?P<speaker>[^（()）\n]{1,24}君)[）)]?'
+# 3. The name must be matched **lazily**. Greedy `{1,24}` runs past the real name
+#    to a later 「君」 in the speech itself: 「○林　隆一君　知事、大変失礼いたしました。林君」
+#    became one 21-character speaker. Lazy matching fixed 3 such records across the
+#    corpus and changed the speech count by zero.
+#
+# 4. 〇 is also a *numeral*, and 「君」 is also an ordinary word. The 「君」 suffix
+#    alone rejects 「二〇〇三年度」, but not 「例えば二〇年後、三〇年後、君が四〇歳を過ぎ」
+#    or 「子供一一〇番の家であるきしゅう君の家」 — 4 such false speakers over 907
+#    documents. A real marker never follows a digit, so the lookbehind settles it.
+#
+#    Rejected alternatives, both measured over the whole corpus: anchoring the
+#    marker to a line start kills all four but loses 7 real speeches that begin
+#    mid-line (「〔「異議なし」と呼ぶ者あり〕 ○議長（濱口太史君）　…」); requiring
+#    whitespace after the marker loses 15, because 「○浜本　収君（続）」 exists and
+#    some older sittings have no space at all after the closing bracket.
+speech_split = '(?<![0-9０-９一二三四五六七八九十百千〇])[○〇](?:(?P<role>[^（(\n]{1,24})[（(])?(?P<speaker>[^（()）\n]{1,24}?君)[）)]?'
 
 [detail.patterns]
 # The archive changes numeral form partway through: 「令和６年６月19日（水曜日）」 in
