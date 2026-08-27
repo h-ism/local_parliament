@@ -21,13 +21,14 @@ own assembly site or from search, and each `robots.txt` was fetched directly.
 | --- | ---: | --- |
 | A. DB-Search (`*.dbsr.jp` + 東京) | 15 | **Blocked** — `Disallow: /` |
 | B. gijiroku VOICES (`*.gijiroku.com` etc.) | 9 | **Blocked** — `Disallow: /…/cgi/`, except 千葉 (see below) |
-| C. SSP (`ssp.kaigiroku.net`) | 18 | **Permitted by robots**, but a JavaScript app — needs an API client, not selectors |
+| C. SSP (`ssp.kaigiroku.net`) | 18 | **Blocked** — the shell pages are allowed, but the data API under `/dnp/search/` is not |
 | D. `kensakusystem.jp` | 3 | **Permitted** — no robots.txt at all, server-rendered HTML |
 | E. Published on the prefecture's own site | 2 | **Permitted** — format not yet verified |
 
 Nothing is collectable with `GenericScraper` as it stands today. The nearest
-targets are D (三重・兵庫・愛媛) and 千葉; the largest prize is C, 18 prefectures on
-one platform, which needs one new scraper rather than 18 configs.
+targets are D (三重・兵庫・愛媛) and 千葉. C was recorded as the largest prize until
+2026-08-27, when the API path turned out to sit outside the one `Allow:` rule; it
+now needs permission rather than code.
 
 ## A. DB-Search — blocked (15)
 
@@ -96,10 +97,11 @@ real difference, not because it is a loophole worth taking.
 have SSP tenants too; which system is current was not established, so they are
 counted under C.
 
-## C. SSP — permitted by robots, blocked by architecture (18)
+## C. SSP — the pages are allowed, the data is not (18)
 
-All on one host, `https://ssp.kaigiroku.net/tenant/<tenant>/`, whose robots.txt is
-the friendliest thing in this survey:
+All on one host, `https://ssp.kaigiroku.net/tenant/<tenant>/`. Its robots.txt reads
+as the friendliest in this survey, and for two days it was recorded that way. It is
+not — see the verdict at the end of this section:
 
 ```
 User-agent: *
@@ -120,18 +122,60 @@ Tenants (`pref<name>`, with two exceptions):
 大分 `prefoita`, 沖縄 `prefokinawa`
 
 The catch: the tenant pages are a shell. `pg/index.html` is a meta-refresh to
-`SpTop.html`, which loads jQuery, Handlebars and `../js/release/{app,config}.js`
-and renders everything client-side. There are no server-rendered result links to
-select. The data must come from an API, and the endpoint is defined in
-`/tenant/js/release/config.js` — which is one of the four disallowed directories,
-so it was not fetched. The per-tenant `js/option.js` (allowed, checked) holds only
-UI options.
+`SpTop.html` (note: *not* `pg/SpTop.html`), which loads jQuery, Handlebars and
+`../js/release/{app,config}.js` and renders everything client-side. There are no
+server-rendered result links to select. The data must come from an API, and the
+endpoint is defined in `/tenant/js/release/config.js`. The per-tenant `js/option.js`
+(allowed, checked) holds only UI options.
 
-So: crawling this platform is *allowed*, and it would cover 18 prefectures with one
-implementation. What is needed is the API path, obtained without reading a
-disallowed script — either by driving a real browser once and watching the network
-tab, or by asking the vendor or any of the 18 assemblies. That is the single
-highest-value next step in this project.
+### The verdict, corrected 2026-08-27
+
+`config.js` was read in a browser by the researcher — a person loading a page is not
+the crawler, and robots.txt binds the crawler. It says:
+
+```js
+dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
+```
+
+There is no host constant, so the base is `https://ssp.kaigiroku.net/dnp/search/`.
+
+**`/dnp/search/` is not under `/tenant/`.** It matches `Disallow: /` and no `Allow:`
+rule reaches it. Checked against `urllib.robotparser`, the same parser `PoliteClient`
+uses: every `/dnp/search/*` path returns DENY.
+
+So the platform's *pages* are crawlable and its *data* is not. The earlier verdict
+— "permitted, blocked only by architecture" — was wrong, and the error was
+structural: the one path that mattered was the one path nobody had seen. **A
+robots.txt verdict is not final until the URL that actually carries the data is
+known.**
+
+SSP therefore belongs with A and B: it needs permission, not code. What changes is
+only the letter's purpose — from "how do I fetch this" to "may I, or will you
+supply it". Drafts: `inquiries/ssp-vendor.md`, `inquiries/ssp-assembly.md`.
+
+### Two things worth carrying elsewhere
+
+**The robots.txt predates the app.** `Last-Modified: 2024-01-10`; the `config.js`
+build is `2026-05-22`. Whether `/dnp/` is unlisted by intent or by neglect cannot be
+told from outside — the same ambiguity as 千葉, in the opposite direction, and the
+same answer: ask, do not decide it for them.
+
+**`urllib.robotparser` denies `/tenant/` too.** It returns the first rule that
+matches in file order, so `Disallow: /` settles every path before `Allow: /tenant/`
+is reached; RFC 9309 and Google resolve by longest match and would allow it. Moot
+here — the API is DENY under both readings — but `PoliteClient` will refuse any site
+that writes `Disallow: /` above a narrower `Allow:`. That is a client-wide question,
+not an SSP one.
+
+### For reference, if permission is granted
+
+The browse endpoints map onto this project's index → session → sitting shape:
+`councils/index`, `councils/get_view_years`, `councils/view`,
+`minutes/get_schedule`, `minutes/get_minute`, `minute_searches/search`,
+`tenants/index`. `config.js` also defines `users/login`, `post_its/*`,
+`search_settings/*` and `statistics/*`, so an authenticated tier exists; which
+endpoints the public view actually uses was not determined, and determining it means
+watching the network, which was not done.
 
 ## D. `kensakusystem.jp` — permitted, server-rendered (3)
 
@@ -175,8 +219,9 @@ prefecture-hosted system at `www3.pref.iwate.jp/gikai/user/www/Kensaku/`
 
 ## What to do next
 
-1. **Get the SSP API path.** 18 prefectures, one implementation, robots already on
-   our side. Load a tenant in a browser once and read the network tab, or ask.
+1. ~~**Get the SSP API path.**~~ — done 2026-08-27, and it settled the question the
+   other way: the API is `/dnp/search/`, which robots.txt disallows. SSP moves to
+   step 3.
 2. **Build 愛媛 (or 三重/兵庫) against `kensakusystem.jp`** — the only platform where
    today's scraper could work almost as-is. Proves the pipeline end to end.
 3. **Ask, for the blocked ones.** Drafts for every one of them are in
@@ -193,5 +238,8 @@ Discovery used pattern probes against vendor hosts plus web search; identificati
 and every robots.txt came from a direct fetch. Requests were spaced ~2–3s and
 serialised per service. One early pass probed `dbsr.jp` hosts in parallel and drew
 `429 Too Many Requests` — that was my error, and the pass was redone sequentially.
-No URL under any `Disallow` rule was fetched, including
-`/tenant/js/release/config.js`, which is why the SSP API path is still unknown.
+No URL under any `Disallow` rule was fetched by the crawler. On 2026-08-27 the
+researcher opened `/tenant/js/release/config.js` in a browser; robots.txt governs
+automated fetching, so that is not a breach, but this sentence used to claim the
+file had never been read and it is corrected here rather than left standing. The
+crawler's rule is unchanged: it does not fetch disallowed paths.
