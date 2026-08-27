@@ -124,17 +124,25 @@ through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it �
 that is the researcher's call, not ours, and it contradicts the politeness
 convention above.
 
-**SSP — 18 prefectures, one fact short**
+**SSP — 18 prefectures, blocked (corrected 2026-08-27)**
 
-`ssp.kaigiroku.net` robots.txt *allows* `/tenant/`, and all 18 numeric tenant ids
-are now recorded in `docs/collection-targets.md` (read from per-tenant scripts,
-which are not under `Disallow: /tenant/js/` — that rule matches the shared
-directory only). What is still missing is the API endpoint, defined in
-`/tenant/js/release/config.js`, which *is* disallowed and has not been fetched.
-The pages are a pure client-side shell, so there is no server-rendered fallback.
-Note a second condition robots says nothing about: 大阪's page states the data
-rights belong to the assembly and reuse should be cleared with 議会事務局.
-See `docs/inquiries/ssp-vendor.md`.
+This was recorded for two days as "allowed, blocked only by architecture". It is
+not. `config.js` declares `API_ROOT: "/dnp/search/"`, and `/dnp/search/` is outside
+the one `Allow: /tenant/` rule, so `Disallow: /` covers it — DENY under
+`urllib.robotparser` and under longest-match too. **The shell pages are crawlable;
+the data is not.** SSP belongs with the 24 blocked assemblies: it needs a letter,
+not a scraper.
+
+The lesson generalises: **a robots.txt verdict is not final until you know the URL
+that actually carries the data.** A client-side app can be allowed everywhere you
+can see and disallowed everywhere it matters.
+
+Vendor: **NTT Advanced Technology** (copyright header). "DNP" is the product,
+Discuss Net Premium — not 大日本印刷; an earlier note misread the logo. Tenant ids
+and browse endpoints are in `docs/collection-targets.md`. 大阪 gets the first
+letter: it is the only one of the 18 naming a destination on its own page, and its
+reuse condition (data rights belong to the assembly) survives any robots answer.
+See `docs/inquiries/ssp-assembly.md`.
 
 **Before any large crawl**
 
@@ -210,7 +218,17 @@ quirks.
   page is fetched, so on an index carrying no dates they save nothing. Narrow
   `--start-url` instead.
 - **Check `robots.txt` before writing any config.** It is one request and it
-  decides whether the rest of the work is worth doing.
+  decides whether the rest of the work is worth doing. But it decides it only for
+  the URLs you know about: SSP's `/tenant/` is allowed and its `/dnp/search/` API
+  is not, so the verdict flipped the day the data URL was found. **On a client-side
+  app, read the verdict as provisional until you know where the data comes from.**
+- **`urllib.robotparser` ignores `Allow:` precedence.** It returns the first rule
+  matching in file order, so `Disallow: /` above `Allow: /tenant/` denies
+  everything; RFC 9309 and Google resolve by longest match and would allow
+  `/tenant/`. `PoliteClient` uses the stdlib parser, so it will refuse sites whose
+  operators plainly meant to permit them. Not yet a problem — SSP is denied under
+  both readings — but check this before concluding that a site with a broad
+  `Disallow` plus a narrow `Allow` is closed.
 - **State the charset when the response cannot carry one.** `GetPerson.exe` returns
   plain text with no meta tag and no `charset`, so detection is a guess — and it
   guessed utf-8 for 5 of 63 sittings. Where the vendor's charset is known, say it

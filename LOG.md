@@ -2,6 +2,162 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — SSP is blocked, and the earlier verdict was wrong (`fix/ssp-verdict`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Documentation only. No code, no collection. One fact arrived and reversed a verdict
+this project had carried for two days.
+
+**What was found**
+
+The researcher opened `/tenant/js/release/config.js` in a browser — robots.txt binds
+the crawler, and a person loading a page is not the crawler. It declares:
+
+```js
+dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
+```
+
+There is no host constant, so the base is `https://ssp.kaigiroku.net/dnp/search/`.
+
+`/dnp/search/` is **not** under `/tenant/`. The host's robots.txt — re-fetched and
+byte-identical to what was recorded on 2026-08-26 — is `Disallow: /` with a single
+`Allow: /tenant/`, so nothing reaches the API path. Checked with
+`urllib.robotparser`, the same parser `PoliteClient` uses: every `/dnp/search/*`
+path returns DENY. It is DENY under longest-match too, so the conclusion does not
+depend on which reading you take.
+
+**So the pages are crawlable and the data is not.** SSP moves out of Tier 2 and in
+with the 24 blocked assemblies. The 18 prefectures do not need a scraper; they need
+a letter. What changes in the letters is their purpose — from "how do I fetch this"
+to "may I, or will you supply it".
+
+**Why the error happened, and what it generalises to**
+
+The old verdict — "permitted by robots, blocked only by architecture" — was not
+careless. robots.txt *was* read, on the first day, and it *does* allow `/tenant/`.
+The mistake was concluding from it before knowing which URL carried the data. On a
+server-rendered site those are the same URL; on a client-side app they need not be,
+and here they were not.
+
+**A robots.txt verdict is not final until the URL that actually carries the data is
+known.** That belongs alongside the other entries in "Things that will bite again",
+and it is now there.
+
+**A second finding, unrelated to SSP**
+
+`urllib.robotparser` returns the first rule matching in file order rather than the
+longest match, so `Disallow: /` above `Allow: /tenant/` denies `/tenant/` as well.
+RFC 9309 and Google resolve the other way. `PoliteClient` would therefore refuse the
+whole of `ssp.kaigiroku.net`, including pages its operator plainly meant to open.
+Moot for SSP — the API is denied either way — but it will matter on the next site
+that writes a broad `Disallow` above a narrow `Allow`. Recorded, not fixed; fixing
+it is a change to crawl behaviour and wants its own branch and its own decision.
+
+**Two smaller corrections**
+
+The vendor is **NTT Advanced Technology Co., Ltd.**, from the copyright header. The
+note that the page carried "a DNP logo" was a misreading: the product is **Discuss
+Net Premium**, its JavaScript namespace is `dnp.*`, and that is what DNP stands for
+here — not 大日本印刷. The contradiction between the two records was never a
+contradiction.
+
+`docs/prefecture-survey.md` claimed no disallowed URL had ever been fetched, naming
+`config.js` specifically. That sentence, and the same claim inside
+`ssp-vendor.md`'s letter body, were true when written and are not now. Both are
+corrected rather than left standing — the letters would otherwise say something
+false to their recipients. The crawler's own rule is unchanged.
+
+**Ordering: 大阪 first**
+
+Of the 18, only 大阪 names a destination on its own page ("転用…については大阪府議会
+事務局までお問い合わせください"). The vendor's department is still unknown, so 大阪 is
+both the shortest route to that and an inquiry that has to happen anyway, since its
+reuse condition survives any answer about robots. One letter returns both.
+
+**Also noted**
+
+`PT_CONTACT` is still `research-crawler@example.invalid`, while every letter promises
+a real contact address in the User-Agent. Set it before sending anything.
+
+**Files**
+
+`CLAUDE.md`, `docs/prefecture-survey.md`, `docs/collection-targets.md`,
+`docs/inquiries/README.md`, `docs/inquiries/ssp-vendor.md`,
+`docs/inquiries/ssp-assembly.md`, `.gitignore` (the fetched vendor script is not
+ours to redistribute).
+
+### 日本語
+
+ドキュメントのみ。コードの変更も収集も行っていない。事実が1つ判明し、2日間持って
+いた判定がひっくり返った。
+
+**分かったこと**
+
+`/tenant/js/release/config.js` をブラウザで開いた。robots.txt が拘束するのは
+クローラであり、人がページを開く行為はそれに当たらない。中身は
+
+```js
+dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
+```
+
+ホスト定数はないので、実体は `https://ssp.kaigiroku.net/dnp/search/`。
+
+`/dnp/search/` は `/tenant/` の**外**。robots.txt を取り直したところ 8/26 の記録と
+バイト単位で同一で、`Disallow: /` に対する `Allow:` は `/tenant/` の1本だけ。
+`PoliteClient` が使うのと同じ `urllib.robotparser` で判定させると、
+`/dnp/search/*` はすべて DENY。最長一致で読んでも DENY なので、解釈に依存しない。
+
+**画面は取得できるが、データは取得できない。** SSP は Tier 2 から外れ、取得禁止の
+24議会と同じ扱いになる。18県に必要なのはスクレイパではなく手紙で、手紙の性格が
+「やり方を教えてほしい」から「許可またはデータ提供の依頼」に変わる。
+
+**なぜ間違えたか**
+
+旧判定「robots は許可、構造だけが壁」は、手を抜いた結果ではない。robots.txt は
+初日に読んでいるし、`/tenant/` が Allow なのも事実である。誤りは、**データを運ぶ
+URL を知らないうちに結論を出したこと**にある。サーバ側描画のサイトでは両者は同じ
+URL だが、クライアント側描画のアプリでは別でありうる。ここでは別だった。
+
+**robots.txt の判定は、実際にデータを運ぶ URL が分かるまで暫定である。**
+「Things that will bite again」に追加した。
+
+**SSP とは無関係な発見**
+
+`urllib.robotparser` は最長一致ではなく**ファイル順で最初に一致した規則**を返す。
+そのため `Disallow: /` が `Allow: /tenant/` より上にあると `/tenant/` も拒否される。
+RFC 9309 や Google は逆に解釈する。つまり `PoliteClient` は `ssp.kaigiroku.net` を
+丸ごと拒否し、運営者が明らかに開放している画面まで取りに行かない。SSP では
+どのみち DENY なので実害はないが、**広い `Disallow` の下に狭い `Allow` を書く次の
+サイトで効いてくる。** 記録のみ、修正はしていない。クロール挙動の変更なので、
+別ブランチと別の判断が要る。
+
+**小さな訂正2件**
+
+事業者は `config.js` の著作権表示より **NTT アドバンステクノロジ株式会社**。
+「ページ内に DNP のロゴ」という記述は読み違いで、製品名が **Discuss Net Premium**、
+JavaScript の名前空間が `dnp.*`。ここでの DNP はそれであって大日本印刷ではない。
+2つの記録の食い違いは、そもそも食い違いではなかった。
+
+`docs/prefecture-survey.md` は「Disallow 配下の URL は一切取得していない」と
+`config.js` を名指しで書いていた。`ssp-vendor.md` の本文にも同じ記述がある。
+書いた時点では真だったが、いまは違う。**そのままにすると、相手に事実でないことを
+書いて送ることになる**ので、両方直した。クローラ側の規則は変えていない。
+
+**順序：大阪を先に**
+
+18県のうち、自分のページに宛先を名指ししているのは大阪だけ（「転用…については
+大阪府議会事務局までお問い合わせください」）。事業者の部署は依然不明なので、
+それを尋ねる先としても大阪が最短で、しかも大阪の再利用条件は robots の可否とは
+別に残るため照会は避けられない。1通で両方の答えが返る。
+
+**あわせて記録**
+
+`PT_CONTACT` が `research-crawler@example.invalid` のまま。手紙はどれも
+「User-Agent に連絡先を明記する」と約束しているので、送る前に設定すること。
+
 ## 2026-08-27 — 愛媛, and the first scraper that is not selectors (`feat/ehime`)
 
 *English and Japanese. / 英語と日本語で併記する。*
