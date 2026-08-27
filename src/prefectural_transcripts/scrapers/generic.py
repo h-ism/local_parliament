@@ -314,7 +314,7 @@ class GenericScraper(BaseScraper):
         if sel.speech_split and not sel.speech:
             # Newlines are kept here: the split is done on text, and paragraph
             # breaks are the only structure these pages have left.
-            return _split_speeches(root.get_text("\n", strip=True), sel.speech_split)
+            return split_speeches(root.get_text("\n", strip=True), sel.speech_split)
         if not sel.speech:
             # No per-speech markup configured: keep the page as a single block
             # rather than silently dropping the transcript.
@@ -332,7 +332,7 @@ class GenericScraper(BaseScraper):
         return speeches
 
 
-def _split_speeches(text: str, pattern: str) -> list[Speech]:
+def split_speeches(text: str, pattern: str) -> list[Speech]:
     """Cut a flat transcript into speeches at each `pattern` match.
 
     Everything from one marker to the next is that speaker's text. Anything

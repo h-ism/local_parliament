@@ -2,6 +2,162 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — 愛媛, and the first scraper that is not selectors (`feat/ehime`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Third prefecture, and the first site that genuinely could not be expressed as a
+config. Scoped, like 和歌山, to what the 地方議会会議録コーパス does not cover after
+2019-03.
+
+**Collected**
+
+```
+meetings : 201          speeches : 11,194
+chars    : 6,123,840    range    : 2019-05-15 .. 2026-03-09
+```
+
+33 sessions, 266 speakers, 2019–2026 continuous. Nothing undated, no sitting
+without speeches, no duplicate, no mojibake, nothing outside the range.
+
+**Why a subclass, not a config**
+
+`GenericScraper` follows links. This site has none to follow:
+
+- The browse tree is `<A HREF="javascript:…" onClick="…treedepth.value='令和 7年'">`,
+  so the target is in an attribute, and the label has to be percent-encoded in
+  **cp932** — the page's own charset — before it can be sent back.
+- A sitting is not at a URL. The page's own ダウンロード button posts a list of
+  character offsets to `GetPerson.exe`, which returns the whole transcript as one
+  plain-text response. Composing that is more than following a link.
+- The transcript is not HTML, so there is no container to select.
+
+`BaseScraper` gained one hook for the general case — `fetch_meeting`, "the page
+`parse_meeting` will be given" — defaulting to today's single GET. That is the
+whole extension: everything else (politeness, cache, cp932 decoding, resume, the
+date filter) is unchanged.
+
+It pays off twice. Listing now costs **nothing per document**, and because
+`fileName=R070303A` carries the date, `--since/--until` prunes before either
+request. This is the first site where a date filter actually saves work.
+
+**Four faults, each silent, each found only by running it**
+
+1. **Pydantic caps a URL at 2,083 characters.** The download URL for a 一般質問 day
+   exceeds it, so it cannot be a record's identity — the crawl died at meeting 6.
+   A ref now points at the speaker index (~100 characters). The forced redesign is
+   better than what it replaced.
+2. **A `years` list can name unreachable nodes.** Opening a *tab* reveals the years
+   it groups; a year's sessions appear only when that year is opened. 令和 2年 and
+   平成31年 are not tabs, so five of the eight years asked for were skipped
+   **without a word**. The walk is two-phase now, and a year the tree lacks is
+   reported instead of ignored.
+3. **The charset is not detectable.** `GetPerson.exe` returns plain text with no
+   meta tag and no `charset` header, so `sniff_encoding` has only
+   charset-normalizer — which guessed **utf-8** for 5 of 63 sittings. The config
+   states `encoding = "cp932"` rather than detecting it. Those five warned, because
+   they parsed to zero speeches; a different document would have produced plausible
+   garbage instead, exactly as 静岡 did.
+4. **「令和元年」 is a year node and 元 is not a digit.** `dates.py` has handled that
+   form since 静岡; the new `_YEAR_NODE` pattern used `\d{1,2}` and skipped the node
+   entirely — walked, matched nothing, said nothing. Caught only because the
+   collected range began at 2020 instead of 2019.
+
+Four of today's mistakes are the same mistake: **assuming one form is every form.**
+Bare member names, ○ versus 〇, 全文 versus 本文, and now 元年. The counter-measure
+that keeps working is not care, it is arithmetic — count what a rule matches
+against a sample, and check the *edges of the range* after every run.
+
+**Speaker and office are deliberately not separated**
+
+The marker is 「○（三宅浩正議長）」: name and office in one run, no delimiter. No
+lexical rule splits them — 「三宅浩正議長」 breaks wrongly under both greedy and lazy
+matching, and the corpus contains
+「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」. The whole string is kept
+as `speaker` and `role` is left empty rather than guessing, which after a day spent
+finding three separate sources of plausible nonsense seems the only defensible
+choice. Doing it properly means reading each document's 出席理事者 roster, where
+office and name *are* separated; that is noted in `docs/kensakusystem.md` as the
+right approach and is deferred, not forgotten.
+
+**Also**
+
+- `pt scrape --start-url` now refuses non-selector sites with an explanation
+  rather than an AttributeError.
+- 8 offline tests for the new scraper; `ruff`, `mypy --strict`, `pytest` (72) clean.
+
+**Not done**
+
+平成3年–2011年 for 愛媛 (`years = []` walks it). 三重 and 兵庫 — same product, same
+`cgi-bin3`, only `base_url` and `Code=` differ; 兵庫 reaches 昭和61年. 委員会会議録.
+
+### 日本語
+
+3県目。そして**設定では表現できなかった最初のサイト**。和歌山と同様、
+地方議会会議録コーパスが 2019年3月で終わったあとの空白に絞って収集した。
+
+**収集結果**
+
+```
+会議 : 201          発言 : 11,194
+文字 : 6,123,840    期間 : 2019-05-15 .. 2026-03-09
+```
+
+33会期・発言者266名・2019〜2026が連続。日付なし・発言0件・重複・文字化け・範囲外
+いずれもゼロ。
+
+**なぜ設定ではなくサブクラスか**
+
+`GenericScraper` はリンクを辿る。このサイトには辿るリンクがない。
+
+- ツリーは `onClick` の中に遷移先があり、しかもラベルを**cp932**で
+  パーセントエンコードして送り返す必要がある。
+- 会議録はURLに存在しない。ページ自身のダウンロードボタンが文字オフセットの一覧を
+  `GetPerson.exe` に送り、全文が1回のプレーンテキスト応答で返る。
+- 本文はHTMLではないので、選択すべき容器がない。
+
+`BaseScraper` に汎用の拡張点を1つだけ追加した — `fetch_meeting`（既定は従来どおり
+`ref.url` を1回GET）。これで**一覧は文書ごとに1リクエストも使わなく**なり、
+`fileName=R070303A` に日付が入っているため **`--since/--until` が両方のフェッチより
+前に効く**。日付フィルタが実際に仕事を減らす最初のサイトになった。
+
+**4つの欠陥。いずれも沈黙し、いずれも動かして初めて出た**
+
+1. **Pydantic のURL上限2083字。** 一般質問日のダウンロードURLが超過し、6件目で
+   クロールが停止した。参照を発言索引URL（約100字）に変更。強制された再設計の方が
+   元の設計より良かった。
+2. **`years` に到達不能なノードを書ける。** タブを開くとその年群が現れ、会期は
+   その年を開いて初めて現れる。令和2年・平成31年はタブではないので、指定した8年の
+   うち5年が**一言もなく**飛ばされていた。2段階に変更し、存在しない年は警告する。
+3. **文字コードが判定不能。** `GetPerson.exe` はプレーンテキストで meta も
+   charset ヘッダもなく、63件中5件が **utf-8 と誤判定**された。設定で
+   `encoding = "cp932"` を明示。今回は発言0件で警告が出たが、別の文書なら
+   静岡と同じ「もっともらしいゴミ」になっていた。
+4. **「令和元年」は年ノードで、元は数字ではない。** `dates.py` は静岡以来この形を
+   扱っているのに、新しい `_YEAR_NODE` は `\d{1,2}` で書いてノードごと飛ばしていた。
+   歩いて、何も一致せず、何も言わない。収集範囲が2019年でなく2020年始まりだったので
+   気づけた。
+
+今日の失敗のうち4つは**同じ失敗**である — 「一つの形で足りる」と思い込むこと。
+括弧なしの議員名、○と〇、全文と本文、そして元年。効き続けている対策は注意深さでは
+なく**算術**だ。規則が何件一致するかをサンプルで数え、収集後に**範囲の端**を確認する。
+
+**氏名と役職は意図的に分けていない**
+
+標識は「○（三宅浩正議長）」で、氏名と役職が区切りなく連結している。語彙的に分ける
+規則は存在しない（「三宅浩正議長」は貪欲でも最短でも誤る）。実際
+「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」も含まれる。推測して
+もっともらしいゴミを作るより、全体を `speaker` に入れ `role` を空にした。
+正しくやるには各文書の出席理事者名簿（役職と氏名が空白で分かれている）を読む必要が
+あり、`docs/kensakusystem.md` に**正しい方法として**記載したうえで先送りしている。
+
+**未実施**
+
+愛媛の平成3年〜2011年（`years = []` で歩ける）。三重・兵庫（同一製品・同一 `cgi-bin3`、
+`base_url` と `Code=` が違うだけ。兵庫は昭和61年まで）。委員会会議録。
+
 ## 2026-08-27 — 和歌山: everything the 地方議会会議録コーパス does not cover (`feat/wakayama-archive`)
 
 *English and Japanese. / 英語と日本語で併記する。*

@@ -12,7 +12,11 @@ import typer
 
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
-from prefectural_transcripts.scrapers import available_sites, load_scraper
+from prefectural_transcripts.scrapers import (
+    GenericScraper,
+    available_sites,
+    load_scraper,
+)
 from prefectural_transcripts.storage import (
     SpeechCsvWriter,
     TranscriptStore,
@@ -92,6 +96,11 @@ def scrape(
         # Narrowing the entry points is the only way to scope a crawl on a site
         # whose index carries no dates: --since/--until can only filter after a
         # page has been fetched, which is too late to save the request.
+        if not isinstance(scraper, GenericScraper):
+            raise typer.BadParameter(
+                f"--start-url applies to selector-driven sites; {name} walks its own tree. "
+                "Scope it from the config instead."
+            )
         scraper.config.start_urls = list(start_url)
         typer.echo(f"Crawling {len(start_url)} given start URL(s) instead of the configured ones.")
     written = 0

@@ -1,0 +1,60 @@
+# 愛媛県議会 — 本会議会議録
+#
+# `kensakusystem.jp`, shared with 三重 (`/mie/`) and 兵庫 (`/hyogopref/`); the same
+# config shape should carry to both. No robots.txt on the host (404) and every
+# page carries `<meta name="robots" CONTENT="follow,index">`.
+#
+# Driven by `KensakuSystemScraper`, not by selectors — the browse tree navigates
+# through an `onClick` attribute with a cp932-encoded label, and a sitting has to
+# be assembled from a list of character offsets. See the module docstring in
+# `scrapers/kensakusystem.py` and `docs/kensakusystem.md`.
+#
+# Coverage: 本会議 from 平成3年第229回定例会; 委員会 from 平成19年5月.
+
+prefecture = "愛媛県"
+name = "ehime"
+scraper = "kensakusystem"
+
+[kensakusystem]
+base_url = "https://www.kensakusystem.jp/ehime/"
+
+# 本会議 only. The same tree carries every standing and special committee, which
+# would multiply the crawl several times over; committees are a separate decision.
+sessions = '定例会|臨時会'
+
+# Which year tabs to walk. Empty means the whole archive back to 平成3年.
+#
+# Scoped to 平成31年 onwards: the 地方議会会議録コーパス already covers 都道府県議会
+# for 2011-04 .. 2019-03, and 2019 lives under the 平成31年 node here (令和元年 is
+# not a separate tab). The archive before 2011 is equally uncollected and is the
+# obvious next run.
+# This is the knob that actually scopes a crawl: a date filter prunes the
+# sittings a walk finds, not the walk itself — the lesson `--start-url` taught
+# on 和歌山. `--since/--until` still helps here, because `fileName=R070303A`
+# carries the date and is read before the transcript is fetched.
+years = [
+    "平成31年",
+    "令和元年",
+    "令和 2年",
+    "令和 3年",
+    "令和 4年",
+    "令和 5年",
+    "令和 6年",
+    "令和 7年",
+    "令和 8年",
+]
+
+# 「○（三宅浩正議長）　理事者の答弁を求めます。」
+#
+# The brackets are load-bearing. The same documents open sections with
+# 「○議事日程」 and 「〇出席議員　45名」 — the latter with 〇 (U+3007) rather than
+# ○ (U+25CB) — and requiring the brackets separates all of them from speech.
+#
+# NOTE: name and office are printed as one run with no delimiter
+# (「池田和少子化対策・女性活躍統括部長」 is 池田和 + 少子化対策・女性活躍統括部長),
+# and there is no lexical rule that splits them: 「三宅浩正議長」 breaks the same
+# way under both greedy and lazy matching. So the whole string is kept as the
+# speaker and `role` is left empty, rather than guessing and producing plausible
+# nonsense. Splitting it properly means reading the 出席理事者 roster in each
+# document, where office and name *are* separated — see `docs/kensakusystem.md`.
+speech_split = '(?m)^○[（(](?P<speaker>[^）)\n]{1,40})[）)]'

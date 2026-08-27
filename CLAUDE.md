@@ -38,6 +38,10 @@ new `BaseScraper` subclass only when a site genuinely cannot be expressed as sel
 Flow: `sites/*.toml` → `SiteConfig` → `GenericScraper` → `PoliteClient` (fetch) →
 `Meeting` models → `TranscriptStore` (JSONL).
 
+A config may name `scraper = "..."` to select something other than `GenericScraper`;
+`kensakusystem` is the one case so far, and `docs/kensakusystem.md` records the
+three independent reasons it earned the exception.
+
 Modules under `src/prefectural_transcripts/`:
 
 - `http.py` — `PoliteClient`. Per-host rate limiting, robots.txt + `Crawl-delay`,
@@ -96,10 +100,12 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
   robots.txt 404, pages marked `index, follow`; one index page → 167 sessions →
   per-sitting full text. 2011-04 .. 2019-03 is deliberately absent: the
   地方議会会議録コーパス already covers it. `docs/wakayama.md`.
-- **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
-  the whole flow works over GET. Two requests per sitting, because the site's own
-  download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
-  text. 兵庫 reaches 昭和61年. `docs/kensakusystem.md`.
+- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 201
+  sittings, 11,194 speeches, 2019-05-15 .. 2026-03-09** (the gap the corpus leaves
+  after 2019-03); 平成3年–2011年 still to do. `docs/kensakusystem.md`.
+- **三重・兵庫** — the same `kensakusystem.jp` product, same `cgi-bin3`; only
+  `base_url` and `Code=` differ, so both should be a config away. 兵庫 reaches
+  昭和61年 and `dates.py` already reads 「昭和六十一年」.
 
 **The next code change**
 
@@ -171,6 +177,11 @@ quirks.
   respectively; all three looked reasonable written down. Re-parsing the whole
   corpus to compare costs zero requests because every response is cached — which
   is what the cache is for.
+- **A node that is walked but matches nothing is the quietest failure of all.**
+  愛媛's tree has a 「令和元年」 node, and 元 is not `\d`; the year was visited,
+  matched no sessions, and nothing warned. Likewise a `years` entry naming a node
+  the tree does not have. **Check the edges of the collected range after every
+  run** — that is what caught both.
 - **A listing-level miss has no smoke test.** 和歌山 labels the whole-sitting link
   「◎第３号全文」 in most sessions and 「◎第１号本文」 in others; filtering on 全文
   dropped three entire sessions in silence. A detail page that parses to zero
@@ -200,6 +211,13 @@ quirks.
   `--start-url` instead.
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing.
+- **State the charset when the response cannot carry one.** `GetPerson.exe` returns
+  plain text with no meta tag and no `charset`, so detection is a guess — and it
+  guessed utf-8 for 5 of 63 sittings. Where the vendor's charset is known, say it
+  in the config instead of sniffing.
+- **`HttpUrl` caps a URL at 2,083 characters.** A URL built from per-speech offsets
+  will exceed it on a busy sitting. Do not use a composed URL as a record's
+  identity; point at something short and stable and compose in `fetch_meeting`.
 
 ## Working notes
 
