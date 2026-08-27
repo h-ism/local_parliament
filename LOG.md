@@ -2,6 +2,112 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — the letter that should have been written first (`docs/local-politics-inquiry`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Documentation only. One new file, `docs/inquiries/local-politics.md`, plus an index
+entry. It has been listed as the next action in `JOURNAL.md` on two consecutive days
+and in `collection-targets.md`'s recommended order as item 1, and it kept not
+happening while three prefectures were collected around it.
+
+**The scope question is now settled: everything obtainable, no window.**
+
+That does not make the 地方議会会議録コーパス less relevant — it makes it more so.
+The old framing was "if the research window falls inside 2011–2019, most of this
+crawl is redundant". With no window, their 全47議会 / 2011-04 .. 2019-03 is not a
+range to route around; it is a large piece of exactly what we want, already
+assembled. What changes is only the reason for asking: not "do I need to crawl
+this?" but "you already have this, may I have it rather than re-crawling 47
+assemblies?"
+
+**The cost of not asking is already on the books.** 和歌山 and 愛媛 were both scoped
+to leave 2011-04 .. 2019-03 empty, on the assumption that it would come from this
+project. Until this letter is answered, those two holes stay open by design — and
+和歌山's 673 documents from 1989–2011 sit on the far side of one of them.
+
+**Three things the letter asks that the records did not anticipate**
+
+1. **Whether collection continues past 2019-04.** If it does, it may overlap what
+   we are crawling right now. Nothing in our notes could establish this; only they
+   can. This is the question most likely to change what we do next.
+2. **Whether speaker and role are separated.** 愛媛 forced us to give up on that
+   split — the marker 「○（三宅浩正議長）」 runs name and office together with no
+   delimiter, and the corpus contains
+   「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」, so no lexical rule
+   survives. We kept the whole string as `speaker` and left `role` empty. If they
+   have solved it, their design is worth knowing.
+3. **What we can offer back.** 和歌山 1989-02 .. 2011-02 (673 documents) predates
+   their range. Asking a research project for 80 GB while offering nothing is a
+   poor way to open, and this is a genuine contribution rather than a courtesy.
+
+**Addressee is unverified**, in keeping with the house rule for these drafts. The
+site is <http://local-politics.jp/>; the contact window has not been checked and is
+marked 要確認.
+
+**One stale claim fixed in passing.** `inquiries/README.md` still said 和歌山's
+transcripts might be PDF and the format needed checking before deciding. 907
+documents later that is plainly false. Corrected — the same failure mode as the SSP
+premise in `fix/ssp-verdict`: a record that was true when written, left standing
+until it would have misled someone.
+
+**Kept off this branch on purpose.** `CLAUDE.md` and `collection-targets.md` both
+describe the corpus in terms of a research window and should be rewritten now that
+there is none, but both are heavily edited in the open PR #10. Doing it here would
+manufacture conflicts. It follows once #10 lands.
+
+**Files**
+
+`docs/inquiries/local-politics.md` (new), `docs/inquiries/README.md`.
+
+### 日本語
+
+ドキュメントのみ。新規1ファイル `docs/inquiries/local-politics.md` と索引への追加。
+`JOURNAL.md` で2日連続、`collection-targets.md` の推奨順序でも第1項として挙げ続けて
+いながら、その周りで3県を収集する間ずっと着手されずに残っていたもの。
+
+**対象期間が確定した — 取得できる限りの全期間、窓は設けない。**
+
+これは当該コーパスの重要度を下げるのではなく、**上げる**。旧来の書き方は
+「対象期間が2011–2019に収まるなら、この収集の大半は不要」だった。窓がない以上、
+先方の 全47議会・2011年4月〜2019年3月 は「避けて通る範囲」ではなく、
+**まさに欲しいものが既に整備されている塊**である。変わるのは尋ねる理由だけで、
+「クロールする必要があるか」ではなく「既にお持ちなので、47議会を取り直す前に
+分けていただけないか」になる。
+
+**尋ねなかった代償は既に帳簿に載っている。** 和歌山も愛媛も、この期間が先方から
+来る前提で 2011-04 .. 2019-03 を空けて収集した。回答が来るまで、その穴は設計上
+開いたままである。しかも和歌山の 1989–2011 の673件は、その穴の向こう側にある。
+
+**記録が想定していなかった質問を3つ入れた**
+
+1. **2019年4月以降も継続しているか。** 継続していれば、いま収集している範囲まで
+   重なりうる。当方の記録では判定不能で、先方にしか分からない。**次の行動を最も
+   変えうる質問。**
+2. **話者と役職が分離されているか。** 愛媛でこの分離を断念した。標識
+   「○（三宅浩正議長）」は氏名と役職が区切りなしで連結され、コーパスには
+   「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」まである。
+   語彙的な規則では解けないので、全文字列を `speaker` に入れ `role` は空にした。
+   先方が解いているなら、その設計は知る価値がある。
+3. **こちらから差し出せるもの。** 和歌山 1989-02 .. 2011-02（673件）は先方の
+   収録範囲より古い。80GB を求めながら何も出さないのは筋が悪く、しかもこれは
+   儀礼ではなく実際に寄与しうるものである。
+
+**宛先は未検証。** この種の下書きの慣行どおり。サイトは <http://local-politics.jp/>
+で、問い合わせ窓口は未確認・要確認と明記した。
+
+**ついでに古い記述を1件訂正。** `inquiries/README.md` に和歌山は「本文が HTML か
+PDF か未確認」と残っていた。907件収集した後では明らかに誤り。`fix/ssp-verdict` の
+SSP の前提とまったく同じ失敗の型 — **書いた時点では真で、放置され、いずれ誰かを
+誤らせる直前まで残っていた記述**である。
+
+**意図的にこのブランチから外したもの。** `CLAUDE.md` と `collection-targets.md` は
+どちらもコーパスを「研究対象期間」を軸に説明しており、窓がなくなった以上は書き
+直すべきだが、両方とも PR #10 で大きく編集中である。ここで触ると衝突を作るだけ
+なので、#10 がマージされてからにする。
+
 ## 2026-08-27 — SSP is blocked, and the earlier verdict was wrong (`fix/ssp-verdict`)
 
 *English and Japanese. / 英語と日本語で併記する。*
