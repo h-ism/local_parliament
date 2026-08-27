@@ -84,11 +84,71 @@ a GET query string**, so no POST support is needed.
   nothing to select. This is the one real gap: the detail step assumes HTML.
 - `<PAGE="n">` markers separate printed pages and should be stripped.
 
-## What the scraper still needs
+## Implemented
 
-1. **Two-level listing** — year → session → sitting. Same gap as 和歌山.
-2. **A non-HTML detail mode** — apply `speech_split` to the raw body when there is
-   no markup to select.
-3. **A listing step that reads `downloadPos` values and composes the next URL**,
-   which is more than "follow a link". This is the one place a small
-   `BaseScraper` subclass may be cheaper than stretching the config schema.
+`KensakuSystemScraper` (`scrapers/kensakusystem.py`) plus `sites/ehime.toml`. This
+is the first site that earned a `BaseScraper` subclass rather than selectors, for
+three independent reasons: the tree is navigated through an `onClick` attribute
+carrying a **cp932-encoded label**, a sitting must be assembled from a list of
+character offsets, and the transcript is plain text with no markup to select.
+
+`BaseScraper` gained one hook, `fetch_meeting`, for the general case of *a
+transcript that is not at a URL the index can hand you*. Listing therefore costs
+nothing per document, and because `fileName=R070303A` carries the date,
+`--since/--until` prunes before **either** request — the one site so far where a
+date filter genuinely saves work.
+
+### Collected — 愛媛, 2019-05 onwards
+
+```
+meetings : 201          speeches : 11,194
+chars    : 6,123,840    range    : 2019-05-15 .. 2026-03-09
+```
+
+33 sessions, 266 speakers, nothing undated, no sitting without speeches, no
+duplicate, no mojibake. Scoped to the gap the 地方議会会議録コーパス leaves after
+2019-03; 平成3年–2011年 is still uncollected and is the obvious next run.
+
+### Four faults, each silent, each found only by running it
+
+1. **Pydantic caps a URL at 2,083 characters.** The download URL for a 一般質問 day
+   runs past that, so it cannot be a record's identity. A ref now points at the
+   *speaker index* (~100 characters) and the download URL is composed inside
+   `fetch_meeting`. This turned out better than the original design: listing no
+   longer fetches anything per document.
+2. **A `years` list can name unreachable nodes.** Opening a *tab* reveals the
+   years it groups; a year's sessions appear only when that year is opened. Naming
+   令和 2年 or 平成31年 — which are not tabs — reached nothing, and five of the eight
+   years asked for were skipped **without a word**. The walk is now two-phase, and
+   a year the tree does not have is reported.
+3. **The charset is not detectable.** `GetPerson.exe` returns plain text with no
+   meta tag and no `charset` on the response, so `sniff_encoding` has only
+   charset-normalizer — and it guessed **utf-8** for 5 of 63 sittings, which
+   decoded to mojibake. Those five parsed to zero speeches and warned; on a
+   different document the same miss produces plausible garbage instead. The
+   config now states `encoding = "cp932"` rather than detecting it.
+4. **「令和元年」 is a year node and 元 is not a digit.** `dates.py` has handled that
+   form since 静岡, but the new `_YEAR_NODE` pattern used `\d{1,2}` and skipped the
+   node entirely — walked, matched nothing, said nothing. Caught only because the
+   collected range started at 2020 instead of 2019.
+
+### Speaker and office are not separable
+
+The marker is 「○（三宅浩正議長）」 — name and office in one run with no delimiter.
+There is no lexical rule that splits them: 「三宅浩正議長」 breaks wrongly under both
+greedy and lazy matching, and the corpus contains
+「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」. So the whole string is
+stored as `speaker` and `role` is left empty, rather than guessing.
+
+Splitting it properly means reading the 出席理事者 roster in each document, where
+office and name *are* separated by whitespace
+(「　保健福祉部長　　　　　　岡　部　　　直」). That is real machinery and is
+deliberately deferred — but it is the right way, and it would also give 三重 and
+兵庫 the same treatment.
+
+## Still to do
+
+- 平成3年–2011年 for 愛媛 (`years = []` walks the whole archive).
+- 三重 and 兵庫: same product, same `cgi-bin3`, different `Code=` and `base_url`.
+  兵庫 reaches 昭和61年, and `dates.py` already reads 「昭和六十一年」.
+- 委員会会議録: the same tree carries them; `sessions` selects 本会議 today.

@@ -507,9 +507,9 @@ WAKAYAMA_SPLIT = (
 
 
 def _split(text: str) -> list[tuple[str | None, str]]:
-    from prefectural_transcripts.scrapers.generic import _split_speeches
+    from prefectural_transcripts.scrapers.generic import split_speeches
 
-    return [(s.role, s.speaker) for s in _split_speeches(text, WAKAYAMA_SPLIT)]
+    return [(s.role, s.speaker) for s in split_speeches(text, WAKAYAMA_SPLIT)]
 
 
 def test_speaker_is_matched_lazily_not_greedily() -> None:

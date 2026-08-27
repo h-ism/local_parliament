@@ -21,15 +21,17 @@ def make_page(url: str, html: str, encoding: str = "utf-8") -> Page:
 class FakeClient:
     """Stands in for PoliteClient, serving canned HTML with no network."""
 
-    def __init__(self, pages: dict[str, str]) -> None:
+    def __init__(self, pages: dict[str, str], encoding: str = "utf-8") -> None:
         self.pages = pages
+        self.encoding = encoding
+        """Some sites are cp932 and a scraper may decode the raw body itself."""
         self.requested: list[str] = []
 
     def get(self, url: str, *, force: bool = False) -> Page:
         self.requested.append(url)
         if url not in self.pages:
             raise AssertionError(f"unexpected request for {url}")
-        return make_page(url, self.pages[url])
+        return make_page(url, self.pages[url], self.encoding)
 
 
 @pytest.fixture

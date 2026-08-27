@@ -35,6 +35,17 @@ class BaseScraper(ABC):
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         """Turn a fetched detail page into a Meeting."""
 
+    def fetch_meeting(self, ref: MeetingRef, client: PoliteClient) -> Page:
+        """Fetch the page `parse_meeting` will be given.
+
+        Almost always one GET of `ref.url`. The hook exists because a transcript
+        is not always at a URL the index can hand you: `kensakusystem.jp` serves
+        a sitting only in response to the list of character offsets that another
+        page carries, so reaching it takes two requests and the second URL cannot
+        be known at listing time.
+        """
+        return client.get(str(ref.url))
+
     def scrape(
         self,
         client: PoliteClient,
@@ -61,7 +72,7 @@ class BaseScraper(ABC):
                 continue
 
             try:
-                page = client.get(str(ref.url))
+                page = self.fetch_meeting(ref, client)
                 meeting = self.parse_meeting(ref, page)
             except FetchError as exc:
                 log.error("could not fetch %s: %s", ref.url, exc)
