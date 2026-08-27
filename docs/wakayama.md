@@ -58,7 +58,47 @@ site links a 人名等の正しい表記 page. Worth capturing as a corpus cavea
 same class of problem as 静岡's cp932 characters, but here the *source* has already
 lost the character, so no decoding fix can recover it.
 
-## What the scraper still needs
+## Implemented
 
-`GenericScraper` has one listing level (`list.meeting_link` + `next_page`). This
-site has two. See `docs/collection-targets.md` — the same gap blocks 愛媛.
+`sites/wakayama.toml`, on the intermediate listing level added to `GenericScraper`
+(`list.index_link` / `index_include` / `max_depth`, plus a symmetric `list.include`).
+
+Verified against live pages, three ways:
+
+| Run | Result |
+| --- | --- |
+| 令和6年6月定例会 (`d00217972`) | 8 sittings, 520 speeches, 222,065 chars, 2024-06-11 .. 06-28 |
+| 平成12年12月定例会 (`p040100`) | 7 sittings, 326 speeches, 250,469 chars, 2000-12-01 .. 12-19 |
+| Full index, `--limit 3` | walks index → session → sitting unaided |
+
+37 distinct speakers in the first run, no empty speaker, roles correctly separated
+from names.
+
+## Three traps this site set, all of the same kind
+
+Each is a case of "one form is not all forms", and each fails *silently*.
+
+1. **Bare member names.** Handled by making the office prefix optional — see above.
+   静岡's rule scored 72 of 98 on 令和6年6月第3号.
+
+2. **The circle is two different characters.** Most documents mark speeches with
+   ○ (U+25CB), but 令和6年6月第1号 uses 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO) for all
+   21 of its speeches. The first live run parsed that sitting to zero speeches and
+   said so; nothing else would have shown it. Accepting both recovered 21 speeches
+   and changed no other document's count over a six-document sample.
+
+3. **〇 is also a numeral.** 平成12年12月第2号 contains 53 of them inside body text
+   (「二〇〇三年度」). Requiring the name to end in 「君」 rejects every one — the same
+   requirement that keeps the attendance roster out, doing double duty.
+
+**Checked and not a problem here:** the 議長 addresses women as さん in speech
+(「６番森礼子さん」), which would break a 「君」-only rule. But the *markers* use 君 for
+every member regardless of gender. Verified across nine documents: zero markers
+ending in さん or 氏. Do not assume this carries to another prefecture.
+
+## Dates
+
+The archive changes numeral form partway through — 「令和６年６月19日（水曜日）」 in
+recent years, 「平成十二年十二月八日（金曜日）」 before that. `dates.py` gained a
+漢数字 reader for this (`kanji_to_int`), which also covers 「昭和六十一年」 and so will
+be needed again for 兵庫.

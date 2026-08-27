@@ -33,6 +33,28 @@ next_page = "a.next"
 # pages that mix transcripts with 【目次】 entries, notices and the like.
 # exclude = '目次|お知らせ'
 
+# Optional: regex; when set, ONLY links whose text or URL match are followed.
+# The counterpart to `exclude`, for pages where transcripts are the exception
+# rather than the rule — 和歌山 lists each member's question next to the whole
+# sitting, and only the 「◎第３号全文」 links should be taken. `exclude` still wins.
+# include = '全文'
+
+# --- a second listing level ---------------------------------------------------
+#
+# Many assemblies publish index → session → sitting, where the middle page is
+# another list rather than a transcript (和歌山, 愛媛). `index_link` selects the
+# links leading to that middle page; `meeting_link` and `index_link` are both
+# applied at every level, so the two sets usually separate themselves.
+#
+# Where the levels are told apart only by the link's *text* — a CMS rendering
+# both as a bare <a> in the same block — filter with the regexes.
+# index_link    = 'div.article a[href*="/gijiroku/"]'
+# index_include = '(定例会|臨時会)$'
+# index_exclude = 'お知らせ'
+
+# How many listing levels to walk, counting the start URL as level 1.
+max_depth = 3
+
 # Safety cap on pagination.
 max_pages = 50
 
@@ -52,6 +74,13 @@ text    = "p"
 # prefix every utterance with 「○」 plus the speaker's office and name, so this
 # usually looks like the line below. Ignored when `speech` is set.
 # speech_split = '○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24})[）)]'
+#
+# Read `docs/wakayama.md` before copying that line: the office prefix is not
+# always present, the circle is sometimes 〇 (U+3007) rather than ○ (U+25CB), and
+# requiring the trailing 「君」 is what keeps attendance rosters and stray numerals
+# out. All three failures are silent. A form that fits more of one site's
+# documents looks like this:
+# speech_split = '[○〇](?:(?P<role>[^（(\n]{1,24})[（(])?(?P<speaker>[^（()）\n]{1,24}君)[）)]?'
 
 # Optional metadata, read from within `container`.
 date      = "span.date"

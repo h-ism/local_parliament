@@ -2,6 +2,126 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-27 — 和歌山, and a second listing level (`feat/wakayama`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Second config in the project, and the first general listing feature. Verified
+against live pages on both generations of the archive; **no full crawl has been
+run** — that is still a decision to take.
+
+**Added**
+
+- `list.index_link` / `index_include` / `index_exclude` / `max_depth` — an
+  intermediate listing level, for sites shaped index → session → sitting. Both
+  和歌山 and 愛媛 are this shape, so it is the domain's shape rather than a
+  per-site hack. `meeting_link` and `index_link` are applied at every level and
+  usually separate themselves; `max_depth` bounds the walk regardless.
+- `list.include` — the symmetric counterpart to `exclude`, for index pages where
+  transcripts are the exception rather than the rule.
+- Fragment-stripping on link resolution. 和歌山 links one document several times at
+  different anchors (`p040078.html#00` for 全文, `#01` for a member's question);
+  without this the `seen` set fails to deduplicate and the page is fetched twice.
+- `dates.py`: 漢数字 和暦 (`kanji_to_int`). Minutes before roughly the mid-2000s
+  print 「平成十二年十二月八日（金曜日）」. Tried after the ordinary 和暦 pattern so it
+  cannot steal a match. Also reads 「昭和六十一年」, which 兵庫 will need.
+- `sites/wakayama.toml`, `docs/wakayama.md`; new options documented in
+  `_example.toml`.
+
+**Verified**
+
+| Run | Result |
+| --- | --- |
+| 令和6年6月定例会 | 8 sittings, 520 speeches, 222,065 chars, 2024-06-11 .. 06-28 |
+| 平成12年12月定例会 | 7 sittings, 326 speeches, 250,469 chars, 2000-12-01 .. 12-19 |
+| Full index, `--limit 3` | walks index → session → sitting unaided |
+
+37 distinct speakers in the first run, no empty speaker, roles separated from
+names. `ruff`, `mypy --strict`, `pytest` (57) clean.
+
+**Three traps, all silent, all the same kind**
+
+1. **Bare member names.** Office-holders are 「○知事（岸本周平君）」 but members are
+   「○濱口太史君」 with no parentheses. 静岡's rule scores 72 of 98 markers on
+   令和6年6月第3号 and drops *every member speech* — the substance of the corpus.
+   Caught before running, by counting what the rule matched against a sample.
+
+2. **The circle is two characters.** 令和6年6月第1号 marks all 21 of its speeches
+   with 〇 (U+3007), not ○ (U+25CB). This was **not** caught by reading; the first
+   live run parsed that sitting to zero speeches and warned. Same signature as the
+   静岡 encoding bug — a sitting that comes back empty is the standard smoke test,
+   and it earned its keep twice now. Accepting both circles recovered 21 speeches
+   and changed no other document's count across a six-document sample.
+
+3. **〇 is also a numeral.** 平成12年12月第2号 contains 53 inside body text
+   (「二〇〇三年度」). The 「君」 requirement rejects all of them — the same rule that
+   keeps the attendance roster out, doing double duty.
+
+**Checked, and not a problem here — but do not assume it elsewhere**
+
+和歌山's 議長 addresses women as さん aloud (「６番森礼子さん」), which a 「君」-only rule
+would break. The *markers* use 君 for every member regardless of gender: verified
+across nine documents, zero markers ending in さん or 氏. On a site that marks them
+さん, a 「君」-only rule would drop women's speeches wholesale. That is a corpus-bias
+problem, not a parsing detail, and it is now noted in CLAUDE.md.
+
+**Not done**
+
+The full 平成2年–令和8年 crawl. Roughly 1 + ~150 session pages + one request per
+sitting; nothing about it is blocked, it just has not been authorised.
+委員会会議録 (`/gijiroku2/`) is untouched.
+
+### 日本語
+
+本プロジェクト2つ目の設定と、最初の汎用一覧機能。新旧両世代の実ページで検証済み。
+**全期間の収集はまだ実行していない**（判断待ち）。
+
+**追加**
+
+- `list.index_link` ほか — 「索引 → 会期 → 会議」型のための中間一覧階層。和歌山も
+  愛媛もこの形なので、場当たりではなくこの領域の形。`max_depth` で walk を制限。
+- `list.include` — `exclude` の対。会議録が例外側にある索引ページ向け。
+- リンク解決時のフラグメント除去。和歌山は同一文書を複数のアンカーで張るため、
+  これがないと重複除去に失敗し二度取得する。
+- `dates.py` に漢数字和暦（`kanji_to_int`）。2000年代半ば以前は
+  「平成十二年十二月八日（金曜日）」形式。「昭和六十一年」も読めるので兵庫でも要る。
+- `sites/wakayama.toml`、`docs/wakayama.md`、`_example.toml` に新オプションを記載。
+
+**検証結果**
+
+令和6年6月定例会＝8会議・520発言・222,065字。平成12年12月定例会＝7会議・326発言・
+250,469字。索引からの全階層 walk も `--limit 3` で確認。発言者37名、空の発言者なし。
+`ruff` / `mypy --strict` / `pytest`（57件）すべて通過。
+
+**3つの罠 — いずれも黙って失敗する同種のもの**
+
+1. **括弧なしの議員名。** 理事者は「○知事（岸本周平君）」、議員は「○濱口太史君」。
+   静岡の規則では令和6年6月第3号で98件中72件しか取れず、**議員発言を全部落とす**。
+   サンプルに対して一致件数を数えたので、実行前に捕まえられた。
+
+2. **丸が2種類ある。** 令和6年6月第1号は21発言すべてを ○(U+25CB) ではなく
+   **〇(U+3007)** で標識している。これは読んでも気づけず、**最初の実収集で
+   「発言0件」の警告が出て**判明した。静岡の文字コードバグと同じ兆候で、
+   「発言0件」は今回も検出手段として機能した。両方を許すと21発言を回収し、
+   他の文書の件数は6文書のサンプルで一件も変わらなかった。
+
+3. **〇 は数字でもある。** 平成12年12月第2号の本文に「二〇〇三年度」等が53件。
+   末尾「君」の要求が全部弾く。出席議員名簿を弾く規則と同じものが二役を果たしている。
+
+**確認済み・ここでは問題なし。ただし他県で前提にしないこと**
+
+和歌山の議長は発言中で女性を「さん」と呼ぶ（「６番森礼子さん」）。しかし**標識**は
+性別にかかわらず「君」。9文書で確認し、さん・氏で終わる標識は0件だった。標識に
+「さん」を使うサイトでは、「君」限定の規則は**女性議員の発言を丸ごと落とす**。
+これは解析上の細部ではなくコーパスの偏りの問題なので、CLAUDE.md に記載した。
+
+**未実施**
+
+平成2年〜令和8年の全期間収集（索引1＋会期約150＋会議ごとに1リクエスト）。
+技術的な障害はなく、実行の可否が未決なだけ。委員会会議録（`/gijiroku2/`）は未着手。
+
 ## 2026-08-27 — Re-opening the leads: four prefectures are collectable (`survey/collectable-targets`)
 
 *English and Japanese. / 英語と日本語で併記する。*

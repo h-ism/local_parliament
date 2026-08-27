@@ -91,20 +91,24 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 - **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
   The full archive (平成11年 onwards) waits on a question about the site's
   `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **和歌山** — plain UTF-8 HTML on the prefecture's CMS, robots.txt 404, pages
-  marked `index, follow`. One index page → ~150 sessions → per-sitting full text,
-  平成2年 to 令和8年. The best target found. `docs/wakayama.md`.
+- **和歌山** — `sites/wakayama.toml`, verified against live pages on both the
+  modern and the 平成-era generation. Plain UTF-8 HTML on the prefecture's CMS,
+  robots.txt 404, pages marked `index, follow`; one index page → ~150 sessions →
+  per-sitting full text, 平成2年 to 令和8年. **No full crawl run yet.**
+  `docs/wakayama.md`.
 - **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
   the whole flow works over GET. Two requests per sitting, because the site's own
   download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
   text. 兵庫 reaches 昭和61年. `docs/kensakusystem.md`.
 
-**The single highest-value code change**
+**The next code change**
 
-`GenericScraper` models a listing as one level plus pagination, but 和歌山 and 愛媛
-are both index → session → sitting. Adding an intermediate listing level opens four
-prefectures at once. It is a real shape in this domain, not a per-site hack.
-愛媛 additionally needs `speech_split` to work on a body that is not HTML.
+The intermediate listing level is done: `list.index_link` / `index_include` /
+`index_exclude` / `max_depth`, a symmetric `list.include`, and fragment-stripping
+when a link is resolved. 愛媛 can now reuse all of it and needs two things more —
+`speech_split` against a body that is not HTML, and a listing step that gathers
+`downloadPos` values into a `GetPerson.exe` URL. The second may be cheaper as a
+small `BaseScraper` subclass than as config. See `docs/kensakusystem.md`.
 
 **Blocked, and why it is not a scraping problem**
 
@@ -152,6 +156,16 @@ quirks.
   parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
   A split rule copied from another prefecture will match the minority form and drop
   the rest silently. Count what a rule catches against a sample before trusting it.
+- **The 「○」 is not always the same character.** 和歌山 marks most sittings with
+  ○ (U+25CB) but one with 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO), and 〇 is *also* the
+  numeral in 「二〇〇三年度」. Match both circles and require the 「君」 suffix; the
+  suffix rejects the numerals and the roster in one rule. This one surfaced only
+  as a sitting that parsed to zero speeches — the same signature as the 静岡
+  encoding bug, and worth treating as the standard smoke test.
+- **Honorifics are not uniform across prefectures.** 和歌山 marks every member
+  「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud. A 「君」-only
+  rule would drop women's speeches wholesale on any site that marks them 「さん」.
+  Verify per site — it is a corpus-bias problem, not a parsing detail.
 - **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
   roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
   the 「君」 honorific separated them. Verify a split rule against a sample and

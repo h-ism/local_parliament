@@ -13,14 +13,15 @@ a second listing level — plus one small parsing addition, opens **four prefect
 
 ## Tier 1 — collectable now, nothing to ask anyone
 
-### 1. 和歌山 — the best target found
+### 1. 和歌山 — the best target found — **implemented 2026-08-27**
 
 robots.txt 404, pages marked `index, follow`, UTF-8, no vendor system. One index
 page lists ~150 sessions covering **平成2年 (1990) – 令和8年 (2026)**; each session
 page lists its sittings; each sitting is a single HTML page with the full text.
 
 Cost: 1 + ~150 + (number of sittings) requests for the entire 36-year archive.
-Detail in `docs/wakayama.md`.
+Detail in `docs/wakayama.md`. `sites/wakayama.toml` now exists and is verified
+against both the modern and the 平成-era generation; no full crawl has been run.
 
 The one trap: members speak as bare `○濱口太史君` while office-holders use
 `○知事（岸本周平君）`. 静岡's parenthesis-only split rule would silently discard the
@@ -45,7 +46,7 @@ date filter here saves requests instead of arriving too late.
 Detail, including the exact URL forms and the cp932 percent-encoding of `treedepth`,
 in `docs/kensakusystem.md`.
 
-### What both need — the single highest-value code change
+### What both need — done for 和歌山, still open for 愛媛
 
 `GenericScraper` models a listing as one level: `list.meeting_link` plus
 `next_page` pagination. Both targets are **year/index → session → sitting**. The
@@ -127,8 +128,8 @@ which is also where our two Tier-1 targets are cheapest.
 
 1. Ask local-politics.jp what they can share for the research window. Costs one
    email and may remove most of the work.
-2. Add the intermediate listing level to `GenericScraper`.
-3. `sites/wakayama.toml` — simplest site, no permission question, 36 years.
+2. ~~Add the intermediate listing level to `GenericScraper`.~~ — done.
+3. ~~`sites/wakayama.toml`~~ — done. Decide whether to run the full 36-year crawl.
 4. `sites/ehime.toml` + the non-HTML detail path; then 三重 and 兵庫 for free,
    with 兵庫 reaching back to 1986.
 5. Send the SSP letters (vendor and assemblies), covering both the API endpoint and
