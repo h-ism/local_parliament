@@ -60,9 +60,21 @@ second may be cheaper as a small `BaseScraper` subclass than as config.
 
 ---
 
-## Tier 2 — SSP, 18 prefectures, still one fact short
+## Tier 2 — SSP, 18 prefectures — **blocked; corrected 2026-08-27**
 
-Unchanged verdict, but the ground is better prepared.
+The missing fact arrived and reversed the verdict. `config.js` declares
+
+```js
+dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
+```
+
+and `/dnp/search/` is not under `/tenant/`, so `Disallow: /` covers it with no
+`Allow:` in reach — DENY under `urllib.robotparser`, and under RFC 9309's
+longest-match reading too. **The shell pages are crawlable; the data is not.**
+
+That puts these 18 with the blocked assemblies below: the way through is a letter,
+not a scraper. Everything in the rest of this section still holds and is what makes
+the letter concrete — keep it.
 
 **Done:** every tenant's numeric id, read from `/tenant/<tenant>/js/<…>.js`, which is
 **not** under any `Disallow` rule (`Disallow: /tenant/js/` matches only the shared
@@ -81,11 +93,16 @@ directory, not `/tenant/prefosaka/js/`).
 pure client-side shell — `<span id="council-title">` is empty in the served HTML.
 So there is no server-rendered route; the API is genuinely required.
 
-**Still blocked on:** the endpoint, which is defined in
-`/tenant/js/release/config.js` — the shared path, and squarely under
-`Disallow: /tenant/js/`. It has not been fetched. The vendor is NTT Advanced
-Technology (the scripts carry an `ntt-at.co.jp` author header); the draft letter is
-`docs/inquiries/ssp-vendor.md`.
+**The endpoint** is `/dnp/search/`, read from `/tenant/js/release/config.js` — a
+disallowed path, opened by the researcher in a browser rather than by the crawler.
+Browse endpoints, for whenever permission exists: `councils/index`,
+`councils/get_view_years`, `councils/view`, `minutes/get_schedule`,
+`minutes/get_minute`, `minute_searches/search`.
+
+**The vendor is NTT Advanced Technology Co., Ltd.**, from the copyright header of
+`config.js`. The earlier note that the page carries "a DNP logo" was a misreading:
+the product is **Discuss Net Premium**, its namespace is `dnp.*`, and DNP is that
+name — not 大日本印刷. The draft letter is `docs/inquiries/ssp-vendor.md`.
 
 **A second question, independent of robots.** 大阪's own page states:
 
@@ -130,7 +147,10 @@ which is also where our two Tier-1 targets are cheapest.
    email and may remove most of the work.
 2. ~~Add the intermediate listing level to `GenericScraper`.~~ — done.
 3. ~~`sites/wakayama.toml`~~ — done. Decide whether to run the full 36-year crawl.
-4. `sites/ehime.toml` + the non-HTML detail path; then 三重 and 兵庫 for free,
-   with 兵庫 reaching back to 1986.
-5. Send the SSP letters (vendor and assemblies), covering both the API endpoint and
-   the reuse condition.
+4. ~~`sites/ehime.toml` + the non-HTML detail path~~ — done. 三重 and 兵庫 are next
+   and should be a config each, with 兵庫 reaching back to 1986.
+5. Send the SSP letters. Now a permission request, not a how-to: the API is
+   disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
+   it is the only one of the 18 that names a destination on its own page.
+6. Set `PT_CONTACT`. Every letter promises a contact address in the User-Agent and
+   the default is still `research-crawler@example.invalid`.
