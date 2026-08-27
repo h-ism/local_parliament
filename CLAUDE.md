@@ -79,21 +79,32 @@ Modules under `src/prefectural_transcripts/`:
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
 
-## Where this stands (updated 2026-08-26)
+## Where this stands (updated 2026-08-27)
 
-Read `docs/prefecture-survey.md` first — it maps all 47 assemblies to their
-minutes system, the `robots.txt` verdict, and whether the pages are scrapeable.
-Per-site detail is in `docs/<prefecture>.md`; drafted letters are in
-`docs/inquiries/` with a README index.
+Read `docs/collection-targets.md` first — it is the ranked answer to "where can we
+collect", with the cost of each target. `docs/prefecture-survey.md` still maps all
+47 assemblies but two of its verdicts are now superseded. Per-site detail is in
+`docs/<prefecture>.md`; drafted letters are in `docs/inquiries/`.
 
 **Collectable today**
 
 - **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
   The full archive (平成11年 onwards) waits on a question about the site's
   `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **三重・兵庫・愛媛** (`kensakusystem.jp`) — no robots.txt, server-rendered CGI,
-  nothing written yet. The likeliest next config, and `speech_split` / `patterns`
-  should carry over.
+- **和歌山** — plain UTF-8 HTML on the prefecture's CMS, robots.txt 404, pages
+  marked `index, follow`. One index page → ~150 sessions → per-sitting full text,
+  平成2年 to 令和8年. The best target found. `docs/wakayama.md`.
+- **愛媛・三重・兵庫** (`kensakusystem.jp`) — no robots.txt, `follow,index`, and
+  the whole flow works over GET. Two requests per sitting, because the site's own
+  download button (`GetPerson.exe`) accepts GET and returns the sitting as plain
+  text. 兵庫 reaches 昭和61年. `docs/kensakusystem.md`.
+
+**The single highest-value code change**
+
+`GenericScraper` models a listing as one level plus pagination, but 和歌山 and 愛媛
+are both index → session → sitting. Adding an intermediate listing level opens four
+prefectures at once. It is a real shape in this domain, not a per-site hack.
+愛媛 additionally needs `speech_split` to work on a body that is not HTML.
 
 **Blocked, and why it is not a scraping problem**
 
@@ -103,14 +114,23 @@ through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it �
 that is the researcher's call, not ours, and it contradicts the politeness
 convention above.
 
-**The single highest-value open task**
+**SSP — 18 prefectures, one fact short**
 
-18 prefectures sit on SSP (`ssp.kaigiroku.net`), whose robots.txt *allows*
-`/tenant/`. They are unreachable only because the pages are a JavaScript app whose
-data endpoint is defined in `/tenant/js/release/config.js` — one of the four
-disallowed directories, so it has not been read. Getting that endpoint another way
-(a browser's network tab, or asking the vendor) unlocks 18 assemblies through one
-implementation. See `docs/inquiries/ssp-vendor.md`.
+`ssp.kaigiroku.net` robots.txt *allows* `/tenant/`, and all 18 numeric tenant ids
+are now recorded in `docs/collection-targets.md` (read from per-tenant scripts,
+which are not under `Disallow: /tenant/js/` — that rule matches the shared
+directory only). What is still missing is the API endpoint, defined in
+`/tenant/js/release/config.js`, which *is* disallowed and has not been fetched.
+The pages are a pure client-side shell, so there is no server-rendered fallback.
+Note a second condition robots says nothing about: 大阪's page states the data
+rights belong to the assembly and reuse should be cleared with 議会事務局.
+See `docs/inquiries/ssp-vendor.md`.
+
+**Before any large crawl**
+
+The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already covers all
+47 assemblies for 2011–2014 and 2015–2019. If the research window sits inside that,
+most of this work is redundant; the genuine gap is 2020 onwards. Settle this first.
 
 ## Things that will bite again
 
@@ -127,6 +147,11 @@ quirks.
 - **One label is rarely enough.** 静岡 labels the date 質問日 on question
   documents and 発言日 on report documents; matching one left 60 of 113 records
   undated. Check a sample of *each document type*, not just the interesting one.
+- **Speech markers come in more than one form on the same page.** 和歌山 writes
+  office-holders as 「○知事（岸本周平君）」 but members as bare 「○濱口太史君」, with no
+  parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
+  A split rule copied from another prefecture will match the minority form and drop
+  the rest silently. Count what a rule catches against a sample before trusting it.
 - **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
   roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
   the 「君」 honorific separated them. Verify a split rule against a sample and
