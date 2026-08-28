@@ -14,9 +14,10 @@ a second listing level — plus one small parsing addition, opens **four prefect
 ## Tier 1 — collectable now, nothing to ask anyone
 
 **Collected on this product (2026-08-28):** 三重 819 sittings / 47,279 speeches /
-1989-02-28 .. 2026-03-31, and 兵庫 809 / 42,310 / **1986-02-22** .. 2026-06-11 —
-the oldest material in the corpus. 愛媛 stands at 204 / 11,548, three of them
-recovered from a URL-length failure. Detail in `docs/kensakusystem.md`.
+1989-02-28 .. 2026-03-31, 兵庫 809 / 42,314 / **1986-02-22** .. 2026-06-11 — the
+oldest material in the corpus — and 愛媛 666 / 39,624 / 1991-06-27 .. 2026-03-19.
+Nothing is left uncollected on any of the three except the corpus window itself.
+Detail in `docs/kensakusystem.md`.
 
 ### 1. 和歌山 — the best target found — **implemented 2026-08-27**
 
@@ -175,7 +176,7 @@ our side can establish.
    and item 1 decides whether we crawl it. 委員会会議録 (`/gijiroku2/`) untouched.
 4. ~~`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`~~ — done. The three
    needed a scraper change each, not a config each; 兵庫 reaches 昭和61年 (1986).
-   Still uncollected on this product: 愛媛 平成3年–2011年, and every 委員会.
+   Still uncollected on this product: every 委員会. The 本会議 archives are done.
 5. Send the SSP letters. Now a permission request, not a how-to: the API is
    disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
    it is the only one of the 18 that names a destination on its own page.

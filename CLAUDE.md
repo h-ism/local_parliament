@@ -100,14 +100,14 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
   robots.txt 404, pages marked `index, follow`; one index page → 167 sessions →
   per-sitting full text. 2011-04 .. 2019-03 is deliberately absent: the
   地方議会会議録コーパス already covers it. `docs/wakayama.md`.
-- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 204
-  sittings, 11,548 speeches, 2019-05-15 .. 2026-03-19** (the gap the corpus leaves
-  after 2019-03); 平成3年–2011年 still to do. Three of those 204 were missing until
-  2026-08-28 — see the URL-length note below. `docs/kensakusystem.md`.
+- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 666
+  sittings, 39,624 speeches, 1991-06-27 .. 2026-03-19** — the whole archive from
+  平成3年第229回定例会, which is where the site's own coverage starts.
+  `docs/kensakusystem.md`.
 - **三重** — `sites/mie.toml`, same scraper. **Collected: 819 sittings, 47,279
   speeches, 1989-02-28 .. 2026-03-31.** Prints office and name separately, which
   愛媛 cannot: 269 distinct roles.
-- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 809 sittings, 42,310
+- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 809 sittings, 42,314
   speeches, 1986-02-22 .. 2026-06-11** — the deepest archive in the survey. One
   request per sitting via 全文表示.
 
@@ -201,6 +201,15 @@ quirks.
   numeral produced four more. Found only by sorting the speaker list by length and
   grepping it for digits and punctuation. **Do that on every corpus before
   trusting it.**
+- **A bound in a rule is a claim about the data, and it will be wrong.** The
+  unified `speech_split` for 愛媛・三重・兵庫 capped a speaker at 24 characters,
+  which is generous until 「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」
+  turns up — 29 characters, a real speaker, and one of the very names this project
+  already cites elsewhere. It also excluded `)` from a name, until
+  「○（大北秀特命担当部長(会計管理者)）」 turned up. Both losses were three speeches in
+  a 11,548-speech corpus and neither warned. **Re-parse and diff before and after
+  a rule change** — it costs nothing from cache and it is the only thing that sees
+  a loss this small.
 - **Judge a candidate rule by what it loses, not only by what it fixes.** Three
   fixes for the same four false positives lost 7, 15 and 0 real speeches
   respectively; all three looked reasonable written down. Re-parsing the whole

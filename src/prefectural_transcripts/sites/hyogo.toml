@@ -39,7 +39,7 @@ years = []
 # （氏名＋議員） with the役職 slot empty. The same rule takes both, and 昭和61年
 # reads identically apart from the 「君」 honorific, which `_clean_speaker` strips.
 #
-# The trailing space is what separates 「○議事日程（第３号）」 — a heading with the
+# What follows the closing bracket is what separates 「○議事日程（第３号）」 — a heading with the
 # exact shape of a marker — from a speech. Counted on 6 sample sittings across
 # 昭和61年 and 令和7年: every real speech taken, only the 議事日程 line left.
 #
@@ -48,4 +48,4 @@ years = []
 # 議長 would use for them, and the same shape 昭和61年 already has (where the
 # honorific is 「君」 and `_clean_speaker` takes it). Verified to change nothing
 # else: the same 190 and 70 speeches are found with and without it.
-speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）)\n]{1,24}?)(?:議員)?[）)][ 　]'
+speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])'

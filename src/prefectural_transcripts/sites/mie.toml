@@ -35,8 +35,8 @@ years = []
 # yields **0 speeches on every document**: it requires 「○（」 and 三重 never writes
 # that. Verified against 平成元年 and 令和7年, both generations.
 #
-# The trailing space is load-bearing. 「○議事日程（第１号）」 has the same shape as a
+# What follows the closing bracket is load-bearing. 「○議事日程（第１号）」 has the same shape as a
 # speech marker and ends the line; requiring a space after the bracket is what
 # separates a heading from someone speaking. Counted on 4 sample sittings: it
 # takes every real speech and leaves exactly the 議事日程 line.
-speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）)\n]{1,24})[）)][ 　]'
+speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])'

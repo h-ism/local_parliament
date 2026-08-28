@@ -408,3 +408,43 @@ def test_a_long_sitting_is_fetched_in_chunks() -> None:
     assert [s.speaker for s in meeting.speeches] == [f"{i}番議員" for i in range(len(chunks))]
     # ...and the header the CGI repeats on each response did not land inside a speech.
     assert all("開催日" not in s.text for s in meeting.speeches)
+
+
+# --- the marker rule, and the three documents that shaped its bounds -----------
+
+UNIFIED_SPLIT = (
+    r"(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)"
+    r"(?:議員)?[）)](?=[ 　（(])"
+)
+
+
+def test_the_marker_rule_takes_every_form_these_sites_write() -> None:
+    """One rule for 愛媛・三重・兵庫, each bound paid for by a real document.
+
+    Every line here is the shape one of the three actually serves; the ones that
+    must *not* match are headings that wear a marker's exact shape.
+    """
+    from prefectural_transcripts.scrapers.generic import split_speeches
+
+    text = "\n".join(
+        [
+            "○議事日程（第３号）",  # a heading: ends its line
+            "〇出席議員　45名",  # a roster, and the other circle
+            "○知事（一見勝之）　三重は役職を外に書く。",
+            "○（三宅浩正議長）　愛媛の現行はすべて括弧の中。",
+            "○（北野　実議員）　兵庫の議員は議員付き。",
+            "○47番（岡田己宜君）（拍手）平成の愛媛は拍手で始まる。",
+            "○（毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長）　29文字の実在の話者。",
+            "○（大北秀特命担当部長(会計管理者)）　名前の中に半角括弧がある。",
+        ]
+    )
+    got = [(s.role, s.speaker) for s in split_speeches(text, UNIFIED_SPLIT)]
+
+    assert got == [
+        ("知事", "一見勝之"),
+        (None, "三宅浩正議長"),
+        (None, "北野　実"),
+        ("47番", "岡田己宜"),  # 「君」 goes in _clean_speaker
+        (None, "毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長"),
+        (None, "大北秀特命担当部長(会計管理者)"),
+    ]

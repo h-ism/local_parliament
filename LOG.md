@@ -2,6 +2,137 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-28 — 愛媛's archive, and a rule that had to be widened twice (`feat/ehime-archive`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The remaining 愛媛: **平成3年 (1991) to 2011-03**, which finishes the 本会議 archive
+on this product. `sites/ehime.toml` had `years` pinned to 平成31年 onwards from the
+first collection; opening it to `[]` and excluding the corpus window with
+`--until` was meant to be the whole change.
+
+**It was not, because 愛媛 has two marker generations.**
+
+```
+令和7年  「○（三宅浩正議長）　理事者の答弁を求めます。」
+平成3年  「○47番（岡田己宜君）（拍手）統一地方選挙後初めての定例県議会において…」
+```
+
+The 平成 documents are 三重's shape — office outside the brackets, name inside,
+「君」 honorific — and the config's rule requires 「○（」. It matches **0 lines of
+every 平成 document**. Running first and reading afterwards would have produced an
+entire archive of zero-speech warnings.
+
+So all three tenants now share one rule. Getting there cost two corrections, and
+both were found the way this repository keeps saying to find things: re-parse from
+cache and diff, rather than look at the new documents and declare victory.
+
+**First correction — what the rule lost.** Unifying on the 三重/兵庫 rule dropped
+**three speeches from the modern 愛媛 corpus**, 11,548 → 11,545. Two causes:
+
+- **The 24-character cap on a speaker.** 「毛利修三愛媛県の未来を創る農業・農村振興
+  条例審査特別委員長」 is 29 characters and is a real speaker — one of the very names
+  `docs/kensakusystem.md` already cites as the reason 愛媛's name and office cannot
+  be split. The bound is 40 now, which is what the old 愛媛 rule always allowed.
+- **`)` excluded from a name.** 「○（大北秀特命担当部長(会計管理者)）」 exists. The
+  group stopped at the inner ASCII bracket, so the speaker was cut short and the
+  speech began with 「）」 — **wrong under the old rule too**, and invisible until
+  two parses were diffed against each other.
+
+**Second correction — what it needed to gain.** 平成3年 opens speeches with
+applause: 「○47番（岡田己宜君）（拍手）…」. A rule requiring a space after the closing
+bracket loses those. The lookahead accepts a space *or* an opening bracket, which
+keeps 「○議事日程（第３号）」 — a heading with a marker's exact shape — excluded,
+because a heading ends its line.
+
+Re-parsed from cache afterwards, all three: 三重 unchanged at 47,279, 兵庫 **+4**
+(the applause openings it also had), 愛媛 back to 11,548 with the long
+committee-chair names intact. Zero requests for any of it.
+
+**Collected**
+
+```
+愛媛  666 sittings  39,624 speeches  23,354,176 chars  1991-06-27 .. 2026-03-19
+```
+
+1991-06-27 is 平成3年第229回定例会, which is exactly where the site says its coverage
+begins — the range edge lands on the documented start rather than near it.
+Nothing undated, no sitting without speeches, no duplicate URL, no honorific
+split, and of the 909 sittings the listing offers, **the 243 not collected are all
+inside the corpus window**.
+
+The two generations do not change over at 2011: `role` is populated for 11,214 of
+the 27,734 speeches in the 平成 archive, so the site switched forms partway
+through. One rule has to take both, which is now what it does.
+
+**Files**
+
+`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`,
+`tests/test_kensakusystem.py`, `CLAUDE.md`, `docs/kensakusystem.md`,
+`docs/collection-targets.md`.
+
+### 日本語
+
+愛媛の残り **平成3年（1991）〜2011年3月**。これでこの製品上の本会議アーカイブは
+完了。`sites/ehime.toml` は初回収集時から `years` を平成31年以降に固定していたので、
+`[]` に開いて `--until` でコーパス窓を除くだけ — のはずだった。
+
+**そうはならなかった。愛媛には標識が2世代ある。**
+
+```
+令和7年  「○（三宅浩正議長）　理事者の答弁を求めます。」
+平成3年  「○47番（岡田己宜君）（拍手）統一地方選挙後初めての定例県議会において…」
+```
+
+平成期は三重型（役職が括弧の外・氏名が中・「君」付き）で、設定の規則は 「○（」 を
+要求する。**平成の全文書で一致0件**。先に走らせて後で読んでいたら、アーカイブ全体が
+「発言0件」の警告で埋まっていた。
+
+そこで3テナントを1つの規則に統一した。到達までに2回の訂正が必要で、どちらも
+**キャッシュから再パースして差分を取る**という、このリポジトリが繰り返し書いている
+やり方でしか見つからなかった。
+
+**訂正その1 — 規則が失ったもの。** 三重・兵庫の規則に統一したところ、**現行愛媛の
+コーパスから3発言が消えた**（11,548 → 11,545）。原因は2つ。
+
+- **話者24文字上限。** 「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長」
+  は29文字で、実在の話者 — しかも `docs/kensakusystem.md` が「愛媛では氏名と役職を
+  分離できない」根拠として挙げていた、まさにその名前。旧愛媛規則が許していた40文字に
+  戻した。
+- **氏名から `)` を除外していた。** 「○（大北秀特命担当部長(会計管理者)）」が実在する。
+  内側の半角括弧で氏名が切れ、発言本文が 「）」 から始まっていた — **旧規則でも
+  壊れていた**のに、2つのパースを突き合わせるまで見えなかった。
+
+**訂正その2 — 規則が得るべきだったもの。** 平成3年の発言は拍手で始まる
+（「○47番（岡田己宜君）（拍手）…」）。閉じ括弧の後に空白を要求する規則はこれを落とす。
+先読みを「空白**または**開き括弧」にした。これでも 「○議事日程（第３号）」 — 標識と
+同形の見出し — は除外されたままである（見出しはそこで行が終わる）。
+
+その後3県をキャッシュから再パース: 三重 47,279で不変、兵庫 **+4**（同じく拍手始まりを
+持っていた）、愛媛は長い委員長名を保ったまま11,548へ復帰。**リクエスト0件**。
+
+**収集**
+
+```
+愛媛  666会議  39,624発言  23,354,176字  1991-06-27 .. 2026-03-19
+```
+
+1991-06-27 は平成3年第229回定例会で、**サイトが公表する収録開始とちょうど一致**する
+（「近い」ではなく一致）。日付欠落なし、発言0件の会議なし、URL重複なし、敬称分裂なし。
+索引が挙げる909会議のうち、**未収集243件はすべてコーパス窓の内側**。
+
+なお2世代は2011年で切り替わるわけではない。平成アーカイブ27,734発言のうち11,214件で
+`role` が埋まっており、**サイトは途中で形式を変えている**。だから1つの規則が両方を
+取れなければならない。
+
+**ファイル**
+
+`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`,
+`tests/test_kensakusystem.py`, `CLAUDE.md`, `docs/kensakusystem.md`,
+`docs/collection-targets.md`.
+
 ## 2026-08-28 — 三重 and 兵庫, and what "the same product" hid (`feat/mie-hyogo`)
 
 *English and Japanese. / 英語と日本語で併記する。*

@@ -22,39 +22,44 @@ base_url = "https://www.kensakusystem.jp/ehime/"
 # would multiply the crawl several times over; committees are a separate decision.
 sessions = '定例会|臨時会'
 
-# Which year tabs to walk. Empty means the whole archive back to 平成3年.
+# The whole archive, 平成3年 (1991) onwards.
 #
-# Scoped to 平成31年 onwards: the 地方議会会議録コーパス already covers 都道府県議会
-# for 2011-04 .. 2019-03, and 2019 lives under the 平成31年 node here (令和元年 is
-# not a separate tab). The archive before 2011 is equally uncollected and is the
-# obvious next run.
-# This is the knob that actually scopes a crawl: a date filter prunes the
-# sittings a walk finds, not the walk itself — the lesson `--start-url` taught
-# on 和歌山. `--since/--until` still helps here, because `fileName=R070303A`
-# carries the date and is read before the transcript is fetched.
-years = [
-    "平成31年",
-    "令和元年",
-    "令和 2年",
-    "令和 3年",
-    "令和 4年",
-    "令和 5年",
-    "令和 6年",
-    "令和 7年",
-    "令和 8年",
-]
+# It was scoped to 平成31年 onwards while only the post-corpus gap was being
+# collected. The corpus window (2011-04 .. 2019-03) is now excluded per run with
+# --since/--until instead, which costs nothing extra here: `fileName=R070303A`
+# carries the date, so the filter prunes before the transcript is fetched. On a
+# site whose listing has no dates the knob would have to stay here — that is the
+# lesson `--start-url` taught on 和歌山.
+years = []
 
-# 「○（三宅浩正議長）　理事者の答弁を求めます。」
+# Two generations, and only one of them looks like the config that collected 2019
+# onwards:
 #
-# The brackets are load-bearing. The same documents open sections with
-# 「○議事日程」 and 「〇出席議員　45名」 — the latter with 〇 (U+3007) rather than
-# ○ (U+25CB) — and requiring the brackets separates all of them from speech.
+#   令和7年  「○（三宅浩正議長）　理事者の答弁を求めます。」
+#   平成3年  「○47番（岡田己宜君）（拍手）統一地方選挙後初めての定例県議会において…」
 #
-# NOTE: name and office are printed as one run with no delimiter
-# (「池田和少子化対策・女性活躍統括部長」 is 池田和 + 少子化対策・女性活躍統括部長),
-# and there is no lexical rule that splits them: 「三宅浩正議長」 breaks the same
-# way under both greedy and lazy matching. So the whole string is kept as the
-# speaker and `role` is left empty, rather than guessing and producing plausible
-# nonsense. Splitting it properly means reading the 出席理事者 roster in each
-# document, where office and name *are* separated — see `docs/kensakusystem.md`.
-speech_split = '(?m)^○[（(](?P<speaker>[^）)\n]{1,40})[）)]'
+# The 平成 archive is 三重's shape — office outside the brackets, name inside, and
+# the 「君」 honorific `_clean_speaker` strips. A rule requiring 「○（」 takes **0
+# lines of every 平成 document**, which would have filled the archive with
+# zero-speech warnings rather than transcripts.
+#
+# The brackets are still load-bearing: the same documents open sections with
+# 「○議事日程」 and 「〇出席議員　53名」 — the latter with 〇 (U+3007) rather than
+# ○ (U+25CB). What follows the closing bracket separates a heading from a speech:
+# a heading ends its line, a speaker is followed by their words — or, in 平成3年,
+# by 「（拍手）」, which is why the lookahead accepts an opening bracket as well as
+# a space. Counted on 4 sittings from 平成3年 and 令和7年: it takes every speech the
+# old rule took, plus the three that open with applause, and leaves 議事日程.
+#
+# The two bounds are wider than they look and both were paid for. The speaker may
+# run to 40 characters because 愛媛 has real ones that do — 「毛利修三愛媛県の未来を
+# 創る農業・農村振興条例審査特別委員長」 is 29 — and a 24-character cap dropped two
+# such speeches from the whole corpus, silently. It may also contain an ASCII
+# bracket, because 「○（大北秀特命担当部長(会計管理者)）」 exists; excluding `)` cut the
+# name at the inner bracket and left the speech starting with 「）」.
+#
+# NOTE: name and office are one run in the modern form (「三宅浩正議長」) and there
+# is no lexical rule that splits them, so `role` stays empty there. The 平成
+# documents separate them and do populate it. Splitting the modern form properly
+# means reading the 出席理事者 roster — see `docs/kensakusystem.md`.
+speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])'
