@@ -83,7 +83,7 @@ Modules under `src/prefectural_transcripts/`:
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
 
-## Where this stands (updated 2026-08-27)
+## Where this stands (updated 2026-08-28)
 
 Read `docs/collection-targets.md` first — it is the ranked answer to "where can we
 collect", with the cost of each target. `docs/prefecture-survey.md` still maps all
@@ -146,12 +146,16 @@ See `docs/inquiries/ssp-assembly.md`.
 
 **Before any large crawl**
 
-The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already covers all
-47 assemblies for **2011-04 to 2019-03** — fiscal years, so the boundaries are not
-where you would guess. Anything inside that window is worth asking them for rather
-than crawling. Note the gap it leaves: **2019-04 .. 2019-12** falls between that
-corpus and any collection that starts at a calendar year. 和歌山 was scoped this
-way; do the same for the next prefecture.
+**Scope is settled: every period we can obtain, no research window.** That makes the
+地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) more relevant, not
+less: it already covers all 47 assemblies for **2011-04 to 2019-03** — fiscal years,
+so the boundaries are not where you would guess — which is not a range to route
+around but a large piece of exactly what we want, already assembled. Ask for it
+rather than re-crawling it; the letter is drafted and unsent
+(`docs/inquiries/local-politics.md`, addressee 要確認). Note the gap it leaves:
+**2019-04 .. 2019-12** falls between that corpus and any collection that starts at a
+calendar year. 和歌山 and 愛媛 were both scoped this way, so both carry a deliberate
+hole until that letter is answered; do the same for the next prefecture.
 
 ## Things that will bite again
 

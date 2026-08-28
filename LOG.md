@@ -2,6 +2,104 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-28 — the scope rewrite that PR #10 was holding up (`docs/scope-no-window`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Documentation only, and the debt named at the end of yesterday's entry: `CLAUDE.md`
+and `docs/collection-targets.md` both still described the corpus in terms of a
+research window, and both were left alone on `docs/local-politics-inquiry` because
+PR #10 was editing them heavily and doing it there would have manufactured
+conflicts. #10 landed; this is the follow-through.
+
+**What was actually stale.** Not the facts — the framing. `collection-targets.md`
+said "if the research window falls inside 2011–2019, most of this crawl is
+redundant" and called **2020 onwards** the genuine gap. With the scope settled as
+every period we can obtain, there is no window to fall inside anything, and
+2011-04 .. 2019-03 is not a range to route around: it is a large piece of exactly
+what we want, already assembled by someone else. The recommended order's item 1
+still said "for the research window" as well.
+
+**Two things the old text hid.** Rewriting it made both explicit:
+
+- 和歌山 and 愛媛 each carry a deliberate hole at 2011-04 .. 2019-03. That is a
+  consequence of the plan, not an oversight, and it stays open until the letter is
+  answered — with 和歌山's 673 documents from 1989–2011 on the far side of one.
+- Item 1 is not "ask about the window" any more. It is "send a drafted letter that
+  has not been sent", with the addressee still 要確認.
+
+**Dates corrected in passing.** `collection-targets.md` described the corpus as
+"2011–2014 and 2015–2019" — the two published slices, but not the boundaries that
+matter. It is 2011-04 .. 2019-03, fiscal years, as `CLAUDE.md` already said. Also
+refreshed item 3, which still asked whether to run the 和歌山 archive crawl; it ran
+yesterday (907 sittings, 46,839 speeches, 1989-02-27 .. 2025-12-19), and what
+remains of that prefecture is the hole above plus the untouched 委員会会議録.
+
+**`PT_CONTACT` is set, and it is not a repository change.** Recommended order item
+6 is closed: a 京都大学 address, exported in the researcher's `~/.bashrc`, verified
+through `Settings().user_agent`. `Settings.contact` reads the environment at import
+and there is no `.env` support, so the export has to exist before `uv run` — worth
+knowing before anyone wonders why a value in a file did nothing. **The address is
+provisional (仮おき)**; the `.bashrc` line says so, because it is what site operators
+see in the User-Agent and what every letter promises, and neither should go out on a
+placeholder. The address itself is deliberately not written into any tracked file.
+
+**One more copy of the same sentence.** `docs/prefecture-survey.md`'s step 4 said
+"if either covers the research window, much of this crawl may be unnecessary" and
+repeated the 2011–2014 / 2015–2019 slicing. Same fix. Three documents carried the
+window premise; grep for it before assuming this branch caught them all.
+
+**Files**
+
+`CLAUDE.md`, `docs/collection-targets.md`, `docs/prefecture-survey.md`.
+
+### 日本語
+
+ドキュメントのみ。昨日のエントリ末尾で「#10 が入ったらやる」と明記した宿題そのもの。
+`CLAUDE.md` と `docs/collection-targets.md` はどちらも研究対象期間（window）を前提に
+書かれたままで、PR #10 が両方を大きく編集していたため、前ブランチでは競合を作らない
+よう意図的に触らずに残していた。#10 がマージされたので、その履行。
+
+**古びていたのは事実ではなく枠組み。** `collection-targets.md` は「対象期間が
+2011–2019 に収まるならこの収集の大半は不要」と書き、**2020年以降**を真の空白と
+呼んでいた。方針が「取得できる限りの全期間」で確定した以上、収まる先の窓は存在せず、
+2011年4月〜2019年3月は避けて通る範囲ではない — **他人が既に整備し終えた、まさに
+欲しいものの塊**である。推奨順序の第1項も「for the research window」のままだった。
+
+**旧文が隠していたことが2つあり、書き直しで表に出た。**
+
+- 和歌山と愛媛は、それぞれ 2011-04 .. 2019-03 に**意図的な穴**を抱えている。計画の
+  帰結であって見落としではないが、照会の回答が出るまで開いたまま。和歌山の
+  1989–2011 の673文書は、その穴の向こう側にある。
+- 第1項はもう「窓について尋ねる」ではない。「**書き上がっているのに送っていない
+  文面を送る**」であり、宛先は依然 要確認。
+
+**ついでに日付を訂正。** `collection-targets.md` はコーパスを「2011–2014 と
+2015–2019」と書いていた。公開単位としては正しいが、効いてくる境界ではない。
+`CLAUDE.md` が既に書いていたとおり **2011年4月〜2019年3月の年度区切り**である。
+第3項も更新した（「36年分を走らせるか決める」は昨日走った — 907会議・46,839発言・
+1989-02-27 .. 2025-12-19。和歌山に残るのは上記の穴と、未着手の委員会会議録）。
+
+**`PT_CONTACT` は設定済み。ただしリポジトリの変更ではない。** 推奨順序 第6項を消し
+込み。京都大学のアドレスを `~/.bashrc` に `export` し、`Settings().user_agent` で
+確認した。`Settings.contact` は import 時に環境変数を読み、`.env` の仕組みは無いので、
+`uv run` の前に export されている必要がある（「ファイルに書いたのに効かない」で
+悩む前に知っておくべき点）。**アドレスは仮おき**であり、`.bashrc` にもその旨を
+コメントで残した — サイト運営者が User-Agent で目にし、各文面が約束するアドレスで
+あって、仮の値のまま送り出してよいものではない。アドレス自体は追跡ファイルには
+書いていない。
+
+**同じ一文がもう1か所あった。** `docs/prefecture-survey.md` の第4項も
+「対象期間を覆うなら、この収集の大半は不要かもしれない」と書き、2011–2014 /
+2015–2019 の区切りを繰り返していた。同じ修正を適用。window の前提は3文書に
+散っていたので、**取りこぼしがないかは grep で確かめること。**
+
+**ファイル**
+
+`CLAUDE.md`, `docs/collection-targets.md`, `docs/prefecture-survey.md`.
+
 ## 2026-08-27 — the letter that should have been written first (`docs/local-politics-inquiry`)
 
 *English and Japanese. / 英語と日本語で併記する。*
