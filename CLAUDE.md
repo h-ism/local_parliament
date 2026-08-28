@@ -104,12 +104,12 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
   sittings, 11,548 speeches, 2019-05-15 .. 2026-03-19** (the gap the corpus leaves
   after 2019-03); 平成3年–2011年 still to do. Three of those 204 were missing until
   2026-08-28 — see the URL-length note below. `docs/kensakusystem.md`.
-- **三重** — `sites/mie.toml`, same scraper. **Collected: 222 sittings, 14,822
-  speeches, 2019-05-10 .. 2026-03-31**; 平成元年 (1989) 〜 2011-03 is running.
-  Prints office and name separately, which 愛媛 cannot.
-- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 191 sittings, 14,986
-  speeches, 2019-06-13 .. 2026-06-11**; **昭和61年 (1986)** 〜 2011-03 is queued —
-  the deepest archive in the survey. One request per sitting via 全文表示.
+- **三重** — `sites/mie.toml`, same scraper. **Collected: 819 sittings, 47,279
+  speeches, 1989-02-28 .. 2026-03-31.** Prints office and name separately, which
+  愛媛 cannot: 269 distinct roles.
+- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 809 sittings, 42,310
+  speeches, 1986-02-22 .. 2026-06-11** — the deepest archive in the survey. One
+  request per sitting via 全文表示.
 
 **"The same product" is not the same site**
 
@@ -234,10 +234,18 @@ quirks.
   suffix rejects the numerals and the roster in one rule. This one surfaced only
   as a sitting that parsed to zero speeches — the same signature as the 静岡
   encoding bug, and worth treating as the standard smoke test.
-- **Honorifics are not uniform across prefectures.** 和歌山 marks every member
-  「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud. A 「君」-only
-  rule would drop women's speeches wholesale on any site that marks them 「さん」.
-  Verify per site — it is a corpus-bias problem, not a parsing detail.
+- **Honorifics are not uniform across prefectures, and this one bit.** 和歌山 marks
+  every member 「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud.
+  A 「君」-only rule would drop women's speeches wholesale on any site that marks
+  them 「さん」. Verify per site — it is a corpus-bias problem, not a parsing detail.
+
+  **What it actually did on 三重 and 兵庫** was quieter than dropping anything:
+  `_clean_speaker` stripped 「君」 and left 「さん」 and 「氏」, so 「太田栄子さん」 and
+  「太田栄子」 were two speakers, 「酒井隆明氏」 and 「酒井隆明」 two more. Ten names for
+  seven people, every one of the splits on the non-「君」 side — which is to say the
+  women and the outside witnesses. Nothing warned; the corpus simply counted them
+  twice. All three honorifics are stripped now. **Check for a name that appears
+  both with and without a suffix after every collection.**
 - **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
   roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
   the 「君」 honorific separated them. Verify a split rule against a sample and

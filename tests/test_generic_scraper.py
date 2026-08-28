@@ -540,3 +540,21 @@ def test_a_marker_need_not_be_followed_by_a_space() -> None:
     continuation form, and older sittings that run straight on."""
     assert _split("○浜本　収君（続）　わかっております。\n") == [(None, "浜本　収")]
     assert _split("○議長（橋本　進君）保健環境部長鈴木英明君。\n") == [("議長", "橋本　進")]
+
+
+def test_both_honorifics_are_stripped_from_a_speaker() -> None:
+    """Taking only 「君」 splits one person into two speakers along gender.
+
+    三重 writes 「太田栄子さん」 in one sitting and 「太田栄子」 in another, and 兵庫
+    does the same for 「金澤和夫さん」 — and 「酒井隆明氏」 for an outside
+    witness — so a 君-only rule left ten names for seven people, none of them on
+    the 「君」 side.
+    """
+    from prefectural_transcripts.scrapers.generic import _clean_speaker
+
+    assert _clean_speaker("濱口太史君") == "濱口太史"
+    assert _clean_speaker("太田栄子さん") == "太田栄子"
+    assert _clean_speaker("太田栄子") == "太田栄子"
+    # 兵庫 hears outside witnesses as 「酒井隆明氏」 and members of the same name
+    # without it, which split three more identities in two.
+    assert _clean_speaker("酒井隆明氏") == "酒井隆明"

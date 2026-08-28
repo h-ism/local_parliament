@@ -153,17 +153,31 @@ nothing per document, and because `fileName=R070303A` carries the date,
 `--since/--until` prunes before **either** request — the one site so far where a
 date filter genuinely saves work.
 
-### Collected — 三重 and 兵庫, 2019-04 onwards (2026-08-28)
+### Collected — 三重 and 兵庫 (2026-08-28)
 
 ```
-三重  222 sittings  14,822 speeches  10,588,850 chars  2019-05-10 .. 2026-03-31
-兵庫  191 sittings  14,986 speeches   8,812,287 chars  2019-06-13 .. 2026-06-11
+三重  819 sittings  47,279 speeches  40,771,120 chars  1989-02-28 .. 2026-03-31
+兵庫  809 sittings  42,310 speeches  34,968,756 chars  1986-02-22 .. 2026-06-11
 ```
 
-Nothing undated, no sitting without speeches, no duplicate URL, no digit or
-punctuation in any speaker name, and — counted against the listing, per session —
-**zero sittings missing inside the collected window** on either. 三重 has 182
-speakers and 104 distinct roles; 兵庫 has 203 and 48.
+兵庫 is now the oldest material in the corpus by three years. Both were collected
+in two passes — 2019-04 onwards first, then everything before 2011-04 — because
+`fileName` carries the date and `--since/--until` prunes before either request.
+
+Nothing undated, no duplicate URL, no digit or punctuation in any speaker name,
+and — counted against the listing, per session — **every uncollected sitting is
+inside the corpus window**: 240 of 1,059 on 三重, 210 of 1,019 on 兵庫, and nothing
+else unaccounted for. 三重 has 515 speakers and 269 roles; 兵庫 has 621 and 75.
+
+One 三重 sitting has no speeches: 平成2年9月20日, which reads
+「〔本日は、開議に至らなかった〕」. The sitting never opened, so the warning is
+right and the record is right.
+
+**The honorific bug this collection surfaced** is in `CLAUDE.md`'s list, and it is
+not local to this vendor: `_clean_speaker` stripped 「君」 only, so 「太田栄子さん」
+and 「太田栄子」 counted as two speakers, as did 「酒井隆明氏」 and 「酒井隆明」. Ten
+names for seven people, all of the splits on the non-「君」 side. Both corpora were
+re-parsed from cache — no requests — once all three suffixes were stripped.
 
 Two artefacts worth knowing, neither of them ours:
 

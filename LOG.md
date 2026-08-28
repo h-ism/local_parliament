@@ -61,24 +61,45 @@ widened before the archive run reached them. Had the rule dropped them quietly, 
 corpus would have been missing 52 documents with nothing anywhere to say so. A
 filter that decides which documents matter has to announce what it discards.
 
-**Collected (2019-04 onwards, the gap the corpus leaves)**
+**Collected**
 
 ```
-三重  222 sittings  14,822 speeches  10,588,850 chars  2019-05-10 .. 2026-03-31
-兵庫  191 sittings  14,986 speeches   8,812,287 chars  2019-06-13 .. 2026-06-11
+三重  819 sittings  47,279 speeches  40,771,120 chars  1989-02-28 .. 2026-03-31
+兵庫  809 sittings  42,310 speeches  34,968,756 chars  1986-02-22 .. 2026-06-11
 ```
 
-Nothing undated, no sitting without speeches, no duplicate URL, no digits or
-punctuation in any speaker name, and — per session, against the listing — **zero
-missing inside the collected window** on either. The archive before 2011-04 (三重
-to 平成元年, 兵庫 to 昭和61年) is running as a separate pass; 2011-04 .. 2019-03 is
-left to the 地方議会会議録コーパス, as on 和歌山 and 愛媛.
+Two passes each — 2019-04 onwards, then everything before 2011-04 — because
+`fileName` carries the date, so `--since/--until` prunes before either request.
+2011-04 .. 2019-03 is left to the 地方議会会議録コーパス, as on 和歌山 and 愛媛.
+**兵庫 is now the oldest material in the corpus by three years.**
+
+Nothing undated, no duplicate URL, no digits or punctuation in any speaker name,
+and counted against the listing per session, **every uncollected sitting is inside
+the corpus window** — 240 of 1,059 on 三重, 210 of 1,019 on 兵庫, nothing else
+unaccounted for. One 三重 sitting has no speeches: 平成2年9月20日 reads
+「〔本日は、開議に至らなかった〕」, so both the warning and the record are correct.
+
+**One more thing the checks caught, and it was not this vendor's fault.**
+`_clean_speaker` has stripped 「君」 since 静岡 and nothing else. 三重 writes
+「太田栄子さん」 in one sitting and 「太田栄子」 in another; 兵庫 does the same for
+「金澤和夫さん」 and, for outside witnesses, 「酒井隆明氏」. That made **ten names for
+seven people, and every split fell on the non-「君」 side** — the women and the
+witnesses. Nothing warns about this: the corpus simply counts one person twice,
+and every per-speaker figure is quietly wrong for exactly the people the minutes
+mark differently. `CLAUDE.md` had predicted the shape of this from 和歌山 and still
+did not catch it, because the prediction was about *dropping* speeches and the
+actual damage was double-counting speakers.
+
+All three suffixes are stripped now, and both corpora were re-parsed from cache —
+zero requests, which is what the cache is for.
 
 **Files**
 
 `src/prefectural_transcripts/scrapers/kensakusystem.py`,
-`sites/mie.toml` (new), `sites/hyogo.toml` (new), `tests/test_kensakusystem.py`,
-`CLAUDE.md`, `docs/kensakusystem.md`, `docs/collection-targets.md`.
+`scrapers/generic.py` (`_clean_speaker`), `sites/mie.toml` (new),
+`sites/hyogo.toml` (new), `tests/test_kensakusystem.py`,
+`tests/test_generic_scraper.py`, `CLAUDE.md`, `docs/kensakusystem.md`,
+`docs/collection-targets.md`.
 
 ### 日本語
 
@@ -131,23 +152,42 @@ left to the 地方議会会議録コーパス, as on 和歌山 and 愛媛.
 捨てる実装だったら、**52文書が欠けたコーパスが、どこにも痕跡を残さず**出来上がって
 いた。どの文書が重要かを決めるフィルタは、捨てたものを必ず申告しなければならない。
 
-**収集（2019年4月以降＝コーパスが空けている範囲）**
+**収集**
 
 ```
-三重  222会議  14,822発言  10,588,850字  2019-05-10 .. 2026-03-31
-兵庫  191会議  14,986発言   8,812,287字  2019-06-13 .. 2026-06-11
+三重  819会議  47,279発言  40,771,120字  1989-02-28 .. 2026-03-31
+兵庫  809会議  42,310発言  34,968,756字  1986-02-22 .. 2026-06-11
 ```
 
-日付欠落なし、発言0件の会議なし、URL重複なし、話者名に数字・記号の混入なし。
-会期単位で索引と突き合わせて、**収集範囲内の欠落は両県とも0件**。2011年4月より前の
-archive（三重＝平成元年、兵庫＝昭和61年まで）は別パスで実行中。2011-04〜2019-03 は
-和歌山・愛媛と同じく地方議会会議録コーパスに委ねる。
+各県2パス（2019年4月以降 → 2011年4月より前）。`fileName` に日付があるので
+`--since/--until` は**どちらのリクエストよりも前に**枝刈りされる。2011-04〜2019-03 は
+和歌山・愛媛と同じく地方議会会議録コーパスに委ねる。**兵庫は本コーパス最古の資料と
+なった**（従来最古より3年古い）。
+
+日付欠落なし、URL重複なし、話者名に数字・記号の混入なし。会期単位で索引と突合し、
+**未収集の会議はすべてコーパス窓の内側**（三重 1,059中240、兵庫 1,019中210）、
+説明のつかない欠落は0件。三重の1会議だけ発言0件だが、これは平成2年9月20日の
+「〔本日は、開議に至らなかった〕」であり、警告もレコードも正しい。
+
+**検査がもう1件見つけた。これは当該ベンダーの問題ではない。** `_clean_speaker` は
+静岡以来「君」しか落としていなかった。三重はある会議で「太田栄子さん」、別の会議で
+「太田栄子」と書き、兵庫は「金澤和夫さん」、参考人には「酒井隆明氏」と書く。結果、
+**7人が10個の名前になり、分裂はすべて「君」以外の側** — つまり女性と参考人に
+集中していた。これは何も警告しない。**コーパスが1人を2人として数え、話者単位の集計が
+「minutes が別の敬称で書く人」についてだけ静かに狂う。** `CLAUDE.md` は和歌山から
+この形を予言していたのに捕まえられなかった。予言が「発言を取りこぼす」話で、実害は
+「話者を二重に数える」話だったからである。
+
+3種の敬称をすべて除去し、両コーパスをキャッシュから再パースした（リクエスト0件 —
+キャッシュはこのためにある）。
 
 **ファイル**
 
 `src/prefectural_transcripts/scrapers/kensakusystem.py`,
-`sites/mie.toml`（新規）, `sites/hyogo.toml`（新規）, `tests/test_kensakusystem.py`,
-`CLAUDE.md`, `docs/kensakusystem.md`, `docs/collection-targets.md`.
+`scrapers/generic.py`（`_clean_speaker`）, `sites/mie.toml`（新規）,
+`sites/hyogo.toml`（新規）, `tests/test_kensakusystem.py`,
+`tests/test_generic_scraper.py`, `CLAUDE.md`, `docs/kensakusystem.md`,
+`docs/collection-targets.md`.
 
 ## 2026-08-28 — the 千葉 letter, rewritten for the person who opens it (`docs/chiba-plain-language`)
 

@@ -13,6 +13,11 @@ a second listing level — plus one small parsing addition, opens **four prefect
 
 ## Tier 1 — collectable now, nothing to ask anyone
 
+**Collected on this product (2026-08-28):** 三重 819 sittings / 47,279 speeches /
+1989-02-28 .. 2026-03-31, and 兵庫 809 / 42,310 / **1986-02-22** .. 2026-06-11 —
+the oldest material in the corpus. 愛媛 stands at 204 / 11,548, three of them
+recovered from a URL-length failure. Detail in `docs/kensakusystem.md`.
+
 ### 1. 和歌山 — the best target found — **implemented 2026-08-27**
 
 robots.txt 404, pages marked `index, follow`, UTF-8, no vendor system. One index
