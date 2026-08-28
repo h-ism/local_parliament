@@ -2,6 +2,153 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-28 — 三重 and 兵庫, and what "the same product" hid (`feat/mie-hyogo`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Two configs, four scraper changes, five tests, and one bug in a corpus that was
+already on disk.
+
+**The premise was wrong.** `collection-targets.md` said 三重 and 兵庫 were "a
+config each" away from 愛媛 — same host, same `cgi-bin3`, same charset, same tree
+shape. They are, in three places that decide whether a config collects anything:
+
+1. **兵庫's tree is a newer generation of markup.** `data-depth="令和 7年 …"` on an
+   `<A class="js-tree-submit">`, not `onClick="…treedepth.value='…'"`. The regex
+   matched nothing, and *a tree with no nodes reads exactly like a year that does
+   not exist* — the failure this project has already been bitten by twice.
+2. **兵庫 has no ダウンロード button at all.** No `downloadPos` checkboxes, so the
+   愛媛 route dead-ends. Its 全文表示 posts `FUNC=PRINT_ALL` to `GetText3.exe`,
+   which returns the whole sitting as HTML in **one** request — cheaper than
+   either of the others, and short enough that the URL is the record's identity.
+3. **三重's marker is 静岡's shape, not 愛媛's.** 「○知事（一見勝之）」 against
+   「○（三宅浩正議長）」. 愛媛's rule requires 「○（」 and matches **zero lines of
+   every 三重 document**. The rule that works on both 三重 and 兵庫 also separates
+   name from office, which 愛媛 forced us to give up on.
+
+Each of those fails silently. None would have been found by reading.
+
+**The bug that was already in the corpus.** `GetPerson.exe` serves 2,102
+characters of URL and returns **404** at 2,119 — measured by bisection, identical
+on 三重 and 愛媛. A 一般質問 day has ~115 speeches, which is just past it.
+`scrape()` catches `FetchError`, logs it, and continues, so the sitting simply is
+not there afterwards. **愛媛 lost three sittings that way on 2026-08-27** — all
+three 3月 days, the busiest kind — and the only trace was three lines in a run log.
+
+Found by doing what the notes have said to do since 和歌山: count the listing
+against the corpus. 212 offered, 201 held, 11 absent: 8 were `--since` working
+correctly and 3 were this. `fetch_meeting` now splits the offsets across as many
+URLs as the limit allows and stitches the responses, dropping the
+`開催日：`/`会議名：` header the CGI repeats on each. All three recovered; 愛媛 is
+**204 sittings, 11,548 speeches**.
+
+The old note called this "pydantic caps a URL at 2,083 characters" and fixed it as
+a modelling problem. It was also a live fetch failure. Nothing connected the two
+for a day, because the fix made the symptom go away.
+
+**Not everything in the tree is a sitting.** 兵庫 lists 決議案・請願・意見書 beside
+its minutes (`R07060004KETS.html`), 三重 a 目次 (`H010228MOKU.html`). The old
+`fileName=([A-Za-z0-9]+)` took the first kind *with the extension truncated*,
+which 404s one request later. Names must now look like `[RHS]YYMMDD` plus a serial;
+a dotted name is dropped quietly and **any other shape is logged as a warning**.
+
+**That warning immediately caught me being wrong.** The first version of the shape
+rule allowed one letter and no digits — and 三重's 平成 archive numbers continued
+sittings `H010518A01`. It rejected **52 real sittings**, said so, and the rule was
+widened before the archive run reached them. Had the rule dropped them quietly, the
+corpus would have been missing 52 documents with nothing anywhere to say so. A
+filter that decides which documents matter has to announce what it discards.
+
+**Collected (2019-04 onwards, the gap the corpus leaves)**
+
+```
+三重  222 sittings  14,822 speeches  10,588,850 chars  2019-05-10 .. 2026-03-31
+兵庫  191 sittings  14,986 speeches   8,812,287 chars  2019-06-13 .. 2026-06-11
+```
+
+Nothing undated, no sitting without speeches, no duplicate URL, no digits or
+punctuation in any speaker name, and — per session, against the listing — **zero
+missing inside the collected window** on either. The archive before 2011-04 (三重
+to 平成元年, 兵庫 to 昭和61年) is running as a separate pass; 2011-04 .. 2019-03 is
+left to the 地方議会会議録コーパス, as on 和歌山 and 愛媛.
+
+**Files**
+
+`src/prefectural_transcripts/scrapers/kensakusystem.py`,
+`sites/mie.toml` (new), `sites/hyogo.toml` (new), `tests/test_kensakusystem.py`,
+`CLAUDE.md`, `docs/kensakusystem.md`, `docs/collection-targets.md`.
+
+### 日本語
+
+設定2本、スクレイパの変更4点、テスト5本、そして**すでにディスク上にあったコーパスの
+バグ1件**。
+
+**前提が間違っていた。** `collection-targets.md` は三重・兵庫を愛媛から「設定1つずつ」
+と書いていた。ホストも `cgi-bin3` も文字コードもツリーの形も同じだからである。実際は、
+**設定が何かを収集できるかどうかを決める3か所**が違っていた。
+
+1. **兵庫のツリーは新世代のマークアップ。** `onClick="…treedepth.value='…'"` ではなく
+   `<A class="js-tree-submit" data-depth="令和 7年 …">`。正規表現は何も拾わず、
+   **ノードが0件のツリーは「存在しない年」と見分けがつかない** — この落とし穴で
+   躓くのは3度目。
+2. **兵庫にはダウンロードボタンが無い。** `downloadPos` のチェックボックスが1つも
+   無く、愛媛の経路は行き止まり。代わりに全文表示が `GetText3.exe` に
+   `FUNC=PRINT_ALL` を投げ、**1リクエストで会議全文をHTMLで返す** — 3県で最も安く、
+   URLが短いのでレコードの同一性にそのまま使える。
+3. **三重の標識は愛媛型ではなく静岡型。** 「○知事（一見勝之）」対
+   「○（三宅浩正議長）」。愛媛の規則は 「○（」 を要求するので、**三重の全文書で
+   一致0件**。三重・兵庫に効く規則は、愛媛で諦めた氏名と役職の分離も同時に果たす。
+
+いずれも無言で失敗する。読んでいるだけでは1つも見つからない。
+
+**すでにコーパスに入っていたバグ。** `GetPerson.exe` は URL 2,102文字までは応答し、
+2,119文字で **404** を返す（二分探索で測定、三重・愛媛で同一）。一般質問の日は
+発言が約115件あり、ちょうどこれを超える。`scrape()` は `FetchError` を記録して先へ
+進むので、**その会議は静かに欠落する**。**愛媛は昨日これで3会議を失っていた** —
+いずれも3月の最も忙しい日 — 痕跡は実行ログの3行だけ。
+
+見つけ方は和歌山以来ずっとノートに書いてあったこと、**索引と収集件数の突合**。
+索引212・収集201・差分11、うち8は `--since` が正しく効いた分、**3件がこれ**。
+`fetch_meeting` は上限に収まるだけURLを分割して結合し、CGIが毎回返す
+`開催日：`/`会議名：` の2行を除去するようにした。3件とも回収し、愛媛は
+**204会議・11,548発言**。
+
+旧ノートはこれを「pydantic が URL を2,083文字で切る」と書き、**モデリングの問題として
+修正していた**。同時に実際のフェッチ失敗でもあったのに、症状が消えたので1日誰も
+結びつけなかった。
+
+**ツリーにあるもの全部が会議録ではない。** 兵庫は決議案・請願・意見書を会議録と並べて
+出し（`R07060004KETS.html`）、三重は目次を出す（`H010228MOKU.html`）。旧
+`fileName=([A-Za-z0-9]+)` は前者を**拡張子を切り落とした形で**拾い、1リクエスト後に
+404になっていた。今は `[RHS]YYMMDD`＋連番の形だけを会議録とし、**ドット付きは静かに
+捨て、それ以外の見慣れない形は警告を出す**。
+
+**その警告が即座に私の誤りを捕まえた。** 形状ルールの初版は「英字1文字・数字なし」
+だったが、三重の平成期は継続会を `H010518A01` と数える。**実在の52会議を弾いて**
+おり、そう言ったので、archive 収集がそこへ到達する前に規則を広げられた。もし黙って
+捨てる実装だったら、**52文書が欠けたコーパスが、どこにも痕跡を残さず**出来上がって
+いた。どの文書が重要かを決めるフィルタは、捨てたものを必ず申告しなければならない。
+
+**収集（2019年4月以降＝コーパスが空けている範囲）**
+
+```
+三重  222会議  14,822発言  10,588,850字  2019-05-10 .. 2026-03-31
+兵庫  191会議  14,986発言   8,812,287字  2019-06-13 .. 2026-06-11
+```
+
+日付欠落なし、発言0件の会議なし、URL重複なし、話者名に数字・記号の混入なし。
+会期単位で索引と突き合わせて、**収集範囲内の欠落は両県とも0件**。2011年4月より前の
+archive（三重＝平成元年、兵庫＝昭和61年まで）は別パスで実行中。2011-04〜2019-03 は
+和歌山・愛媛と同じく地方議会会議録コーパスに委ねる。
+
+**ファイル**
+
+`src/prefectural_transcripts/scrapers/kensakusystem.py`,
+`sites/mie.toml`（新規）, `sites/hyogo.toml`（新規）, `tests/test_kensakusystem.py`,
+`CLAUDE.md`, `docs/kensakusystem.md`, `docs/collection-targets.md`.
+
 ## 2026-08-28 — the 千葉 letter, rewritten for the person who opens it (`docs/chiba-plain-language`)
 
 *English and Japanese. / 英語と日本語で併記する。*

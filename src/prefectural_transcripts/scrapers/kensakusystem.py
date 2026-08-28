@@ -32,6 +32,21 @@ is in the `fileName`. A ref therefore points at the *speaker index*, which is al
 what a `Meeting` records as its URL: the download URL runs to several kilobytes on
 a busy sitting and is not a usable identity.
 
+**兵庫 is the same product and not the same site**, which is the other thing this
+module now encodes. Three differences, each of which fails without a sound:
+
+* its tree carries labels in `data-depth="…"` rather than in an `onClick`
+  assignment, and a tree with no nodes looks exactly like a year that is not there;
+* it has no ダウンロード button and therefore no offsets — its 全文表示 button
+  (`GetText3.exe?…&FUNC=PRINT_ALL`) returns the whole sitting in **one** request,
+  as HTML, which `download = "printall"` selects;
+* and the marker forms differ across all three tenants, so `speech_split` belongs
+  in the config, per site, counted against a sample before it is trusted.
+
+The GET route also has a limit the vendor does not document: `GetPerson.exe` 404s
+on a URL past roughly 2,110 characters, which a busy sitting exceeds. See
+`MAX_URL`.
+
 See `docs/kensakusystem.md`.
 """
 
@@ -46,6 +61,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import quote, urljoin
 
+from bs4 import BeautifulSoup
+
 from prefectural_transcripts.dates import parse_japanese_date
 from prefectural_transcripts.http import FetchError, Page, PoliteClient
 from prefectural_transcripts.models import Meeting, MeetingRef
@@ -54,9 +71,16 @@ from prefectural_transcripts.scrapers.generic import split_speeches
 
 log = logging.getLogger(__name__)
 
-# `onClick="document.viewtree.treedepth.value='令和 7年 第391回定例会 '"` — note that
-# the trailing space is part of the label and must survive into the query string.
-_TREEDEPTH = re.compile(r"treedepth\.value='([^']*)'")
+# Two generations of the same tree, and a config cannot tell them apart in
+# advance — so both are read.
+#
+# 愛媛・三重: `onClick="document.viewtree.treedepth.value='令和 7年 第391回定例会 '"`
+# 兵庫:      `<A HREF="#" class="js-tree-submit" data-depth="令和 7年  2月第370回定例会 ">`
+#
+# The trailing space is part of the label in both and must survive into the query
+# string. Reading only the older form on 兵庫 finds no nodes at all, which looks
+# exactly like a year the tree does not have.
+_TREEDEPTH = re.compile(r'''treedepth\.value='([^']*)'|data-depth="([^"]*)"''')
 # 「令和元年」 is a year node like any other, and 元 is not a digit. `dates.py`
 # has handled that form since 静岡; forgetting it here cost a whole year — the
 # node was walked, matched nothing, and said nothing.
@@ -65,9 +89,19 @@ _YEAR_NODE = re.compile(r"^(?:令和|平成|昭和)\s*(?:元|\d{1,2})年$")
 # — the sitting's label is the anchor text, and it is the only place the 第N号 and
 # the printed date appear together.
 _DOCUMENT = re.compile(
-    r'href="ResultFrame\.exe\?[^"]*fileName=([A-Za-z0-9]+)[^"]*"[^>]*>(?:\s*<[^>]+>)*\s*([^<]*)',
+    r'href="ResultFrame\.exe\?[^"]*fileName=([^"&]+)[^"]*"[^>]*>(?:\s*<[^>]+>)*\s*([^<]*)',
     re.IGNORECASE,
 )
+# `R080225A` — era initial, era year, month, day, serial letter, and on 三重's
+# older documents a two-digit continuation: `H010518A01`. Everything else the tree
+# offers is not a sitting: 決議案・請願・意見書 (`R07060004KETS.html`), 目次
+# (`H010228MOKU.html`), 名簿 (`MEIB`), 議案 (`GIAN`) — all of them dotted.
+#
+# The `\d{0,2}` was not in the first version of this rule, and 52 三重 sittings
+# from the 平成 archive were rejected by it. They were *reported*, which is the
+# only reason this line is right now: a shape rule about which documents matter
+# has to say what it is dropping, because it will be wrong about something.
+_SITTING = re.compile(r"^[RHS]\d{6}[A-Z]\d{0,2}$")
 _DOWNLOAD_POS = re.compile(r'name="downloadPos"\s+value="(\d+)"')
 _CODE = re.compile(r"(cgi-bin\d*)/See\.exe\?Code=([A-Za-z0-9]+)")
 _INDEX_URL = re.compile(r"/(cgi-bin\d*)/r_Speakers\.exe\?([A-Za-z0-9]+)/([A-Za-z0-9]+)/")
@@ -83,6 +117,48 @@ DEFAULT_SPEECH_SPLIT = r"(?m)^○[（(](?P<speaker>[^）)\n]{1,40})[）)]"
 
 # `GetPerson.exe` marks printed page breaks in the text it returns.
 _PAGE_MARK = re.compile(r'<PAGE="\d+">')
+
+# The server refuses a request line past roughly 2,110 characters — 2,102 was
+# fetched and 2,119 gave **404**, on both 三重 and 愛媛, which is a length limit
+# wearing a "not found" costume. A 一般質問 day has enough speeches to cross it,
+# and `scrape()` logs a FetchError and moves on, so the sitting simply is not
+# there afterwards. It cost 愛媛 three sittings before anyone noticed.
+#
+# 1,800 leaves room for a long tenant path and a few more offsets than measured.
+MAX_URL = 1800
+
+# `GetPerson.exe` repeats these two lines at the top of every response, so they
+# arrive again in the middle of a sitting that had to be fetched in chunks.
+_DOWNLOAD_HEADER = ("開催日：", "会議名：")
+
+
+def _chunk(stem: str, positions: list[str]) -> list[list[str]]:
+    """Split the offsets into as few URLs as the server's length limit allows."""
+    chunks: list[list[str]] = [[]]
+    length = len(stem)
+    for pos in positions:
+        field = len(f"&downloadPos={pos}")
+        if chunks[-1] and length + field > MAX_URL:
+            chunks.append([])
+            length = len(stem)
+        chunks[-1].append(pos)
+        length += field
+    return chunks
+
+
+def _strip_header(body: bytes, encoding: str) -> bytes:
+    """Drop the `開催日：`/`会議名：` lines the CGI repeats on every response."""
+    out = body
+    for label in _DOWNLOAD_HEADER:
+        marker = label.encode(encoding)
+        if out.startswith(marker):
+            _, _, out = out.partition(b"\n")
+    return out.lstrip(b"\r\n")
+
+
+def _depths(html: str) -> list[str]:
+    """Every tree label on a page, whichever generation of markup it uses."""
+    return [old or new for old, new in _TREEDEPTH.findall(html)]
 
 
 def _squash(label: str) -> str:
@@ -141,6 +217,17 @@ class KensakuConfig:
     so it is stated rather than detected.
     """
 
+    download: str = "getperson"
+    """How a whole sitting is fetched: `getperson` (愛媛・三重) or `printall` (兵庫).
+
+    Same product, two generations. 愛媛 and 三重 carry a ダウンロード button whose
+    `GetPerson.exe` takes a repeated `downloadPos` read off the speaker index —
+    two requests, and the URL has to be chunked (see `MAX_URL`). 兵庫's speaker
+    index has no such form; its 全文表示 button posts `FUNC=PRINT_ALL` to
+    `GetText3.exe`, which returns the whole sitting as HTML in **one** request,
+    with no per-speech offsets involved at all.
+    """
+
     sessions: str = "定例会|臨時会"
     """Regex on the tree label; only matching nodes are opened.
 
@@ -191,9 +278,23 @@ class KensakuSystemScraper(BaseScraper):
                 if name in seen:
                     continue
                 seen.add(name)
+                if not _SITTING.match(name):
+                    # 兵庫 lists 決議案・請願・意見書 (`…KETS.html`) beside its
+                    # sittings and 三重 lists a 目次 (`R080119MOKU`). Neither is a
+                    # transcript. A dotted name is a known kind and is dropped
+                    # quietly; anything else is a shape we have not seen, and the
+                    # one thing this project cannot afford is dropping a sitting
+                    # in silence.
+                    if "." in name:
+                        log.debug("not a sitting, skipped: %s (%s)", name, label.strip())
+                    else:
+                        log.warning(
+                            "unexpected document name, skipped: %s (%s)", name, label.strip()
+                        )
+                    continue
                 yield MeetingRef(
                     prefecture=self.prefecture,
-                    url=self._index_url(cgi, code, name),  # type: ignore[arg-type]
+                    url=self._document_url(cgi, code, name),  # type: ignore[arg-type]
                     date=date_from_filename(name),
                     title=f"{_squash(session)}{label.strip()}",
                 )
@@ -226,12 +327,12 @@ class KensakuSystemScraper(BaseScraper):
         wanted = re.compile(self.config.sessions)
         allowed = set(self.config.years)
         root = client.get(f"{see}?Code={code}")
-        tabs = [v for v in _TREEDEPTH.findall(root.text) if _YEAR_NODE.match(v)]
+        tabs = [v for v in _depths(root.text) if _YEAR_NODE.match(v)]
 
         years: set[str] = set(tabs)
         for tab in tabs:
             page = client.get(f"{see}?Code={code}&treedepth={_cp932(tab)}")
-            years.update(v for v in _TREEDEPTH.findall(page.text) if _YEAR_NODE.match(v))
+            years.update(v for v in _depths(page.text) if _YEAR_NODE.match(v))
 
         if allowed:
             missing = allowed - years
@@ -241,16 +342,24 @@ class KensakuSystemScraper(BaseScraper):
 
         for year in sorted(years, key=_year_key, reverse=True):
             page = client.get(f"{see}?Code={code}&treedepth={_cp932(year)}")
-            for label in _TREEDEPTH.findall(page.text):
+            for label in _depths(page.text):
                 if label.startswith(year) and wanted.search(label):
                     yield label
 
-    def _index_url(self, cgi: str, code: str, name: str) -> str:
-        """The speaker index for one sitting.
+    def _document_url(self, cgi: str, code: str, name: str) -> str:
+        """What a ref points at — short, stable, and one request from the text.
 
-        Short and stable, which is why it — not the download URL — is what a ref
-        and a stored `Meeting` point at.
+        Under `getperson` that is the *speaker index*, because the download URL
+        is composed from the offsets it carries and runs to kilobytes. Under
+        `printall` there are no offsets: the 全文表示 URL is itself short, and it
+        is both the identity and the fetch.
         """
+        if self.config.download == "printall":
+            return (
+                f"{urljoin(self.config.base_url, cgi + '/GetText3.exe')}"
+                f"?Code={code}&fileName={name}&startPos=0&keyMode=10"
+                f"&searchMode=1&FUNC=PRINT_ALL"
+            )
         return (
             f"{urljoin(self.config.base_url, cgi + '/r_Speakers.exe')}"
             f"?{code}/{name}/0/0//10/1/1073741823:2097151/0/1//0/0/0"
@@ -259,12 +368,15 @@ class KensakuSystemScraper(BaseScraper):
     # -- fetching --------------------------------------------------------------
 
     def fetch_meeting(self, ref: MeetingRef, client: PoliteClient) -> Page:
-        """Read the offsets from the speaker index, then download the sitting.
+        """Fetch the whole sitting, by whichever route this tenant offers.
 
-        `GetPerson.exe` is the page's own ダウンロード button. It accepts GET with
-        a repeated `downloadPos` and returns the selected speeches concatenated as
-        plain text, which is one request instead of one per speech.
+        `printall` is one plain GET of the ref itself. `getperson` reads the
+        offsets off the speaker index first, then downloads them — in as few
+        requests as the server's URL limit allows.
         """
+        if self.config.download == "printall":
+            return client.get(str(ref.url))
+
         index = client.get(str(ref.url))
         positions = _DOWNLOAD_POS.findall(index.text)
         if not positions:
@@ -274,19 +386,43 @@ class KensakuSystemScraper(BaseScraper):
         if not m:
             raise FetchError(f"cannot read the sitting id out of {ref.url}")
         cgi, code, name = m.groups()
-        url = (
-            f"{urljoin(self.config.base_url, cgi + '/GetPerson.exe')}"
-            f"?Code={code}&fileName={name}" + "".join(f"&downloadPos={p}" for p in positions)
+        stem = (
+            f"{urljoin(self.config.base_url, cgi + '/GetPerson.exe')}?Code={code}&fileName={name}"
         )
-        return client.get(url)
+        pages = [
+            client.get(stem + "".join(f"&downloadPos={p}" for p in chunk))
+            for chunk in _chunk(stem, positions)
+        ]
+        if len(pages) == 1:
+            return pages[0]
+
+        # More offsets than one URL can carry. The parts are contiguous, so the
+        # bodies concatenate — after dropping the two-line header the CGI puts on
+        # every response, which would otherwise land in the middle of a speech.
+        body = pages[0].body + b"".join(
+            _strip_header(x.body, self.config.encoding) for x in pages[1:]
+        )
+        log.debug("%s assembled from %d requests", name, len(pages))
+        return Page(
+            url=str(ref.url),
+            status=200,
+            body=body,
+            encoding=self.config.encoding,
+            fetched_at=datetime.now(UTC),
+            from_cache=all(x.from_cache for x in pages),
+        )
 
     # -- detail ----------------------------------------------------------------
 
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         # `GetPerson.exe` returns plain text with CRLF line endings and printed
         # page markers; there is no markup to select, so the split rule runs on
-        # the body as fetched.
+        # the body as fetched. `GetText3.exe?FUNC=PRINT_ALL` returns the same
+        # transcript as HTML with `<BR>` for every line break, so it is reduced
+        # to text first — the split rule is the same either way.
         body = page.body.decode(self.config.encoding, errors="replace")
+        if self.config.download == "printall":
+            body = BeautifulSoup(body, "lxml").get_text("\n", strip=True)
         text = _PAGE_MARK.sub("", body).replace("\r\n", "\n").replace("\r", "\n")
         title = ref.title or ""
         # 「令和8年第395回定例会（第1号 2月25日）」 — the session is everything before

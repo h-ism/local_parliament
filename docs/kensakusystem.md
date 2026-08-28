@@ -1,8 +1,25 @@
 # `kensakusystem.jp` — 三重・兵庫・愛媛
 
-Verified against 愛媛 on 2026-08-27; 三重 and 兵庫 confirmed to be the same install.
+Verified against 愛媛 on 2026-08-27, and against 三重 and 兵庫 on 2026-08-28.
 **Collectable.** The whole flow works over plain GET, and the site's own download
-button hands back a full sitting in one request.
+button hands back a full sitting in one or two requests.
+
+**"The same install" was wrong, and it was wrong in the two places that decide
+whether a config collects anything.** The three tenants share a host, a
+`cgi-bin3`, a charset and a tree shape, and differ in: the markup that carries a
+tree node, the route that returns a transcript, and the form of a speech marker.
+A config copied across without checking yields **zero speeches** on 三重 and
+**zero nodes** on 兵庫 — both of which look, from the run log, like a site that
+simply has nothing to give.
+
+| | 愛媛 | 三重 | 兵庫 |
+| --- | --- | --- | --- |
+| tree node | `onClick=…treedepth.value='…'` | same | `data-depth="…"` |
+| transcript | `GetPerson.exe` + offsets | same | `GetText3.exe?FUNC=PRINT_ALL` |
+| requests per sitting | 2–3 | 2–3 | **1** |
+| body | plain text | plain text | HTML (`<BR>`) |
+| marker | `○（三宅浩正議長）` | `○知事（一見勝之）` | `○議長（浜田知昭）` / `○（北野　実議員）` |
+| name vs office | inseparable | **separate** | **separate** |
 
 ## Access
 
@@ -17,8 +34,11 @@ button hands back a full sitting in one request.
 | Pref | Path | `Code=` | Coverage |
 | --- | --- | --- | --- |
 | 三重 | `/mie/` | `4t2ncj9qufw8kewil1` | 本会議 平成元年〜; 委員会 令和5年〜 |
-| 兵庫 | `/hyogopref/` | `rpo2cq1zucjm5gwgk4` | 本会議・予算特別委員会・決算特別委員会 **昭和61年第197回定例会**〜 |
+| 兵庫 | `/hyogopref/` | `rpo2cq1zucjm5gwgk4` | 本会議・予算特別委員会・決算特別委員会 **昭和61年第197回定例会**〜; 常任委員会 平成17年6月〜 |
 | 愛媛 | `/ehime/` | `e7c7rvxas7fwx1belp` | 本会議 平成3年第229回定例会〜; 委員会 平成19年5月〜 |
+
+Year nodes counted on 2026-08-28: 三重 **39** (平成元年–令和8年), 兵庫 **42**
+(昭和61年–令和8年). Both walk as two phases — tabs, then the years they group.
 
 兵庫 is the deepest archive found anywhere in this survey — back to 1986.
 
@@ -73,6 +93,41 @@ a GET query string**, so no POST support is needed.
    speech. Compare the alternatives, both of which are worse: `GetText3.exe` returns
    one speech (~3 KB) and `GetPage.exe` one printed page (~4 KB).
 
+## 兵庫's route: 全文表示, one request
+
+兵庫's speaker index carries **no `downloadPos` checkboxes at all** — the download
+form the other two tenants use is simply not on the page, so `GetPerson.exe` has
+nothing to assemble and the 愛媛 flow dead-ends. What 兵庫 has instead is the
+navigation frame's 全文表示 button:
+
+```
+GetText3.exe?Code=<code>&fileName=R070225A&startPos=0&keyMode=10&searchMode=1&FUNC=PRINT_ALL
+```
+
+`FUNC=PRINT_ALL` is the whole difference. Without it the same endpoint returns one
+speech (~8 KB); with it, the entire sitting (~170 KB) comes back in **one GET** —
+cheaper than 愛媛 and 三重, which need the speaker index first. `startPos` is
+ignored under `PRINT_ALL` (0 and 272 return the same bytes), so the URL is
+composable at listing time and is short enough to be the record's identity.
+
+The body is HTML rather than plain text — one `<BR>` per line — so it is reduced
+with `BeautifulSoup(...).get_text("\n", strip=True)` before the split rule runs.
+The markers survive that unchanged, including the full-width space that separates
+a speaker from their words.
+
+## Not every document in the tree is a sitting
+
+兵庫 lists 決議案・請願・意見書 beside its minutes, at both the year and the session
+level, as `fileName=R07060004KETS.html`. 三重 lists a table of contents as
+`fileName=R080119MOKU`. The old `fileName=([A-Za-z0-9]+)` pattern took the first
+kind **with the `.html` cut off**, which then 404s one request later, and took the
+second kind as a sitting with a real-looking date.
+
+A sitting's name is `[RHS]YYMMDD` plus a serial letter, and `_SITTING` now requires
+exactly that. A dotted name is a known kind and is dropped quietly; **any other
+shape is logged as a warning**, because a silently dropped sitting is the failure
+this project keeps paying for.
+
 ## Parsing notes
 
 - Marker form is `○（名前役職）` — name and office run together inside one pair of
@@ -98,6 +153,29 @@ nothing per document, and because `fileName=R070303A` carries the date,
 `--since/--until` prunes before **either** request — the one site so far where a
 date filter genuinely saves work.
 
+### Collected — 三重 and 兵庫, 2019-04 onwards (2026-08-28)
+
+```
+三重  222 sittings  14,822 speeches  10,588,850 chars  2019-05-10 .. 2026-03-31
+兵庫  191 sittings  14,986 speeches   8,812,287 chars  2019-06-13 .. 2026-06-11
+```
+
+Nothing undated, no sitting without speeches, no duplicate URL, no digit or
+punctuation in any speaker name, and — counted against the listing, per session —
+**zero sittings missing inside the collected window** on either. 三重 has 182
+speakers and 104 distinct roles; 兵庫 has 203 and 48.
+
+Two artefacts worth knowing, neither of them ours:
+
+- 三重 prints 「○教育長（福永和伸教育長）」 in one 令和6年 sitting — the office twice,
+  inside the brackets and out. One occurrence.
+- 兵庫 occasionally runs a member's name into a committee title inside the
+  brackets (「松本隆弘議会運営委員会委員長」), the 愛媛 problem in miniature. The
+  ordinary member form (「北野　実議員」) splits cleanly and is by far the majority.
+
+The archive before 2011-04 is a separate run; 2011-04 .. 2019-03 is left to the
+地方議会会議録コーパス, as on 和歌山 and 愛媛.
+
 ### Collected — 愛媛, 2019-05 onwards
 
 ```
@@ -108,6 +186,43 @@ chars    : 6,123,840    range    : 2019-05-15 .. 2026-03-09
 33 sessions, 266 speakers, nothing undated, no sitting without speeches, no
 duplicate, no mojibake. Scoped to the gap the 地方議会会議録コーパス leaves after
 2019-03; 平成3年–2011年 is still uncollected and is the obvious next run.
+
+**Corrected 2026-08-28: it was 201, and three sittings were missing.** The
+listing offered 212; 8 of the 11 absences were `--since` doing its job and three
+were fetch failures against the URL length limit below. Recovered, so the figure
+is now **204 sittings, 11,548 speeches**.
+
+### Three more faults, found on 三重 and 兵庫 (2026-08-28)
+
+1. **`GetPerson.exe` 404s on a long URL, and that 404 is a length limit.** 2,102
+   characters fetched; 2,119 returned **404**, identically on 三重 and 愛媛. A
+   一般質問 day has ~115 speeches, which is just past it. `scrape()` catches
+   `FetchError`, logs it and continues, so the sitting is simply not in the corpus
+   afterwards — **three 愛媛 sittings were lost this way**, all 3月 days, and the
+   only trace was three error lines in a run log nobody re-read. `fetch_meeting`
+   now splits the offsets across as many URLs as it takes (`MAX_URL = 1800`) and
+   concatenates the responses, dropping the `開催日：`/`会議名：` header the CGI
+   repeats on every one. The three were recovered on 2026-08-28.
+
+   The 愛媛 note that a download URL "runs past pydantic's 2,083-character limit"
+   was recorded as a *modelling* problem and fixed as one. It was also a live
+   fetch failure, and nothing connected the two for a day.
+
+2. **兵庫's tree is a different generation of markup.** `data-depth="令和 7年 …"`
+   on an `<A class="js-tree-submit">`, instead of `onClick="…treedepth.value='…'"`.
+   The regex found nothing, and a tree with no nodes is indistinguishable from a
+   year that does not exist. Both forms are read now.
+
+3. **三重's speech marker is 静岡's, not 愛媛's.** 「○知事（一見勝之）」 — office
+   outside the brackets, name inside — where 愛媛 writes 「○（三宅浩正議長）」. The
+   愛媛 rule requires 「○（」 and matches **0 lines of every 三重 document**. The
+   same rule shape works for both 三重 and 兵庫 and, unlike 愛媛, it separates name
+   from office because the site does.
+
+   It needs one guard: 「○議事日程（第３号）」 is a heading with the exact shape of a
+   marker. Requiring a space after the closing bracket separates them — a heading
+   ends its line, a speaker keeps talking. Counted across 8 sample sittings from
+   昭和61年 to 令和7年: every real speech taken, only the 議事日程 line left.
 
 ### Four faults, each silent, each found only by running it
 
@@ -149,6 +264,6 @@ deliberately deferred — but it is the right way, and it would also give 三重
 ## Still to do
 
 - 平成3年–2011年 for 愛媛 (`years = []` walks the whole archive).
-- 三重 and 兵庫: same product, same `cgi-bin3`, different `Code=` and `base_url`.
-  兵庫 reaches 昭和61年, and `dates.py` already reads 「昭和六十一年」.
 - 委員会会議録: the same tree carries them; `sessions` selects 本会議 today.
+- 愛媛's name/office split, which needs the 出席理事者 roster. 三重 and 兵庫 do not
+  need it — they print the two separately.
