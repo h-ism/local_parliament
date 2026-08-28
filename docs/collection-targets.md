@@ -126,31 +126,55 @@ were known tomorrow. It belongs in the inquiry letters for these 18.
 
 ---
 
-## Before collecting anything: check what already exists
+## Before collecting anything: ask for what already exists
+
+**Scope is settled (2026-08-27): every period we can obtain, no research window.**
 
 The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) publishes a
-都道府県議会 corpus covering **all 47 assemblies** for **2011–2014** and **2015–2019**
-— reported as 423 bodies, ~134M sentences, ~80 GB. Its search systems are public;
-the bulk data appears to be by arrangement with the project rather than a download.
+都道府県議会 corpus covering **all 47 assemblies** for **2011-04 .. 2019-03** —
+fiscal years, so the boundaries are not where you would guess. Reported as 423
+bodies, ~134M sentences, ~80 GB. Its search systems are public; the bulk data
+appears to be by arrangement with the project rather than a download.
 
-If the research window falls inside 2011–2019, most of this crawl is redundant and
-the right move is to ask them, not to re-collect. The genuine gap is **2020 onwards**,
-which is also where our two Tier-1 targets are cheapest.
+With no window, that range is not something to route around. It is a large piece of
+exactly what we want, already assembled, and the question is no longer "do I need to
+crawl this?" but "you already have this — may I have it rather than re-crawling 47
+assemblies?"
 
-**This should be settled before any large crawl is started.**
+Two consequences are already on the books:
+
+- **和歌山 and 愛媛 were both scoped to leave 2011-04 .. 2019-03 empty**, on the
+  assumption that it comes from this project. Those holes stay open by design until
+  the letter is answered — and 和歌山's 673 documents from 1989–2011 sit on the far
+  side of one of them.
+- **2019-04 .. 2019-12 falls between that corpus and any collection that starts at a
+  calendar year.** 和歌山 was scoped with that edge in mind; do the same for the next
+  prefecture.
+
+**Ask before starting any large crawl.** The letter is drafted and unsent:
+`docs/inquiries/local-politics.md`. It also asks whether their collection continues
+past 2019-04 — the answer most likely to change what we do next, and one nothing on
+our side can establish.
 
 ---
 
 ## Recommended order
 
-1. Ask local-politics.jp what they can share for the research window. Costs one
-   email and may remove most of the work.
+1. **Send `docs/inquiries/local-politics.md`.** Drafted 2026-08-27, not yet sent;
+   the addressee is still 要確認. One email, and it decides whether 2011-04 ..
+   2019-03 has to be crawled for 47 assemblies at all.
 2. ~~Add the intermediate listing level to `GenericScraper`.~~ — done.
-3. ~~`sites/wakayama.toml`~~ — done. Decide whether to run the full 36-year crawl.
+3. ~~`sites/wakayama.toml`~~ — done, and the archive is collected: 907 sittings,
+   46,839 speeches, 1989-02-27 .. 2025-12-19. Only 2011-04 .. 2019-03 is missing,
+   and item 1 decides whether we crawl it. 委員会会議録 (`/gijiroku2/`) untouched.
 4. ~~`sites/ehime.toml` + the non-HTML detail path~~ — done. 三重 and 兵庫 are next
    and should be a config each, with 兵庫 reaching back to 1986.
 5. Send the SSP letters. Now a permission request, not a how-to: the API is
    disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
    it is the only one of the 18 that names a destination on its own page.
-6. Set `PT_CONTACT`. Every letter promises a contact address in the User-Agent and
-   the default is still `research-crawler@example.invalid`.
+6. ~~Set `PT_CONTACT`.~~ — set 2026-08-28 to a 京都大学 address, as an `export` in
+   the researcher's `~/.bashrc`. There is no `.env` support: `Settings.contact`
+   reads the environment at import, so it has to be exported before `uv run`.
+   **Provisional (仮おき) — confirm the address before a letter goes out or a large
+   crawl starts.** It is what site operators see in the User-Agent and what every
+   letter in `docs/inquiries/` promises.

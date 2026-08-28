@@ -226,11 +226,13 @@ prefecture-hosted system at `www3.pref.iwate.jp/gikai/user/www/Kensaku/`
    today's scraper could work almost as-is. Proves the pipeline end to end.
 3. **Ask, for the blocked ones.** Drafts for every one of them are in
    `docs/inquiries/` — see its README for who gets which letter.
-4. **Look at existing corpora before re-collecting anything.** The
+4. **Ask for existing corpora before re-collecting anything.** The
    地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) already publishes a
-   都道府県議会 corpus for 2011–2014 and 2015–2019, and `yonalog`
-   (<https://chiholog.net/yonalog>) offers cross-prefecture search. If either
-   covers the research window, much of this crawl may be unnecessary.
+   都道府県議会 corpus for **2011-04 .. 2019-03** (fiscal years), and `yonalog`
+   (<https://chiholog.net/yonalog>) offers cross-prefecture search. The scope is
+   every period we can obtain, so that range is wanted rather than excluded — which
+   makes it something to request rather than re-crawl for 47 assemblies. Letter
+   drafted, unsent: `docs/inquiries/local-politics.md`.
 
 ## Method and courtesy
 
