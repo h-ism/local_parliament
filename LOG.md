@@ -2,6 +2,75 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-08-28 — the 千葉 letter, rewritten for the person who opens it (`docs/chiba-plain-language`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Documentation only. The 千葉 draft was too technical, and the fix is not to trim it
+but to split it.
+
+**Who reads this.** 議会事務局 staff, not the person who maintains the server. The
+old body led with `/voices/cgi/`, `/gikai/cgi/`, `/kaigiroku/cgi/` and the word
+`Disallow`, and asked them to judge whether their own robots.txt was an oversight.
+None of that is information they can act on — it is a request to make a decision in
+a vocabulary that belongs to someone else, and it reads as pressure rather than as
+courtesy.
+
+**What changed.** The body now explains the situation in plain Japanese — websites
+carry a robots.txt saying "please don't read this part automatically"; other
+prefectures on the same product have their minutes inside that range; yours sits in
+a slightly different place and so falls outside it; we cannot tell whether that is
+deliberate. Every path name moved to a 【技術的な補足】 at the end, addressed to
+whoever maintains the system, so the office can forward that section alone. The
+substance is unchanged and nothing was softened away: the letter still discloses
+that the setting currently permits access, and still says we will not collect if
+that was not the intent.
+
+**Also reordered.** The old letter opened with the robots question and asked for the
+data second. That put the awkward part first and made the whole thing read as an
+argument about configuration. The request comes first now; the question follows.
+
+**One line of house style.** `inquiries/README.md` gains the rule, because 30 other
+drafts share the old shape and will be sent by someone reading that index — 千葉 is
+now the worked example, and the others are explicitly marked as not yet converted.
+
+**Files**
+
+`docs/inquiries/chiba.md`, `docs/inquiries/README.md`.
+
+### 日本語
+
+ドキュメントのみ。千葉の文面が専門的すぎるという指摘への対応。削るのではなく
+**分ける**ことで解いた。
+
+**誰が読むか。** 受け取るのは議会事務局の職員であって、サーバを管理している人とは
+限らない。旧文は `/voices/cgi/`・`/gikai/cgi/`・`/kaigiroku/cgi/` と `Disallow` を
+本文の前面に置き、「自分たちの robots.txt が記載漏れかどうか」を判断してくれと
+求めていた。これは相手が動ける情報ではなく、**他人の語彙で決断を迫る形**であり、
+礼儀というより圧力として読まれる。
+
+**変えたこと。** 本文は平易な日本語で事情を述べるだけにした — ウェブサイトには
+「ここは自動で読み取らないでほしい」と伝える robots.txt という設定があり、同じ
+仕組みの他県では会議録がその範囲に入っているが、貴議会は設置場所がわずかに違う
+ためその範囲に入っていない、意図的かどうかはこちらでは分からない、という説明。
+パス名はすべて末尾の【技術的な補足】に移し、システム担当・事業者向けの宛書きを
+付けた（事務局はその部分だけを転送すればよい）。**内容は薄めていない。** 現状の
+設定では取得可能であると明かしている点も、意図と異なるなら取得しないと述べている
+点もそのまま。
+
+**順序も入れ替えた。** 旧文は robots の話から始まり、データのお願いが後だった。
+気まずい話が先頭に来ることで、全体が「設定についての議論」に見えていた。いまは
+お願いが先、確認が後。
+
+**書き方を README に1行。** 他に30本の下書きが同じ旧い形のままで、送る人はあの索引
+を見て送る。千葉を見本として示し、**他は未改訂であると明記した。**
+
+**ファイル**
+
+`docs/inquiries/chiba.md`, `docs/inquiries/README.md`.
+
 ## 2026-08-28 — the scope rewrite that PR #10 was holding up (`docs/scope-no-window`)
 
 *English and Japanese. / 英語と日本語で併記する。*
