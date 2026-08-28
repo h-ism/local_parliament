@@ -100,21 +100,38 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
   robots.txt 404, pages marked `index, follow`; one index page → 167 sessions →
   per-sitting full text. 2011-04 .. 2019-03 is deliberately absent: the
   地方議会会議録コーパス already covers it. `docs/wakayama.md`.
-- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 201
-  sittings, 11,194 speeches, 2019-05-15 .. 2026-03-09** (the gap the corpus leaves
-  after 2019-03); 平成3年–2011年 still to do. `docs/kensakusystem.md`.
-- **三重・兵庫** — the same `kensakusystem.jp` product, same `cgi-bin3`; only
-  `base_url` and `Code=` differ, so both should be a config away. 兵庫 reaches
-  昭和61年 and `dates.py` already reads 「昭和六十一年」.
+- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 204
+  sittings, 11,548 speeches, 2019-05-15 .. 2026-03-19** (the gap the corpus leaves
+  after 2019-03); 平成3年–2011年 still to do. Three of those 204 were missing until
+  2026-08-28 — see the URL-length note below. `docs/kensakusystem.md`.
+- **三重** — `sites/mie.toml`, same scraper. **Collected: 819 sittings, 47,279
+  speeches, 1989-02-28 .. 2026-03-31.** Prints office and name separately, which
+  愛媛 cannot: 269 distinct roles.
+- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 809 sittings, 42,310
+  speeches, 1986-02-22 .. 2026-06-11** — the deepest archive in the survey. One
+  request per sitting via 全文表示.
 
-**The next code change**
+**"The same product" is not the same site**
 
-The intermediate listing level is done: `list.index_link` / `index_include` /
-`index_exclude` / `max_depth`, a symmetric `list.include`, and fragment-stripping
-when a link is resolved. 愛媛 can now reuse all of it and needs two things more —
-`speech_split` against a body that is not HTML, and a listing step that gathers
-`downloadPos` values into a `GetPerson.exe` URL. The second may be cheaper as a
-small `BaseScraper` subclass than as config. See `docs/kensakusystem.md`.
+三重 and 兵庫 were recorded for a day as "a config away" from 愛媛 because they
+share a host, a `cgi-bin3`, a charset and a tree shape. They differ in the three
+places that decide whether a config collects anything, and every difference fails
+*quietly*:
+
+- **兵庫's tree is newer markup** — `data-depth="令和 7年 …"`, not
+  `onClick="…treedepth.value='…'"`. The old regex found no nodes, and a tree with
+  no nodes reads exactly like a year that does not exist.
+- **兵庫 has no ダウンロード button.** No `downloadPos` checkboxes at all, so the
+  愛媛 route dead-ends. Its 全文表示 (`GetText3.exe?…&FUNC=PRINT_ALL`) returns the
+  whole sitting as HTML in **one** request — cheaper than either of the others.
+- **三重's marker is 静岡's shape, not 愛媛's** — 「○知事（一見勝之）」 against
+  「○（三宅浩正議長）」. 愛媛's rule matches **zero** lines on every 三重 document.
+
+The rule that took 三重 and 兵庫 needs one guard: 「○議事日程（第３号）」 has a
+marker's exact shape, and only the space after the bracket separates a heading
+from someone still talking.
+
+See `docs/kensakusystem.md`.
 
 **Blocked, and why it is not a scraping problem**
 
@@ -189,6 +206,13 @@ quirks.
   respectively; all three looked reasonable written down. Re-parsing the whole
   corpus to compare costs zero requests because every response is cached — which
   is what the cache is for.
+- **A URL length limit can wear a 404.** `GetPerson.exe` serves 2,102 characters
+  of URL and returns **404** at 2,119 — on two different tenants, identically. A
+  一般質問 day carries just enough offsets to cross it, `scrape()` logs the
+  FetchError and moves on, and the sitting is then absent from the corpus with
+  nothing but one line in a run log to say so. It cost 愛媛 three sittings, found
+  a day later by counting the listing against the corpus. **When a fetch fails on
+  the busiest documents only, suspect the length of the request, not the server.**
 - **A node that is walked but matches nothing is the quietest failure of all.**
   愛媛's tree has a 「令和元年」 node, and 元 is not `\d`; the year was visited,
   matched no sessions, and nothing warned. Likewise a `years` entry naming a node
@@ -210,10 +234,18 @@ quirks.
   suffix rejects the numerals and the roster in one rule. This one surfaced only
   as a sitting that parsed to zero speeches — the same signature as the 静岡
   encoding bug, and worth treating as the standard smoke test.
-- **Honorifics are not uniform across prefectures.** 和歌山 marks every member
-  「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud. A 「君」-only
-  rule would drop women's speeches wholesale on any site that marks them 「さん」.
-  Verify per site — it is a corpus-bias problem, not a parsing detail.
+- **Honorifics are not uniform across prefectures, and this one bit.** 和歌山 marks
+  every member 「君」 regardless of gender, but its 議長 says 「６番森礼子さん」 aloud.
+  A 「君」-only rule would drop women's speeches wholesale on any site that marks
+  them 「さん」. Verify per site — it is a corpus-bias problem, not a parsing detail.
+
+  **What it actually did on 三重 and 兵庫** was quieter than dropping anything:
+  `_clean_speaker` stripped 「君」 and left 「さん」 and 「氏」, so 「太田栄子さん」 and
+  「太田栄子」 were two speakers, 「酒井隆明氏」 and 「酒井隆明」 two more. Ten names for
+  seven people, every one of the splits on the non-「君」 side — which is to say the
+  women and the outside witnesses. Nothing warned; the corpus simply counted them
+  twice. All three honorifics are stripped now. **Check for a name that appears
+  both with and without a suffix after every collection.**
 - **Structure can be coincidence.** 「○出　席　議　員（六十七名）」 is an attendance
   roster with the exact shape of a speech marker 「○知事（鈴木康友君）」. Requiring
   the 「君」 honorific separated them. Verify a split rule against a sample and
@@ -221,6 +253,12 @@ quirks.
 - **A date filter is not a crawl limit.** `--since/--until` are applied after a
   page is fetched, so on an index carrying no dates they save nothing. Narrow
   `--start-url` instead.
+- **Count the listing against the corpus after every run.** Not the total — the
+  per-item difference. 愛媛 reported 201 sittings and looked complete; the listing
+  offered 212, and of the 11 missing, 8 were correctly filtered by `--since` and
+  **3 were fetch failures nobody had noticed**. Re-listing costs nothing because
+  every page is cached, and it is the only check that catches a document the
+  crawler asked for and failed to get.
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing. But it decides it only for
   the URLs you know about: SSP's `/tenant/` is allowed and its `/dnp/search/` API

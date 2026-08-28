@@ -1,0 +1,51 @@
+# 兵庫県議会 — 本会議会議録
+#
+# `kensakusystem.jp`, the same product as 愛媛・三重 — and the one that shows how
+# little "the same product" guarantees. Two things differ, and each of them makes
+# the 愛媛 config collect nothing at all:
+#
+# 1. **The tree is newer markup.** Nodes are `<A HREF="#" class="js-tree-submit"
+#    data-depth="令和 7年  2月第370回定例会 ">`, not the `onClick=…treedepth.value`
+#    of the other two. The scraper now reads both.
+# 2. **There is no ダウンロード button.** The speaker index carries no
+#    `downloadPos` checkboxes, so `GetPerson.exe` has nothing to assemble. What
+#    it has instead is 全文表示 — `GetText3.exe?…&FUNC=PRINT_ALL` — which returns
+#    the whole sitting as HTML in **one** request. See `download` below.
+#
+# No robots.txt on the host (404); pages are marked `follow,index`. cp932.
+#
+# Coverage: 本会議 **昭和61年 (1986)** 〜 — the deepest archive in the survey.
+# 予算特別委員会・決算特別委員会 reach back equally far and 常任委員会 to 平成17年6月;
+# all three are in the same tree and are left out by `sessions`.
+
+prefecture = "兵庫県"
+name = "hyogo"
+scraper = "kensakusystem"
+
+[kensakusystem]
+base_url = "https://www.kensakusystem.jp/hyogopref/"
+download = "printall"
+
+sessions = '定例会|臨時会'
+
+# The whole archive, 昭和61年 onwards. As on 三重, the corpus window is excluded
+# per run with --since/--until, which prunes before anything is fetched.
+years = []
+
+# 「○議長（浜田知昭）　　ただいまから本日の会議を開きます。」
+# 「○（北野　実議員）　　おはようございます。自由民主党議員団、…」
+#
+# Both forms appear in the same sitting: office-holders as 役職（氏名）, members as
+# （氏名＋議員） with the役職 slot empty. The same rule takes both, and 昭和61年
+# reads identically apart from the 「君」 honorific, which `_clean_speaker` strips.
+#
+# The trailing space is what separates 「○議事日程（第３号）」 — a heading with the
+# exact shape of a marker — from a speech. Counted on 6 sample sittings across
+# 昭和61年 and 令和7年: every real speech taken, only the 議事日程 line left.
+#
+# The `(?:議員)?` drops the office that modern 兵庫 appends inside the brackets, so
+# a member is stored as 「北野　実」 rather than 「北野　実議員」 — the same name the
+# 議長 would use for them, and the same shape 昭和61年 already has (where the
+# honorific is 「君」 and `_clean_speaker` takes it). Verified to change nothing
+# else: the same 190 and 70 speeches are found with and without it.
+speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）)\n]{1,24}?)(?:議員)?[）)][ 　]'

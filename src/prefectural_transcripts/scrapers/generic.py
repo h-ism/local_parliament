@@ -360,5 +360,13 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
 
 
 def _clean_speaker(name: str) -> str:
-    """Drop the 「君」 the minutes append to every name; keep the name itself."""
-    return re.sub(r"\s*君$", "", name.strip())
+    """Drop the honorific the minutes append to a name; keep the name itself.
+
+    「君」, 「さん」 and 「氏」, because taking only 「君」 splits one person into two
+    speakers along a line that is usually gender. 三重 writes 「太田栄子さん」 in one
+    sitting and 「太田栄子」 in another; 兵庫 does the same for 「金澤和夫さん」 and,
+    for the outside witnesses it hears, 「酒井隆明氏」. With a 「君」-only rule those
+    were ten names for seven people, and every per-speaker count was wrong for
+    exactly the speakers the minutes mark with something other than 「君」.
+    """
+    return re.sub(r"\s*(?:君|さん|氏)$", "", name.strip())

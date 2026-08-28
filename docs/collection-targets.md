@@ -13,6 +13,11 @@ a second listing level — plus one small parsing addition, opens **four prefect
 
 ## Tier 1 — collectable now, nothing to ask anyone
 
+**Collected on this product (2026-08-28):** 三重 819 sittings / 47,279 speeches /
+1989-02-28 .. 2026-03-31, and 兵庫 809 / 42,310 / **1986-02-22** .. 2026-06-11 —
+the oldest material in the corpus. 愛媛 stands at 204 / 11,548, three of them
+recovered from a URL-length failure. Detail in `docs/kensakusystem.md`.
+
 ### 1. 和歌山 — the best target found — **implemented 2026-08-27**
 
 robots.txt 404, pages marked `index, follow`, UTF-8, no vendor system. One index
@@ -27,7 +32,7 @@ The one trap: members speak as bare `○濱口太史君` while office-holders us
 `○知事（岸本周平君）`. 静岡's parenthesis-only split rule would silently discard the
 majority of the corpus.
 
-### 2. 愛媛・三重・兵庫 — one config shape, three prefectures
+### 2. 愛媛・三重・兵庫 — three prefectures, three shapes — **implemented 2026-08-28**
 
 `kensakusystem.jp`, robots.txt 404, pages marked `follow,index`. The survey left two
 open questions and both resolved in our favour:
@@ -46,17 +51,18 @@ date filter here saves requests instead of arriving too late.
 Detail, including the exact URL forms and the cp932 percent-encoding of `treedepth`,
 in `docs/kensakusystem.md`.
 
-### What both need — done for 和歌山, still open for 愛媛
+### What "one config shape" cost
 
-`GenericScraper` models a listing as one level: `list.meeting_link` plus
-`next_page` pagination. Both targets are **year/index → session → sitting**. The
-generic fix is an intermediate listing level — a selector for links that lead to
-another list rather than to a transcript — which is a real shape in this domain,
-not a per-site hack.
+That heading was half wrong and the correction is the most useful thing this page
+records. The three tenants share a host, a `cgi-bin3`, a charset and a tree shape.
+They differ in the markup of a tree node (兵庫: `data-depth=`), the route to a
+transcript (兵庫: `GetText3.exe?FUNC=PRINT_ALL`, one request, HTML) and the form
+of a speech marker (三重: `○知事（一見勝之）`, which 愛媛's rule never matches).
 
-愛媛 needs two smaller things on top: applying `speech_split` to a body that is not
-HTML, and a listing step that gathers `downloadPos` values into the next URL. The
-second may be cheaper as a small `BaseScraper` subclass than as config.
+Each difference fails silently — no nodes, or no speeches — so all three were
+found by running the thing, not by reading it. Full account in
+`docs/kensakusystem.md`. 三重 and 兵庫 both separate name from office, which 愛媛
+does not, so their `role` fields are populated.
 
 ---
 
@@ -167,8 +173,9 @@ our side can establish.
 3. ~~`sites/wakayama.toml`~~ — done, and the archive is collected: 907 sittings,
    46,839 speeches, 1989-02-27 .. 2025-12-19. Only 2011-04 .. 2019-03 is missing,
    and item 1 decides whether we crawl it. 委員会会議録 (`/gijiroku2/`) untouched.
-4. ~~`sites/ehime.toml` + the non-HTML detail path~~ — done. 三重 and 兵庫 are next
-   and should be a config each, with 兵庫 reaching back to 1986.
+4. ~~`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`~~ — done. The three
+   needed a scraper change each, not a config each; 兵庫 reaches 昭和61年 (1986).
+   Still uncollected on this product: 愛媛 平成3年–2011年, and every 委員会.
 5. Send the SSP letters. Now a permission request, not a how-to: the API is
    disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
    it is the only one of the 18 that names a destination on its own page.

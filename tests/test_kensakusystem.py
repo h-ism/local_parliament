@@ -221,3 +221,190 @@ def test_gannen_is_a_year_node() -> None:
     assert not _YEAR_NODE.match("令和元年 第363回定例会 ")
     # 平成31年 must sort before 令和元年, which string order gets backwards.
     assert _year_key("平成31年") < _year_key("令和元年")
+
+
+# --- 兵庫: the same product, two generations apart -----------------------------
+#
+# Every fixture below is the shape hyogopref actually serves. Read only the older
+# markup and 兵庫 yields nothing at all — which looks exactly like a year the tree
+# does not have, and warns about nothing.
+
+HYOGO = "https://www.kensakusystem.jp/hyogopref/"
+HCGI = HYOGO + "cgi-bin3/"
+HCODE = "rpo2cq1zucjm5gwgk4"
+
+HYOGO_INDEX = f"""<html><body>
+<a href="cgi-bin3/See.exe?Code={HCODE}">会議録の閲覧</a>
+</body></html>"""
+
+# `data-depth` rather than `onClick="…treedepth.value='…'"`.
+HYOGO_ROOT = """<html><body>
+<A HREF="#" class="js-tree-submit" data-depth="令和 7年"><IMG ALT="令和 2年～"></A>
+</body></html>"""
+
+HYOGO_YEAR = """<html><body>
+<A HREF="#" class="js-tree-submit" data-depth="令和 7年"></A>
+<A HREF="#" class="js-tree-submit" data-depth="令和 7年  2月第370回定例会 ">2月第370回定例会</A>
+<A HREF="#" class="js-tree-submit" data-depth="令和 7年 総務常任委員会 ">総務常任委員会</A>
+</body></html>"""
+
+# The 決議案・請願・意見書 the year level lists beside its sittings. Their names
+# carry an extension, and `fileName=([A-Za-z0-9]+)` used to take them with the
+# `.html` cut off — a request that 404s one hop later.
+HYOGO_SESSION = f"""<html><body>
+<A href="ResultFrame.exe?Code={HCODE}&fileName=R070225A&startPos=0">
+<IMG SRC="/hyogopref/image/r.gif">（第3日 2月25日）</A><BR>
+<A href="ResultFrame.exe?Code={HCODE}&fileName=R07060004KETS.html">
+<IMG SRC="/hyogopref/image/r.gif">令和 7年 6月決議案第4号</A><BR>
+</body></html>"""
+
+# `GetText3.exe?…&FUNC=PRINT_ALL` — HTML, one `<BR>` per line, whole sitting.
+# 「○議事日程（第３号）」 has the exact shape of a marker and is not a speech; the
+# space after the bracket is what separates them.
+HYOGO_TRANSCRIPT = """<html><body>
+開催日：令和 7年 2月25日<BR>
+○議事日程（第３号）<BR>
+○議長（浜田知昭）　　ただいまから本日の会議を開きます。<BR>
+○（北野　実議員）　　おはようございます。姫路市選出の北野実です。<BR>
+○知事（齋藤元彦）　　北野実議員のご質問にお答えをします。<BR>
+</body></html>"""
+
+HYOGO_SPLIT = r"(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）)\n]{1,24}?)(?:議員)?[）)][ 　]"
+
+
+def _hyogo_pages() -> dict[str, str]:
+    doc = (
+        f"{HCGI}GetText3.exe?Code={HCODE}&fileName=R070225A"
+        "&startPos=0&keyMode=10&searchMode=1&FUNC=PRINT_ALL"
+    )
+    return {
+        HYOGO + "index.html": HYOGO_INDEX,
+        f"{HCGI}See.exe?Code={HCODE}": HYOGO_ROOT,
+        f"{HCGI}See.exe?Code={HCODE}&treedepth={_cp932('令和 7年')}": HYOGO_YEAR,
+        f"{HCGI}See.exe?Code={HCODE}&treedepth={_cp932('令和 7年  2月第370回定例会 ')}": (
+            HYOGO_SESSION
+        ),
+        doc: HYOGO_TRANSCRIPT,
+    }
+
+
+def _hyogo() -> KensakuSystemScraper:
+    return KensakuSystemScraper(
+        KensakuConfig(
+            prefecture="兵庫県",
+            base_url=HYOGO,
+            name="hyogo",
+            download="printall",
+            speech_split=HYOGO_SPLIT,
+        )
+    )
+
+
+def test_the_newer_tree_markup_is_read_too() -> None:
+    """兵庫 carries its labels in `data-depth`, not in an `onClick` assignment."""
+    client = FakeClient(_hyogo_pages())
+    refs = list(_hyogo().list_meetings(client))
+    assert [r.date for r in refs] == [date(2025, 2, 25)]
+    assert refs[0].title == "令和7年2月第370回定例会（第3日 2月25日）"
+
+
+def test_documents_that_are_not_sittings_are_left_out(caplog) -> None:
+    """兵庫 lists 決議案・請願・意見書 on the same pages as its minutes."""
+    client = FakeClient(_hyogo_pages())
+    with caplog.at_level("WARNING"):
+        refs = list(_hyogo().list_meetings(client))
+    assert len(refs) == 1
+    assert "KETS" not in str(refs[0].url)
+    # A known kind is dropped quietly; an unknown shape would be reported.
+    assert not caplog.text
+
+
+def test_the_older_serial_suffix_is_a_sitting_too() -> None:
+    """三重's 平成 archive numbers a continued sitting `H010518A01`.
+
+    The first version of the shape rule allowed one letter and no digits, and
+    rejected 52 real sittings. They were reported rather than dropped in silence,
+    which is the only reason this is a test and not a hole in the corpus.
+    """
+    from prefectural_transcripts.scrapers.kensakusystem import _SITTING
+
+    assert _SITTING.match("H010518A01")
+    assert _SITTING.match("S610222A")
+    # 目次・名簿・議案 are not sittings, with or without their extension.
+    assert not _SITTING.match("R080119MOKU")
+    assert not _SITTING.match("H070515MEIB.html")
+
+
+def test_an_unknown_document_shape_is_reported(caplog) -> None:
+    """The one thing this project cannot afford is dropping a sitting in silence."""
+    pages = _hyogo_pages()
+    pages[f"{HCGI}See.exe?Code={HCODE}&treedepth={_cp932('令和 7年  2月第370回定例会 ')}"] = (
+        f'<A href="ResultFrame.exe?Code={HCODE}&fileName=R07UNSEENSHAPE">（第3日）</A>'
+    )
+    client = FakeClient(pages)
+    with caplog.at_level("WARNING"):
+        list(_hyogo().list_meetings(client))
+    assert "R07UNSEENSHAPE" in caplog.text
+
+
+def test_printall_is_one_request_and_html() -> None:
+    """No speaker index, no offsets: 全文表示 hands back the whole sitting."""
+    client = FakeClient(_hyogo_pages(), encoding="cp932")
+    scraper = _hyogo()
+    ref = next(iter(scraper.list_meetings(client)))
+    before = len(client.requested)
+    meeting = scraper.parse_meeting(ref, scraper.fetch_meeting(ref, client))
+
+    assert len(client.requested) == before + 1
+    assert [(s.role, s.speaker) for s in meeting.speeches] == [
+        ("議長", "浜田知昭"),
+        (None, "北野　実"),
+        ("知事", "齋藤元彦"),
+    ]
+    # 「○議事日程（第３号）」 has a marker's shape and is not a speech.
+    assert all("議事日程" not in s.speaker for s in meeting.speeches)
+
+
+# --- the URL limit that ate three sittings -------------------------------------
+
+
+def test_a_long_sitting_is_fetched_in_chunks() -> None:
+    """`GetPerson.exe` 404s past ~2,110 characters of URL, and `scrape()` logs a
+    FetchError and moves on — so the sitting is simply absent afterwards. Three
+    愛媛 sittings were lost that way, all of them 3月 days with ~120 speeches.
+    """
+    from prefectural_transcripts.scrapers.kensakusystem import MAX_URL
+
+    pages = _pages()
+    positions = [str(i * 977) for i in range(120)]
+    many = "".join(f'<INPUT name="downloadPos" value="{p}" >' for p in positions)
+    index = f"{CGI}r_Speakers.exe?{CODE}/R080225A/0/0//10/1/1073741823:2097151/0/1//0/0/0"
+    pages[index] = f"<html><body><FORM>{many}</FORM></body></html>"
+
+    stem = f"{CGI}GetPerson.exe?Code={CODE}&fileName=R080225A"
+    chunks, current, length = [], [], len(stem)
+    for p in positions:
+        field = len(f"&downloadPos={p}")
+        if current and length + field > MAX_URL:
+            chunks.append(current)
+            current, length = [], len(stem)
+        current.append(p)
+        length += field
+    chunks.append(current)
+    assert len(chunks) > 1, "the fixture must be long enough to need splitting"
+
+    head = "開催日：令和 8年 2月25日\r\n会議名：令和 8年定例会（第1号 2月25日）\r\n\r\n"
+    for i, chunk in enumerate(chunks):
+        url = stem + "".join(f"&downloadPos={p}" for p in chunk)
+        assert len(url) <= MAX_URL
+        pages[url] = f"{head}○（{i}番議員）　発言{i}。\r\n"
+
+    client = FakeClient(pages, encoding="cp932")
+    scraper = _scraper()
+    ref = next(iter(scraper.list_meetings(client)))
+    meeting = scraper.parse_meeting(ref, scraper.fetch_meeting(ref, client))
+
+    # Every chunk arrived...
+    assert [s.speaker for s in meeting.speeches] == [f"{i}番議員" for i in range(len(chunks))]
+    # ...and the header the CGI repeats on each response did not land inside a speech.
+    assert all("開催日" not in s.text for s in meeting.speeches)
