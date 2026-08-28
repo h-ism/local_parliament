@@ -128,6 +128,43 @@ exactly that. A dotted name is a known kind and is dropped quietly; **any other
 shape is logged as a warning**, because a silently dropped sitting is the failure
 this project keeps paying for.
 
+## One marker rule, and what each bound cost
+
+All three tenants now use the same `speech_split`, and every part of it was paid
+for by a document that broke an earlier version:
+
+```
+(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])
+```
+
+- **`role` outside the brackets.** 三重, 兵庫, and 愛媛's 平成 archive all write
+  「○知事（一見勝之）」 / 「○47番（岡田己宜君）」. Only 愛媛's modern documents write
+  「○（三宅浩正議長）」 with everything inside, and there `role` is simply empty.
+- **The lookahead, not a trailing space.** 「○議事日程（第３号）」 has a marker's exact
+  shape and ends its line; a speaker is followed by their words. But 愛媛 平成3年
+  opens speeches with applause — 「○47番（岡田己宜君）（拍手）統一地方選挙後…」 — so
+  an opening bracket has to count too. Requiring a space dropped three of those.
+- **40 characters, not 24.** 「毛利修三愛媛県の未来を創る農業・農村振興条例審査特別
+  委員長」 is 29 characters and is a real speaker. A 24-character cap silently
+  dropped two speeches from the 愛媛 corpus — the same names this document cites
+  as the reason 愛媛's name and office cannot be split.
+- **`)` allowed inside the name.** 「○（大北秀特命担当部長(会計管理者)）」 exists.
+  Excluding the ASCII bracket cut the speaker at the inner one and left the speech
+  itself starting with 「）」 — wrong under the old rule too, and only visible
+  because the corpus was re-parsed and diffed rather than eyeballed.
+
+The rule change was checked by re-parsing all three corpora from cache and
+diffing: 三重 unchanged, 兵庫 **+4** (the applause openings), 愛媛 unchanged at
+11,548 with the long committee-chair names intact.
+
+## 愛媛 has two generations too
+
+The config that collected 2019 onwards would have collected **nothing** before
+2011: 平成3年 uses 三重's marker shape, and a rule requiring 「○（」 matches zero
+lines of every 平成 document. Since a zero-speech sitting does warn, this would
+have been noisy rather than silent — but it would have been an entire archive of
+warnings, discovered after the crawl rather than before it.
+
 ## Parsing notes
 
 - Marker form is `○（名前役職）` — name and office run together inside one pair of
@@ -157,7 +194,8 @@ date filter genuinely saves work.
 
 ```
 三重  819 sittings  47,279 speeches  40,771,120 chars  1989-02-28 .. 2026-03-31
-兵庫  809 sittings  42,310 speeches  34,968,756 chars  1986-02-22 .. 2026-06-11
+兵庫  809 sittings  42,314 speeches  34,968,714 chars  1986-02-22 .. 2026-06-11
+愛媛  666 sittings  39,624 speeches  23,354,176 chars  1991-06-27 .. 2026-03-19
 ```
 
 兵庫 is now the oldest material in the corpus by three years. Both were collected
@@ -190,7 +228,18 @@ Two artefacts worth knowing, neither of them ours:
 The archive before 2011-04 is a separate run; 2011-04 .. 2019-03 is left to the
 地方議会会議録コーパス, as on 和歌山 and 愛媛.
 
-### Collected — 愛媛, 2019-05 onwards
+### Collected — 愛媛, the whole archive (2026-08-28)
+
+666 sittings, 39,624 speeches, 1991-06-27 .. 2026-03-19 — 平成3年第229回定例会 is
+where the site's coverage starts, and the collected range begins exactly there.
+243 sittings are uncollected and all 243 are inside the corpus window. No
+honorific splits, nothing undated, no sitting without speeches.
+
+Both marker generations are present and the 平成 documents populate `role` for
+11,214 of their 27,734 speeches — the site changed forms partway through the
+archive rather than at a clean boundary, which is why one rule has to take both.
+
+### Collected — 愛媛, 2019-05 onwards (superseded by the line above)
 
 ```
 meetings : 201          speeches : 11,194
