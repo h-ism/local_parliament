@@ -184,6 +184,28 @@ def _cp932(value: str) -> str:
     return quote(value.encode("cp932"))
 
 
+# 「令和7年総務常任委員会」, 「令和8年令和8年度予算特別委員会」, 「令和6年県庁舎等再整備協議会」.
+# Matched positively rather than by excluding 定例会・臨時会, because the labels
+# that are not 本会議 are a closed list of shapes and the 本会議 ones are not:
+# 兵庫's truncated 「昭和61年第198回定」 is a 定例会 whose label does not say so, and
+# an "everything else is a committee" rule would file that sitting as one.
+_COMMITTEE = re.compile(r"委員会|協議会|検討会|世話人会|分科会")
+_LEADING_YEAR = re.compile(r"^(?:令和|平成|昭和)(?:元|\d{1,2})年")
+
+
+def _committee(session: str | None) -> str | None:
+    """The committee a sitting belongs to, or None for 本会議.
+
+    The leading year comes off — 「令和7年総務常任委員会」 is the 総務常任委員会 — but
+    only the first one, because 兵庫 names a budget committee for the fiscal year
+    it examines and 「令和8年令和8年度予算特別委員会」 is genuinely a different body
+    from 「令和7年度予算特別委員会」.
+    """
+    if not session or not _COMMITTEE.search(session):
+        return None
+    return _LEADING_YEAR.sub("", session).strip() or None
+
+
 def date_from_filename(name: str) -> date | None:
     """`R070303A` -> 2025-03-03. The listing carries no dates, but the name does.
 
@@ -231,8 +253,14 @@ class KensakuConfig:
     sessions: str = "定例会|臨時会"
     """Regex on the tree label; only matching nodes are opened.
 
-    Defaults to 本会議 only. The same tree carries every 委員会, which would
-    multiply the crawl several times over.
+    The default is 本会議 only, which is how the three tenants were first
+    collected. All three now say `.` — every node under a year — because naming
+    the kinds of session wanted turned out to be a way of losing them: 兵庫's
+    tree carries 「昭和61年 第198回定 」, a label truncated mid-word by whoever
+    typed it, and `定例会|臨時会` skipped it in silence along with the sitting of
+    1986-06-05 underneath. A node that is never opened warns about nothing.
+
+    The year node itself is not a session and is skipped whatever this says.
     """
 
     years: list[str] = field(default_factory=list)
@@ -343,6 +371,10 @@ class KensakuSystemScraper(BaseScraper):
         for year in sorted(years, key=_year_key, reverse=True):
             page = client.get(f"{see}?Code={code}&treedepth={_cp932(year)}")
             for label in _depths(page.text):
+                if _squash(label) == _squash(year):
+                    # The year's own node is repeated among its children; it is
+                    # not a session, and opening it again would walk in circles.
+                    continue
                 if label.startswith(year) and wanted.search(label):
                     yield label
 
@@ -436,6 +468,7 @@ class KensakuSystemScraper(BaseScraper):
             url=ref.url,
             date=ref.date,
             session=session,
+            committee=_committee(session),
             title=title or None,
             speeches=split_speeches(text, self.config.speech_split),
             retrieved_at=datetime.now(UTC),

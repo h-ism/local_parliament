@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import date
 
 from conftest import FakeClient
+from prefectural_transcripts.scrapers import SITES_DIR
 from prefectural_transcripts.scrapers.kensakusystem import (
     KensakuConfig,
     KensakuSystemScraper,
@@ -33,11 +34,14 @@ ROOT = """<html><body>
    onClick="document.viewtree.treedepth.value='平成30年'">平成27年～平成30年</A>
 </body></html>"""
 
-YEAR_R8 = """<html><body>
+# The year lists its own node among its children, and its documents beside them —
+# so opening the year *as a session* yields every sitting a second time.
+YEAR_R8 = f"""<html><body>
 <A onClick="document.viewtree.treedepth.value='令和 8年'">令和 8年</A>
 <A onClick="document.viewtree.treedepth.value='令和 7年'">令和 7年</A>
 <A onClick="document.viewtree.treedepth.value='令和 8年 第395回定例会 '">第395回定例会</A>
 <A onClick="document.viewtree.treedepth.value='令和 8年 建設委員会 '">建設委員会</A>
+<A href="ResultFrame.exe?Code={CODE}&fileName=R080225A&startPos=0">（第1号 2月25日）</A>
 </body></html>"""
 
 YEAR_EMPTY = """<html><body>
@@ -87,6 +91,11 @@ def _pages() -> dict[str, str]:
         year_h30: YEAR_EMPTY,
         session: SESSION,
     }
+    committee = f"{CGI}See.exe?Code={CODE}&treedepth={_cp932('令和 8年 建設委員会 ')}"
+    pages[committee] = f"""<html><body>
+<A href="ResultFrame.exe?Code={CODE}&fileName=R080610B04&startPos=0">
+<IMG SRC="/ehime/image/r2.gif" WIDTH="12">（ 6月10日）</A><BR>
+</body></html>"""
     for name in ("R080225A", "R080302A"):
         pages[f"{CGI}r_Speakers.exe?{CODE}/{name}/0/0//10/1/1073741823:2097151/0/1//0/0/0"] = (
             SPEAKERS
@@ -118,6 +127,11 @@ def test_a_long_sitting_still_yields_a_valid_ref() -> None:
     the index instead."""
     pages = _pages()
     many = "".join(f'<INPUT name="downloadPos" value="{i * 977}" >' for i in range(120))
+    committee = f"{CGI}See.exe?Code={CODE}&treedepth={_cp932('令和 8年 建設委員会 ')}"
+    pages[committee] = f"""<html><body>
+<A href="ResultFrame.exe?Code={CODE}&fileName=R080610B04&startPos=0">
+<IMG SRC="/ehime/image/r2.gif" WIDTH="12">（ 6月10日）</A><BR>
+</body></html>"""
     for name in ("R080225A", "R080302A"):
         pages[f"{CGI}r_Speakers.exe?{CODE}/{name}/0/0//10/1/1073741823:2097151/0/1//0/0/0"] = (
             f"<html><body><FORM>{many}</FORM></body></html>"
@@ -412,10 +426,23 @@ def test_a_long_sitting_is_fetched_in_chunks() -> None:
 
 # --- the marker rule, and the three documents that shaped its bounds -----------
 
-UNIFIED_SPLIT = (
-    r"(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)"
-    r"(?:議員)?[）)](?=[ 　（(])"
-)
+
+def _shipped_split(name: str) -> str:
+    """The rule as it ships, so these tests guard the file the crawl reads."""
+    return KensakuConfig.from_toml(SITES_DIR / f"{name}.toml").speech_split
+
+
+UNIFIED_SPLIT = _shipped_split("ehime")
+
+
+def test_the_three_tenants_share_one_rule() -> None:
+    """They are one rule on purpose, and each divergence has cost a corpus.
+
+    Keeping them equal is also what makes the counts in every comment here
+    comparable: a change measured on 兵庫's archive is a change to 三重's too.
+    """
+    assert _shipped_split("mie") == UNIFIED_SPLIT
+    assert _shipped_split("hyogo") == UNIFIED_SPLIT
 
 
 def test_the_marker_rule_takes_every_form_these_sites_write() -> None:
@@ -448,3 +475,124 @@ def test_the_marker_rule_takes_every_form_these_sites_write() -> None:
         (None, "毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長"),
         (None, "大北秀特命担当部長(会計管理者)"),
     ]
+
+
+def test_the_marker_rule_takes_the_committee_forms_too() -> None:
+    """委員会 write the same marker three more ways, and each one parsed to zero.
+
+    兵庫 leaves the marker alone on its line — with the office outside the
+    brackets and with it inside — and 三重 drops the brackets altogether. Every
+    line below is one of the three tenants' actual markup, and the headings among
+    them are the ones that wear a marker's exact shape.
+    """
+    from prefectural_transcripts.scrapers.generic import split_speeches
+
+    text = "\n".join(
+        [
+            "○（議事日程）",  # 兵庫 委員会 heading: no office, ends its line
+            "○（１　諸　報　告）",
+            "○（部外局関係）",
+            "○議事日程（第７号）",  # 本会議 heading: office outside, ends its line
+            "○委員長（門間雄司）",
+            "　　ただいまから総務常任委員会を開会します。",
+            "○ＳＤＧｓ推進課長（佐城永修）",
+            "　　資料に沿ってご説明します。",
+            "○（庄本えつこ委員）",
+            "　　１点お伺いします。",
+            "○（内藤兵衛委員長発言の概要）",
+            "　　運営について申し合わせたとおりです。",
+            "○議事日程　　",  # 三重 委員会 heading: nothing follows on the line
+            "○小島委員長　　ただいまの報告に対し、御質疑はありませんか。",
+            "○宮本課長　　まず、今回の改正というのが、",
+        ]
+    )
+    got = [(s.role, s.speaker) for s in split_speeches(text, UNIFIED_SPLIT)]
+
+    assert got == [
+        ("委員長", "門間雄司"),
+        ("ＳＤＧｓ推進課長", "佐城永修"),
+        ("委員", "庄本えつこ"),
+        ("委員長発言の概要", "内藤兵衛"),
+        (None, "小島委員長"),
+        (None, "宮本課長"),
+    ]
+
+
+def test_a_heading_that_ends_its_line_is_not_a_speaker() -> None:
+    """The two guards that let the committee branches exist at all.
+
+    「○議事日程（第７号）」 has branch 2's exact shape and 「○（議事日程）」 branch 3's.
+    A digit inside the brackets is what separates the first — a sitting has no
+    speaker called 第７号 — and the office suffix separates the second, which is
+    和歌山's 「君」 trick under another name.
+    """
+    import re
+
+    for heading in ("○議事日程（第７号）", "○（議事日程）", "○（２　閉会中の継続調査事件）"):
+        assert not re.match(UNIFIED_SPLIT, heading), heading
+    for marker in ("○委員長（門間雄司）", "○（庄本えつこ委員）"):
+        assert re.match(UNIFIED_SPLIT, marker), marker
+
+
+def test_a_committee_sitting_records_which_committee() -> None:
+    """`committee` is what separates 本会議 from 委員会 once both are in one file."""
+    from prefectural_transcripts.scrapers.kensakusystem import _committee
+
+    assert _committee("令和7年総務常任委員会") == "総務常任委員会"
+    # 兵庫 names a budget committee for the year it examines, and the two years
+    # are genuinely different bodies — so only the leading one comes off.
+    assert _committee("令和8年令和8年度予算特別委員会") == "令和8年度予算特別委員会"
+    assert _committee("令和6年県庁舎等再整備協議会") == "県庁舎等再整備協議会"
+    assert _committee("令和8年第395回定例会") is None
+    # 兵庫's truncated 「第198回定」 is a 定例会 whose label does not say so. An
+    # "everything that is not 定例会 is a committee" rule would file it as one.
+    assert _committee("昭和61年第198回定") is None
+    assert _committee(None) is None
+
+
+def test_the_year_node_is_not_one_of_its_own_sessions() -> None:
+    """The tree repeats the year among its children; opening it walks in circles.
+
+    It cost nothing while `sessions` named the kinds of session wanted. With
+    `sessions = '.'` — which is what collects the committees — the year label
+    matches like anything else.
+    """
+    client = FakeClient(_pages())
+    refs = list(_scraper(sessions=".").list_meetings(client))
+
+    assert [r.title for r in refs] == [
+        "令和8年第395回定例会（第1号 2月25日）",
+        "令和8年第395回定例会（第2号 3月 2日）",
+        "令和8年建設委員会（ 6月10日）",
+    ]
+    # 「令和8年第395回定例会（第1号 2月25日）」 appears once. The year page lists that
+    # sitting too, so opening the year as a session would collect it twice.
+    assert len(refs) == len({str(r.url) for r in refs})
+
+
+def test_a_label_truncated_by_the_site_is_still_opened() -> None:
+    """兵庫's tree carries 「昭和61年 第198回定 」, cut off mid-word by whoever typed
+    it, and the sitting of 1986-06-05 hangs underneath. `定例会|臨時会` skipped the
+    node and nothing warned — a node that is never opened has no smoke test. This
+    is why all three tenants now say `sessions = '.'`."""
+    pages = _hyogo_pages()
+    truncated = "令和 7年 第198回定 "
+    pages[f"{HCGI}See.exe?Code={HCODE}&treedepth={_cp932('令和 7年')}"] = HYOGO_YEAR.replace(
+        "総務常任委員会 ", "第198回定 "
+    )
+    pages[f"{HCGI}See.exe?Code={HCODE}&treedepth={_cp932(truncated)}"] = (
+        f'<A href="ResultFrame.exe?Code={HCODE}&fileName=R070605A">（第3日 6月 5日）</A>'
+    )
+    client = FakeClient(pages)
+
+    scraper = KensakuSystemScraper(
+        KensakuConfig(
+            prefecture="兵庫県",
+            base_url=HYOGO,
+            name="hyogo",
+            download="printall",
+            speech_split=HYOGO_SPLIT,
+            sessions=".",
+        )
+    )
+    assert date(2025, 6, 5) in [r.date for r in scraper.list_meetings(client)]
