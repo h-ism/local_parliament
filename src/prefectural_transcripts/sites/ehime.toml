@@ -24,6 +24,19 @@ base_url = "https://www.kensakusystem.jp/ehime/"
 # than assuming, because neither of the other two tenants is like that.
 sessions = '.'
 
+# 「○（三宅浩正議長）」 is a name and an office in one run with nothing to split on —
+# which is why this file said for a week that 愛媛's `role` could not be filled.
+# It can: the same document opens with 「　　９番　　三　宅　浩　正」, and the roster is
+# the missing delimiter.
+#
+# The cost of not doing it was not an empty column. 「中畑保一」 spoke 51 times as a
+# member and 「中畑保一議長」 1,772 times as chair, and they were **two speakers**;
+# 38 people were counted twice that way, every one of them someone who held an
+# office. Names only, never offices: 「○（財政課長）」 stays as it is, because the
+# roster does say who holds that post but the record does not attribute the
+# speech to them.
+roster_split = true
+
 # The whole archive, 平成3年 (1991) onwards.
 #
 # It was scoped to 平成31年 onwards while only the post-corpus gap was being

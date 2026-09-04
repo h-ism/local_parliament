@@ -596,3 +596,70 @@ def test_a_label_truncated_by_the_site_is_still_opened() -> None:
         )
     )
     assert date(2025, 6, 5) in [r.date for r in scraper.list_meetings(client)]
+
+
+# --- 愛媛's rosters, which are the delimiter its markers do not have -----------
+
+ROSTER = """〇出席議員　44名
+　　１番　　井　川　　　剛
+　　９番　　三　宅　浩　正
+
+〇出席理事者
+　知事　　　　　　　　　　中　村　時　広
+　デジタル変革担当部長　　大　内　康　夫
+　　観光スポーツ文化部長　金　子　浩　一
+　財政課長　　　　　　　　知　念　良　輝
+
+〇出席事務局職員
+　事務局長　　　　　　　　須　藤　達　也
+"""
+
+
+def test_the_roster_is_read_off_the_sitting_itself() -> None:
+    from prefectural_transcripts.scrapers.kensakusystem import roster_names, roster_offices
+
+    names = roster_names(ROSTER)
+    assert {"三宅浩正", "中村時広", "大内康夫", "知念良輝", "須藤達也"} <= names
+    # The padding between office and name is two spaces on most rows and **one**
+    # on some — 「　　観光スポーツ文化部長　金　子　浩　一」 — so the name rule reads
+    # nothing there and the office rule has to.
+    assert "金子浩一" not in names
+    assert "観光スポーツ文化部長" in roster_offices(ROSTER)
+
+
+def test_a_name_and_an_office_are_split_only_where_the_roster_says_so() -> None:
+    """「○（三宅浩正議長）」 is one run with nothing to split on, and leaving it that
+    way made 「中畑保一」 and 「中畑保一議長」 two speakers — 38 people counted twice,
+    every one of them someone who held an office."""
+    from prefectural_transcripts.scrapers.kensakusystem import (
+        roster_names,
+        roster_offices,
+        split_on_roster,
+    )
+
+    names, offices = roster_names(ROSTER), roster_offices(ROSTER)
+
+    assert split_on_roster("三宅浩正議長", names, offices) == ("三宅浩正", "議長")
+    assert split_on_roster("大内康夫デジタル変革担当部長", names, offices) == (
+        "大内康夫",
+        "デジタル変革担当部長",
+    )
+    # Read off the office side, because the name side cannot parse that row.
+    assert split_on_roster("金子浩一観光スポーツ文化部長", names, offices) == (
+        "金子浩一",
+        "観光スポーツ文化部長",
+    )
+    # 「○（財政課長）」 names nobody. The roster does say who holds the post, and
+    # attaching them would be attributing a speech the record does not attribute.
+    assert split_on_roster("財政課長", names, offices) == ("財政課長", None)
+    # A speaker the roster has never heard of is left exactly as printed.
+    assert split_on_roster("山田太郎参考人", names, offices) == ("山田太郎参考人", None)
+
+
+def test_the_split_is_off_unless_a_config_asks_for_it() -> None:
+    """三重 and 兵庫 print name and office separately; only 愛媛 needs this, and a
+    surname-only marker like 三重's 「○小島委員長」 must not be cut down to 「小島」."""
+    assert not KensakuConfig(prefecture="三重県", base_url=BASE).roster_split
+    assert KensakuConfig.from_toml(SITES_DIR / "ehime.toml").roster_split
+    assert not KensakuConfig.from_toml(SITES_DIR / "mie.toml").roster_split
+    assert not KensakuConfig.from_toml(SITES_DIR / "hyogo.toml").roster_split

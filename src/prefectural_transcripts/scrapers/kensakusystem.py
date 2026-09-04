@@ -65,7 +65,7 @@ from bs4 import BeautifulSoup
 
 from prefectural_transcripts.dates import parse_japanese_date
 from prefectural_transcripts.http import FetchError, Page, PoliteClient
-from prefectural_transcripts.models import Meeting, MeetingRef
+from prefectural_transcripts.models import Meeting, MeetingRef, Speech
 from prefectural_transcripts.scrapers.base import BaseScraper
 from prefectural_transcripts.scrapers.generic import split_speeches
 
@@ -206,6 +206,109 @@ def _committee(session: str | None) -> str | None:
     return _LEADING_YEAR.sub("", session).strip() or None
 
 
+# 「〇出席議員　44名」 / 「〇出席理事者」 / 「〇出席事務局職員」 — the rosters a sitting
+# opens with, and the only place 愛媛 ever writes a name apart from its office.
+_ROSTER_HEAD = re.compile(
+    r"^[○〇](?:出席|欠席)(?:議員|委員|理事者|事務局職員)|^[○〇]その他の出席者"
+)
+# 「　　１番　　井　川　　　剛」, 「　知事　　　　　　　　　　中　村　時　広」 — a label,
+# two or more spaces, then the name. The name has single spaces inside it (and
+# sometimes three, to pad a two-character surname), so the split has to be on the
+# *first* run of two or more, not on whitespace generally.
+_ROSTER_ROW = re.compile(r"^[ 　]+(?P<label>\S(?:[^\s]|[ 　](?![ 　]))*?)[ 　]{2,}(?P<name>\S.*)$")
+
+
+# The office is easier to read than the name: it is the first token on the line,
+# whatever the padding after it. That matters because the padding is not always
+# two spaces — 「　　観光スポーツ文化部長　金　子　浩　一」 separates them with one, and
+# the row rule above reads nothing at all from a line like that.
+_ROSTER_LABEL = re.compile(r"^[ 　]+(?P<label>[^\s]{2,30})[ 　]")
+# What may be left over once an office comes off: a name, not a fragment.
+_NAME = re.compile(r"^[^\s0-9０-９]{2,8}$")
+
+
+def roster_names(text: str) -> set[str]:
+    """Every name this sitting lists as present, spaces squashed out.
+
+    愛媛 prints 「○（三宅浩正議長）」 — name and office in one run, with nothing to
+    split on — but it also prints 「　　９番　　三　宅　浩　正」 at the top of the same
+    document. The roster is the missing delimiter.
+    """
+    names: set[str] = set()
+    inside = False
+    for line in text.split("\n"):
+        if _ROSTER_HEAD.match(line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        row = _ROSTER_ROW.match(line)
+        if row:
+            names.add(re.sub(r"\s+", "", row.group("name")))
+        elif line.strip() and not line.startswith((" ", "　")):
+            inside = False
+    return {n for n in names if len(n) >= 2}
+
+
+def roster_offices(text: str) -> set[str]:
+    """Every office the sitting lists, read as the first token of a roster line.
+
+    A fallback for the rows `roster_names` cannot read: where the office and the
+    name are separated by a single space there is nothing to split the line on,
+    but the office itself is still the first thing after the indent.
+    """
+    offices: set[str] = set()
+    inside = False
+    for line in text.split("\n"):
+        if _ROSTER_HEAD.match(line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        label = _ROSTER_LABEL.match(line)
+        if label:
+            offices.add(re.sub(r"\s+", "", label.group("label")))
+        elif line.strip() and not line.startswith((" ", "　")):
+            inside = False
+    return offices
+
+
+def split_on_roster(
+    speaker: str,
+    names: set[str],
+    offices: set[str] = frozenset(),  # type: ignore[assignment]
+) -> tuple[str, str | None]:
+    """`三宅浩正議長` -> `(三宅浩正, 議長)`, using only names the sitting itself lists.
+
+    The name must match and something must be left over, which is what keeps this
+    from inventing a split. 「○（財政課長）」 names nobody and is left alone — the
+    roster does say who holds that post, but attaching it would be attributing a
+    speech the record does not attribute.
+
+    The longest match wins, so a 田中 on the roster cannot cut a 田中一郎 short.
+    """
+    best = ""
+    for name in names:
+        if len(name) > len(best) and speaker.startswith(name) and len(speaker) > len(name):
+            best = name
+    if best:
+        return best, speaker[len(best) :]
+
+    # Nothing on the name side. Try the office side, which is readable on rows the
+    # name rule cannot parse — 「金子浩一観光スポーツ文化部長」 is 23 speeches that stay
+    # glued otherwise. What is left has to look like a name, or this would cut
+    # 「保健福祉部社会福祉医療局長」 down to a fragment and call it a person.
+    office = ""
+    for candidate in offices:
+        if len(candidate) > len(office) and speaker.endswith(candidate):
+            office = candidate
+    if office:
+        head = speaker[: -len(office)]
+        if _NAME.match(head):
+            return head, office
+    return speaker, None
+
+
 def date_from_filename(name: str) -> date | None:
     """`R070303A` -> 2025-03-03. The listing carries no dates, but the name does.
 
@@ -248,6 +351,17 @@ class KensakuConfig:
     index has no such form; its 全文表示 button posts `FUNC=PRINT_ALL` to
     `GetText3.exe`, which returns the whole sitting as HTML in **one** request,
     with no per-speech offsets involved at all.
+    """
+
+    roster_split: bool = False
+    """Split 「三宅浩正議長」 into name and office using the sitting's own roster.
+
+    愛媛 alone needs it: 三重 and 兵庫 print the two separately, and 愛媛's own
+    平成 documents do too, so this only ever fires where `role` came back empty.
+
+    It is not cosmetic. 「中畑保一」 spoke 51 times as a member and 「中畑保一議長」
+    1,772 times as chair, and they were two speakers — 38 people were counted
+    twice that way, all of them the ones who held an office.
     """
 
     sessions: str = "定例会|臨時会"
@@ -446,6 +560,19 @@ class KensakuSystemScraper(BaseScraper):
 
     # -- detail ----------------------------------------------------------------
 
+    def _speeches(self, text: str) -> list[Speech]:
+        speeches = split_speeches(text, self.config.speech_split)
+        if not self.config.roster_split:
+            return speeches
+        names, offices = roster_names(text), roster_offices(text)
+        if not names and not offices:
+            return speeches
+        for speech in speeches:
+            if speech.role:
+                continue
+            speech.speaker, speech.role = split_on_roster(speech.speaker, names, offices)
+        return speeches
+
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         # `GetPerson.exe` returns plain text with CRLF line endings and printed
         # page markers; there is no markup to select, so the split rule runs on
@@ -470,7 +597,7 @@ class KensakuSystemScraper(BaseScraper):
             session=session,
             committee=_committee(session),
             title=title or None,
-            speeches=split_speeches(text, self.config.speech_split),
+            speeches=self._speeches(text),
             retrieved_at=datetime.now(UTC),
             source_html_sha256=page.sha256,
         )

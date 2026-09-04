@@ -402,10 +402,45 @@ office and name *are* separated by whitespace
 deliberately deferred — but it is the right way, and it would also give 三重 and
 兵庫 the same treatment.
 
+## 愛媛's name/office split — done, and it was not a cosmetic column
+
+This document said for a week that 愛媛's `role` could not be filled: 「○（三宅浩正
+議長）」 is a name and an office in one run with nothing to split on. That was true
+of the *marker*. It is not true of the document, which opens with
+「　　９番　　三　宅　浩　正」. **The roster is the missing delimiter.**
+
+What it was costing was not an empty column. 「中畑保一」 spoke 51 times as a member
+and 「中畑保一議長」 1,772 times as chair — **two speakers**, and 38 people were
+counted twice that way, every one of them somebody who had held an office. Any
+per-speaker figure was wrong for exactly the people who chaired.
+
+Two rules, in order, both read off the sitting's own rosters (`roster_split =
+true`, 愛媛 only):
+
+1. **The name side.** 「　知事　　　　　　中　村　時　広」 splits on the first run of two
+   or more spaces; the name keeps single spaces inside it, so the split cannot be
+   on whitespace generally. The longest matching name wins, so a 田中 cannot cut a
+   田中一郎 short.
+2. **The office side**, for rows the first rule cannot read: 「　　観光スポーツ文化
+   部長　金　子　浩　一」 separates the two with **one** space, and there is nothing to
+   split the line on — but the office is still the first token, and a marker
+   ending in it leaves a name behind. What is left has to look like a name, or
+   this would cut 「保健福祉部社会福祉医療局長」 into a fragment and call it a person.
+
+Re-parsed over the whole corpus from cache: **39,624 speeches before and after**,
+speakers **717 → 455**, and **35,518 speeches now carry a role**. What remains is
+21 name-and-office runs over 54 speeches — people the sitting's own roster does
+not list.
+
+「○（財政課長）」 is left exactly as it is. The roster does say who held that post
+that day; attaching them would be attributing a speech the record does not
+attribute.
+
 ## Still to do
 
-- 愛媛's name/office split, which needs the 出席理事者 roster. 三重 and 兵庫 do not
-  need it — they print the two separately. Note the committees do not need it
-  either on 三重, where the marker is 「○小島委員長」 with nothing to split on.
+- Nothing on 三重 and 兵庫's side needs the roster: they print name and office
+  separately. 三重's committees write 「○小島委員長」 — a surname and an office with
+  no full name anywhere — and the split is deliberately off there, because
+  cutting it to 「小島」 would merge a chair and a member who share a surname.
 - 三重's 令和8年 is published as 定例会・暫定版. When the final version replaces it,
   the same sitting can arrive again under a different `fileName`.
