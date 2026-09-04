@@ -338,6 +338,13 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
     Everything from one marker to the next is that speaker's text. Anything
     before the first marker is procedural chrome (a heading, a table of
     contents) and is dropped.
+
+    A marker may have more than one shape on the same site — 兵庫 writes
+    「○委員長（門間雄司）　…」 in 本会議 and leaves the same marker alone on its line
+    in 委員会, and 三重 drops the brackets entirely there — so a rule needs
+    alternatives, and a regex cannot use the name `speaker` twice. Any group
+    named `speaker2`, `role3`, … therefore counts as that field; the first one
+    that matched wins, in the order the branches are written.
     """
     regex = re.compile(pattern)
     marks = list(regex.finditer(text))
@@ -351,12 +358,20 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
         speeches.append(
             Speech(
                 order=len(speeches),
-                speaker=_clean_speaker(groups.get("speaker", "")),
-                role=(groups.get("role") or "").strip() or None,
+                speaker=_clean_speaker(_branch(groups, "speaker")),
+                role=_branch(groups, "role").strip() or None,
                 text=body,
             )
         )
     return speeches
+
+
+def _branch(groups: dict[str, str | None], field: str) -> str:
+    """The value of `field` from whichever branch of the rule matched."""
+    for name, value in groups.items():
+        if name.startswith(field) and value:
+            return value
+    return ""
 
 
 def _clean_speaker(name: str) -> str:

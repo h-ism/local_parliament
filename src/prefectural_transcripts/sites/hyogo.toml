@@ -16,7 +16,7 @@
 #
 # Coverage: 本会議 **昭和61年 (1986)** 〜 — the deepest archive in the survey.
 # 予算特別委員会・決算特別委員会 reach back equally far and 常任委員会 to 平成17年6月;
-# all three are in the same tree and are left out by `sessions`.
+# all three are in the same tree and all three are collected now.
 
 prefecture = "兵庫県"
 name = "hyogo"
@@ -26,7 +26,16 @@ scraper = "kensakusystem"
 base_url = "https://www.kensakusystem.jp/hyogopref/"
 download = "printall"
 
-sessions = '定例会|臨時会'
+# Every node under a year, which on this tenant is not a preference but a
+# correction. `定例会|臨時会` skipped 「昭和61年 第198回定 」 — a label truncated
+# mid-word in the site's own tree — and with it the sitting of 1986-06-05, which
+# was missing from the corpus for a week with nothing to show for it. A node that
+# is never opened cannot warn.
+#
+# It also opens the committees: 常任委員会 from 平成17年, 予算特別委員会 and
+# 決算特別委員会 from 昭和61年 — as deep as the 本会議 archive — and the 協議会・
+# 検討会・世話人会 the assembly also records.
+sessions = '.'
 
 # The whole archive, 昭和61年 onwards. As on 三重, the corpus window is excluded
 # per run with --since/--until, which prunes before anything is fetched.
@@ -48,4 +57,48 @@ years = []
 # 議長 would use for them, and the same shape 昭和61年 already has (where the
 # honorific is 「君」 and `_clean_speaker` takes it). Verified to change nothing
 # else: the same 190 and 70 speeches are found with and without it.
-speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])'
+#
+# 委員会 forced this rule apart from the one that collected 本会議, and each of the
+# three branches added below was a document that parsed to **zero speeches**:
+#
+#   本会議        「○議長（浜田知昭）　　ただいまから本日の会議を開きます。」
+#   兵庫 委員会   「○委員長（門間雄司）」 — the speech begins on the *next* line
+#   兵庫 委員会   「○（庄本えつこ委員）」 — likewise, and no office outside the brackets
+#   三重 委員会   「○小島委員長　　ただいまの報告に対し、…」 — no brackets at all
+#
+# So: branch 1 is the 本会議 rule unchanged; branch 2 takes a marker left alone on
+# its line with the office outside the brackets; branch 3 the same with the office
+# inside; branch 4 the unbracketed 三重 form. A regex cannot name a group twice, so
+# the branches number theirs and `split_speeches` reads whichever matched.
+#
+# What each branch had to be guarded against, all of it seen in the sample:
+#
+# * 「○議事日程（第７号）」 is a heading with branch 2's exact shape, and it also ends
+#   its line. Branch 2 therefore refuses digits *inside* the brackets: a sitting has
+#   no speaker called 第７号, and where a number does belong to a person it is the
+#   office — 「○39番（岩名秀樹君）」 — which sits outside them.
+# * 「○（議事日程）」, 「○（会議の概要）」, 「○（１　諸　報　告）」, 「○（部外局関係）」 are
+#   headings with branch 3's exact shape. Branch 3 therefore requires the office
+#   suffix 委員・委員長・議長… , which is 和歌山's 「君」 trick again: the roster and
+#   the headings have no honorific and the speakers all do.
+# * 「○（内藤兵衛委員長発言の概要）」 is a real marker: 兵庫 records some of what a
+#   chair said as a summary rather than verbatim. 「発言の概要」 stays inside the
+#   office so the corpus says which it is, rather than being trimmed away.
+# * 「○議事日程　　」 is a heading with branch 4's shape. Branch 4 requires text to
+#   follow on the same line, which a heading never has.
+#
+# Counted on 19 sample sittings across the three tenants and both marker
+# generations, then re-parsed over all 2,294 collected 本会議 sittings from cache:
+# 三重 47,279 and 愛媛 39,624 unchanged to the speech, 兵庫 **+8** — eight markers
+# whose text began on the next line, which the 本会議 rule had been dropping since
+# it was written. Nothing was lost anywhere.
+# Laid out with `(?x)`, which ignores the layout but not the spaces inside a
+# character class — those are the ones that matter here.
+speech_split = '''(?xm)
+  ^○ (?:
+      (?P<role>[^（(\n]{0,24}) [（(] (?P<speaker>[^）\n]{1,40}?) (?:議員)? [）)] (?=[ 　（(])
+    | (?P<role2>[^（(\n]{1,24}) [（(] (?P<speaker2>[^）\n0-9０-９]{1,40}?) [）)] $
+    | [（(] (?P<speaker3>[^）\n]{1,40}?)
+          (?P<role3>(?:議員|委員長|副委員長|委員|議長|副議長) (?:発言の概要)?) [）)] $
+    | (?P<speaker4>[^（(\n]{1,20}?) (?=[ 　]+\S)
+  )'''

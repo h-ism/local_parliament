@@ -9,7 +9,7 @@
 # be assembled from a list of character offsets. See the module docstring in
 # `scrapers/kensakusystem.py` and `docs/kensakusystem.md`.
 #
-# Coverage: 本会議 from 平成3年第229回定例会; 委員会 from 平成19年5月.
+# Coverage: 本会議 from 平成3年第229回定例会; 委員会 from 平成19年. Both are collected.
 
 prefecture = "愛媛県"
 name = "ehime"
@@ -18,9 +18,24 @@ scraper = "kensakusystem"
 [kensakusystem]
 base_url = "https://www.kensakusystem.jp/ehime/"
 
-# 本会議 only. The same tree carries every standing and special committee, which
-# would multiply the crawl several times over; committees are a separate decision.
-sessions = '定例会|臨時会'
+# Every node under a year: 本会議 and every 委員会 the tree carries. 愛媛's
+# committees reach back to 平成19年 and are written in the same marker form as its
+# 本会議, so the rule above takes them unchanged — which was worth checking rather
+# than assuming, because neither of the other two tenants is like that.
+sessions = '.'
+
+# 「○（三宅浩正議長）」 is a name and an office in one run with nothing to split on —
+# which is why this file said for a week that 愛媛's `role` could not be filled.
+# It can: the same document opens with 「　　９番　　三　宅　浩　正」, and the roster is
+# the missing delimiter.
+#
+# The cost of not doing it was not an empty column. 「中畑保一」 spoke 51 times as a
+# member and 「中畑保一議長」 1,772 times as chair, and they were **two speakers**;
+# 38 people were counted twice that way, every one of them someone who held an
+# office. Names only, never offices: 「○（財政課長）」 stays as it is, because the
+# roster does say who holds that post but the record does not attribute the
+# speech to them.
+roster_split = true
 
 # The whole archive, 平成3年 (1991) onwards.
 #
@@ -62,4 +77,47 @@ years = []
 # is no lexical rule that splits them, so `role` stays empty there. The 平成
 # documents separate them and do populate it. Splitting the modern form properly
 # means reading the 出席理事者 roster — see `docs/kensakusystem.md`.
-speech_split = '(?m)^○(?P<role>[^（(\n]{0,24})[（(](?P<speaker>[^）\n]{1,40}?)(?:議員)?[）)](?=[ 　（(])'
+# 委員会 forced this rule apart from the one that collected 本会議, and each of the
+# three branches added below was a document that parsed to **zero speeches**:
+#
+#   本会議        「○議長（浜田知昭）　　ただいまから本日の会議を開きます。」
+#   兵庫 委員会   「○委員長（門間雄司）」 — the speech begins on the *next* line
+#   兵庫 委員会   「○（庄本えつこ委員）」 — likewise, and no office outside the brackets
+#   三重 委員会   「○小島委員長　　ただいまの報告に対し、…」 — no brackets at all
+#
+# So: branch 1 is the 本会議 rule unchanged; branch 2 takes a marker left alone on
+# its line with the office outside the brackets; branch 3 the same with the office
+# inside; branch 4 the unbracketed 三重 form. A regex cannot name a group twice, so
+# the branches number theirs and `split_speeches` reads whichever matched.
+#
+# What each branch had to be guarded against, all of it seen in the sample:
+#
+# * 「○議事日程（第７号）」 is a heading with branch 2's exact shape, and it also ends
+#   its line. Branch 2 therefore refuses digits *inside* the brackets: a sitting has
+#   no speaker called 第７号, and where a number does belong to a person it is the
+#   office — 「○39番（岩名秀樹君）」 — which sits outside them.
+# * 「○（議事日程）」, 「○（会議の概要）」, 「○（１　諸　報　告）」, 「○（部外局関係）」 are
+#   headings with branch 3's exact shape. Branch 3 therefore requires the office
+#   suffix 委員・委員長・議長… , which is 和歌山's 「君」 trick again: the roster and
+#   the headings have no honorific and the speakers all do.
+# * 「○（内藤兵衛委員長発言の概要）」 is a real marker: 兵庫 records some of what a
+#   chair said as a summary rather than verbatim. 「発言の概要」 stays inside the
+#   office so the corpus says which it is, rather than being trimmed away.
+# * 「○議事日程　　」 is a heading with branch 4's shape. Branch 4 requires text to
+#   follow on the same line, which a heading never has.
+#
+# Counted on 19 sample sittings across the three tenants and both marker
+# generations, then re-parsed over all 2,294 collected 本会議 sittings from cache:
+# 三重 47,279 and 愛媛 39,624 unchanged to the speech, 兵庫 **+8** — eight markers
+# whose text began on the next line, which the 本会議 rule had been dropping since
+# it was written. Nothing was lost anywhere.
+# Laid out with `(?x)`, which ignores the layout but not the spaces inside a
+# character class — those are the ones that matter here.
+speech_split = '''(?xm)
+  ^○ (?:
+      (?P<role>[^（(\n]{0,24}) [（(] (?P<speaker>[^）\n]{1,40}?) (?:議員)? [）)] (?=[ 　（(])
+    | (?P<role2>[^（(\n]{1,24}) [（(] (?P<speaker2>[^）\n0-9０-９]{1,40}?) [）)] $
+    | [（(] (?P<speaker3>[^）\n]{1,40}?)
+          (?P<role3>(?:議員|委員長|副委員長|委員|議長|副議長) (?:発言の概要)?) [）)] $
+    | (?P<speaker4>[^（(\n]{1,20}?) (?=[ 　]+\S)
+  )'''

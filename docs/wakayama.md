@@ -1,4 +1,4 @@
-# 和歌山県議会 — 本会議会議録
+# 和歌山県議会 — 本会議会議録と委員会会議記録
 
 Verified 2026-08-27. **Collectable, and the best target in the survey.**
 
@@ -172,3 +172,60 @@ The archive changes numeral form partway through — 「令和６年６月19日�
 recent years, 「平成十二年十二月八日（金曜日）」 before that. `dates.py` gained a
 漢数字 reader for this (`kanji_to_int`), which also covers 「昭和六十一年」 and so will
 be needed again for 兵庫.
+
+
+## 委員会 — a second site, not a second index (2026-09-04)
+
+`/gijiroku2/test.html`, `sites/wakayama_committee.toml`. Same CMS, same
+politeness answer, and almost nothing else in common with the 本会議 side.
+
+**Collected: 163 sittings, 7,814 speeches, 1,294,507 chars, 2023-05-19 ..
+2026-06-23**, into the same `data/和歌山県.jsonl` where `committee` separates them.
+No undated record, no sitting with zero speeches, 471 distinct speakers.
+
+**Coverage stops at 令和5年 (2023).** The 本会議 archive reaches 平成2年; the
+committee index simply does not go back, so nothing here falls inside the corpus
+window and the hole 和歌山's 本会議 carries does not apply to it.
+
+### The record is not a transcript, and by 令和8年 it is
+
+Three marker forms inside four years, and a rule for any one takes **zero
+speeches** from the others:
+
+```
+●玄素委員長            要点筆記: the chair, then 「◎…」 lines summarising what they did
+Ｑ　谷口委員           a question, 要点筆記 again
+○濱口委員長　山家委員。 予算特別委員会 総括質疑, 令和8年: a verbatim transcript
+```
+
+令和7年's 総括質疑 is still 要点筆記 and 令和8年's is not. The site changed
+generation inside the range this config covers.
+
+### 予算特別委員会 is a level deeper, in some sessions only
+
+In a 2月定例会 its page is an index of 「総括質疑1日目」「総括質疑2日目」「採決」; in a
+5月臨時会 the same label leads straight to a three-minute record of electing a
+chair. `max_depth = 3` follows both.
+
+Found the way these are always found: three documents parsed to zero speeches at
+5.5–6.4 KB — too large to be a 「質疑なし」 day. Nine real records were behind them.
+The three index pages are named in `exclude` because nothing in the label or the
+URL tells an index from a transcript; a fourth will announce itself the same way.
+
+### Three things that split one person in two
+
+- **「（年長委員）」 and 「（委員外議員）」** are role notes, not names.
+  「山田委員（年長委員）」 had 5 speeches against 「山田委員」's 88. Only those two are
+  stripped: cutting at any bracket would merge 「鈴木(德)委員」 — which exists to tell
+  two members of one surname apart — into a 「鈴木」 that is neither of them.
+- **「●北廣知事室長説明」** is the same person as 「Ａ　北廣知事室長」. The 説明 comes off.
+- **`session` is not recorded at all.** Each committee types its own header and
+  the digit width varies by document: the three sittings of 令和8年2月 write it
+  「令和８年２月」, 「令和8年2月」 and 「令和８年2月」. `date` and `committee` identify a
+  sitting; `title` keeps the wording verbatim. The 本会議 side does not have this
+  (131 sessions, each written one way, over all 907 records).
+
+### And one date that was not a date
+
+「令和８年６月23 日（火）」 — a space between the 23 and the 日, in one record of 163.
+The pattern now allows whitespace before every unit, not only between them.

@@ -177,7 +177,19 @@ start URLs is what actually saves the requests.
 
 ## Not done yet
 
-- 委員会会議録 (`comgiji.nsf`) — same host and almost certainly the same shape, but
-  not opened yet. Likely a second `start_urls` entry, or a sibling config.
+- 委員会会議録 (`comgiji.nsf`) — **opened 2026-09-04, not collected.** It is the
+  same Domino application under a different `.nsf`: `WebView1` 開催別, `WebView2`
+  委員会別, `WebView3` 議員別, the same `Expand=N` / `ExpandView` controls, the same
+  three `robots` meta tags, cp932. One document is again one 発言単位 — 【委員会概要】,
+  then 「議案説明及び所管事項等の報告（当局側説明）」, then one per member as
+  「鈴木　澄美（自民改革会議）（質疑・質問）」.
+
+  **What stops it is not the shape, it is the size and the open question.** The
+  view paginates at 30 rows: `?OpenView` returns 30 collapsed nodes and
+  `?OpenView&ExpandView` returns the documents of only that first page (28 of
+  them, 22 KB). Collecting the archive means walking `Start=1,31,61,…`, which is
+  the "thousands of documents" case this document already says to write about
+  first — and that letter is the one waiting on 議事課. Building the config before
+  the answer would be verifying it by doing the thing the answer governs.
 - The exact size of the expanded view, and whether Domino caps it. Unmeasured,
   because measuring it means fetching it.

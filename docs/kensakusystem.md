@@ -35,7 +35,7 @@ simply has nothing to give.
 | --- | --- | --- | --- |
 | 三重 | `/mie/` | `4t2ncj9qufw8kewil1` | 本会議 平成元年〜; 委員会 令和5年〜 |
 | 兵庫 | `/hyogopref/` | `rpo2cq1zucjm5gwgk4` | 本会議・予算特別委員会・決算特別委員会 **昭和61年第197回定例会**〜; 常任委員会 平成17年6月〜 |
-| 愛媛 | `/ehime/` | `e7c7rvxas7fwx1belp` | 本会議 平成3年第229回定例会〜; 委員会 平成19年5月〜 |
+| 愛媛 | `/ehime/` | `e7c7rvxas7fwx1belp` | 本会議 平成3年第229回定例会〜; 委員会 平成19年〜 |
 
 Year nodes counted on 2026-08-28: 三重 **39** (平成元年–令和8年), 兵庫 **42**
 (昭和61年–令和8年). Both walk as two phases — tabs, then the years they group.
@@ -156,6 +156,84 @@ for by a document that broke an earlier version:
 The rule change was checked by re-parsing all three corpora from cache and
 diffing: 三重 unchanged, 兵庫 **+4** (the applause openings), 愛媛 unchanged at
 11,548 with the long committee-chair names intact.
+
+## 委員会 write the marker three more ways
+
+The rule above collected 本会議 on all three tenants and takes **zero speeches**
+from a modern 兵庫 常任委員会 or any 三重 委員会 at all. Three shapes it had never
+seen, found by sampling before the crawl rather than after it:
+
+```
+兵庫 常任委員会   ○委員長（門間雄司）
+                 　　ただいまから総務常任委員会を開会します。
+兵庫 議会運営委員会 ○（庄本えつこ委員）        ← office inside, still alone on the line
+三重 委員会       ○小島委員長　　ただいまの報告に対し、御質疑はありませんか。
+```
+
+兵庫 leaves the marker alone on its line in 委員会 and puts the speech on the next
+one — the same tenant, the same `FUNC=PRINT_ALL` route, a different `<BR>`. 三重
+drops the brackets entirely and runs surname and office together, so `role` stays
+empty there while its 本会議 records populate it.
+
+So the rule has four branches now, and each of the three new ones exists between a
+speaker and a heading that wears its exact shape:
+
+| Branch | Takes | Kept out by |
+| --- | --- | --- |
+| 1 | `○議長（浜田知昭）　　…` | text follows on the same line |
+| 2 | `○委員長（門間雄司）` at EOL | **no digit inside the brackets** — 「○議事日程（第７号）」 |
+| 3 | `○（庄本えつこ委員）` at EOL | **an office suffix** — 「○（議事日程）」, 「○（１　諸　報　告）」 |
+| 4 | `○小島委員長　　…` | **text on the same line** — 「○議事日程　　」 |
+
+Branch 3 is 和歌山's 「君」 trick under another name: the headings have no office
+and every speaker has one. Branch 2's guard is that no sitting has a speaker
+called 第７号, and where a number does belong to a person it is the office, which
+sits *outside* the brackets (「○39番（岩名秀樹君）」).
+
+A regex cannot name a group twice, so the branches number theirs — `speaker2`,
+`role3` — and `split_speeches` reads whichever one matched.
+
+「○（内藤兵衛委員長発言の概要）」 is a real marker, not a heading: 兵庫 records some
+of what a chair said as a summary rather than verbatim. 「発言の概要」 is kept
+inside the office so the corpus says which it is.
+
+**What the change cost, measured before it shipped.** Re-parsed all 2,294
+collected 本会議 sittings from cache and diffed: 三重 47,279 and 愛媛 39,624
+unchanged to the speech, 兵庫 **+8**. Those eight are markers whose text began on
+the next line — real speeches the 本会議 rule had been dropping since it was
+written, including a struck one recorded as
+「○（長岡壯壽議員）」 followed by a line of dashes. Nothing was lost anywhere.
+
+## A label the site truncated, and the sitting under it
+
+兵庫's tree carries **「昭和61年 第198回定 」** — 「第198回定例会」 cut off mid-word by
+whoever typed it. `sessions = '定例会|臨時会'` did not match it, so the node was
+never opened, and **the sitting of 1986-06-05 (`S610605A`) was missing from the
+corpus** with nothing in any log to say so. It is the only such label on the three
+tenants; there is no reason to think it is the last one.
+
+All three configs now say `sessions = '.'` — every node under a year — which
+also opens the committees, and the year's own node is skipped by the scraper
+rather than by the regex. **A node that is never opened cannot warn**, which is the
+listing-level version of the failure this document keeps recording.
+
+## 委員会: what the records actually are
+
+- 三重's committees begin at **令和5年**; 愛媛's at **平成19年**; 兵庫's 常任委員会 at
+  平成17年, and its 予算特別委員会・決算特別委員会 at **昭和61年**, as deep as the
+  本会議 archive.
+- 兵庫's 常任委員会 before roughly 平成19年 are **要点筆記**: the record is
+  「○（問）」/「○（答）」/「○（〇）」 with no speaker named at all. Those parse as
+  speeches whose speaker is 問 or 答 — which is what the published record says.
+  Anyone counting speakers must exclude them.
+- A committee sitting with **no speeches is often correct**: 「質疑　なし」 days are
+  a real record of a few hundred characters. That is why the zero-speech warning
+  now carries the document size — 1,570 bytes is a procedural record, 60,000 is a
+  broken rule.
+- `committee` is populated from the session label with the leading year removed,
+  so 本会議 and 委員会 stay separable in one file. 兵庫 names a budget committee for
+  the year it examines, and 「令和8年度予算特別委員会」 keeps that year because the
+  two years are different bodies.
 
 ## 愛媛 has two generations too
 
@@ -324,9 +402,45 @@ office and name *are* separated by whitespace
 deliberately deferred — but it is the right way, and it would also give 三重 and
 兵庫 the same treatment.
 
+## 愛媛's name/office split — done, and it was not a cosmetic column
+
+This document said for a week that 愛媛's `role` could not be filled: 「○（三宅浩正
+議長）」 is a name and an office in one run with nothing to split on. That was true
+of the *marker*. It is not true of the document, which opens with
+「　　９番　　三　宅　浩　正」. **The roster is the missing delimiter.**
+
+What it was costing was not an empty column. 「中畑保一」 spoke 51 times as a member
+and 「中畑保一議長」 1,772 times as chair — **two speakers**, and 38 people were
+counted twice that way, every one of them somebody who had held an office. Any
+per-speaker figure was wrong for exactly the people who chaired.
+
+Two rules, in order, both read off the sitting's own rosters (`roster_split =
+true`, 愛媛 only):
+
+1. **The name side.** 「　知事　　　　　　中　村　時　広」 splits on the first run of two
+   or more spaces; the name keeps single spaces inside it, so the split cannot be
+   on whitespace generally. The longest matching name wins, so a 田中 cannot cut a
+   田中一郎 short.
+2. **The office side**, for rows the first rule cannot read: 「　　観光スポーツ文化
+   部長　金　子　浩　一」 separates the two with **one** space, and there is nothing to
+   split the line on — but the office is still the first token, and a marker
+   ending in it leaves a name behind. What is left has to look like a name, or
+   this would cut 「保健福祉部社会福祉医療局長」 into a fragment and call it a person.
+
+Re-parsed over the whole corpus from cache: **39,624 speeches before and after**,
+speakers **717 → 455**, and **35,518 speeches now carry a role**. What remains is
+21 name-and-office runs over 54 speeches — people the sitting's own roster does
+not list.
+
+「○（財政課長）」 is left exactly as it is. The roster does say who held that post
+that day; attaching them would be attributing a speech the record does not
+attribute.
+
 ## Still to do
 
-- 平成3年–2011年 for 愛媛 (`years = []` walks the whole archive).
-- 委員会会議録: the same tree carries them; `sessions` selects 本会議 today.
-- 愛媛's name/office split, which needs the 出席理事者 roster. 三重 and 兵庫 do not
-  need it — they print the two separately.
+- Nothing on 三重 and 兵庫's side needs the roster: they print name and office
+  separately. 三重's committees write 「○小島委員長」 — a surname and an office with
+  no full name anywhere — and the split is deliberately off there, because
+  cutting it to 「小島」 would merge a chair and a member who share a surname.
+- 三重's 令和8年 is published as 定例会・暫定版. When the final version replaces it,
+  the same sitting can arrive again under a different `fileName`.
