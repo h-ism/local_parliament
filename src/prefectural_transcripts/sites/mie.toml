@@ -18,10 +18,17 @@ scraper = "kensakusystem"
 [kensakusystem]
 base_url = "https://www.kensakusystem.jp/mie/"
 
-# Every node under a year: 本会議 and 委員会 alike. Note 「令和 8年 定例会・暫定版 」 —
-# 三重 publishes the current session as 暫定版 until the final version replaces it,
-# so a re-run after that happens can pick the same sitting up again under a
-# different fileName.
+# Every node under a year: 本会議 and 委員会 alike.
+#
+# 「令和 8年 定例会・暫定版 」 is the current session, published provisionally until
+# the final version replaces it. Measured 2026-09-04: **9 sittings**, R080119A ..
+# R080331A (2026-01-19 .. 2026-03-31), and they carry *ordinary* fileNames — not a
+# 暫定-specific form. So the risk is the opposite of a duplicate: if the final
+# version reuses the name, `--resume` skips it and the corpus keeps the
+# provisional text for good.
+#
+# The check is one command — `session` contains 暫定 — and the fix is to drop those
+# rows and re-run once the session label loses the suffix.
 #
 # 三重's 委員会 begin at 令和5年 (2023), which is where this tree's committee
 # coverage starts — far shallower than its 本会議 archive back to 平成元年.
