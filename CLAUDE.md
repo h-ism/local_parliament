@@ -90,26 +90,27 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 47 assemblies but two of its verdicts are now superseded. Per-site detail is in
 `docs/<prefecture>.md`; drafted letters are in `docs/inquiries/`.
 
-**Collectable today**
+**Collectable today** (figures 2026-09-04; `committee` separates the two in each file)
 
-- **静岡** — `sites/shizuoka.toml`, the only working config. 2025 is collected.
-  The full archive (平成11年 onwards) waits on a question about the site's
-  `<meta name="robots" content="none">`; see `docs/shizuoka.md`.
-- **和歌山** — `sites/wakayama.toml`. **Collected: 907 sittings, 46,839 speeches,
-  1989-02-27 .. 2025-12-19.** Plain UTF-8 HTML on the prefecture's CMS,
-  robots.txt 404, pages marked `index, follow`; one index page → 167 sessions →
-  per-sitting full text. 2011-04 .. 2019-03 is deliberately absent: the
-  地方議会会議録コーパス already covers it. `docs/wakayama.md`.
-- **愛媛** — `sites/ehime.toml` on `KensakuSystemScraper`. **Collected: 666
-  sittings, 39,624 speeches, 1991-06-27 .. 2026-03-19** — the whole archive from
-  平成3年第229回定例会, which is where the site's own coverage starts.
-  `docs/kensakusystem.md`.
-- **三重** — `sites/mie.toml`, same scraper. **Collected: 819 sittings, 47,279
-  speeches, 1989-02-28 .. 2026-03-31.** Prints office and name separately, which
-  愛媛 cannot: 269 distinct roles.
-- **兵庫** — `sites/hyogo.toml`, same scraper. **Collected: 809 sittings, 42,314
-  speeches, 1986-02-22 .. 2026-06-11** — the deepest archive in the survey. One
-  request per sitting via 全文表示.
+| | 本会議 | 委員会 | Range |
+| --- | --- | --- | --- |
+| **和歌山** | 916 / 47,377 | 163 / 7,814 | 本会議 1989-02-27〜, 委員会 2023-05-19〜 |
+| **三重** | 1,059 / 62,940 | 426 / 39,530 | 本会議 1989-02-28〜, 委員会 2023-01-18〜 |
+| **愛媛** | 909 / 53,631 | 2,214 / 154,702 | 本会議 1991-06-27〜, 委員会 2007-05-11〜 |
+| **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
+| **静岡** | 113 / 1,395 | — | 2025 only |
+
+**11,198 sittings, 642,211 speeches, 290,961,845 characters.** Sittings/speeches
+per cell. Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka}.toml`.
+
+- The **corpus window (2011-04 .. 2019-03) is collected** on 三重・愛媛・兵庫, both
+  本会議 and 委員会, decided 2026-09-04: whether the 地方議会会議録コーパス includes
+  committee minutes is unverified, and its letter is still unsent. **和歌山 still
+  has the window open on its 本会議 side** — 252 documents, its config not re-run.
+- 静岡's full archive and its 委員会 (`comgiji.nsf`, surveyed 2026-09-04, paginated
+  30 rows at a time) both wait on the `meta robots` question; see `docs/shizuoka.md`.
+- Each tenant's listing reconciles item by item against its corpus. 和歌山 carries
+  one undated sitting because the site prints 「平成八年七年十日（水曜日）」.
 
 **"The same product" is not the same site**
 
@@ -171,8 +172,14 @@ around but a large piece of exactly what we want, already assembled. Ask for it
 rather than re-crawling it; the letter is drafted and unsent
 (`docs/inquiries/local-politics.md`, addressee 要確認). Note the gap it leaves:
 **2019-04 .. 2019-12** falls between that corpus and any collection that starts at a
-calendar year. 和歌山 and 愛媛 were both scoped this way, so both carry a deliberate
-hole until that letter is answered; do the same for the next prefecture.
+calendar year.
+
+**Superseded 2026-09-04 for 三重・愛媛・兵庫**, which were re-run without
+`--since/--until` and now hold the window itself, 本会議 and 委員会 alike. The
+reason is in the letter: it *asks* whether that corpus includes 委員会 at all, so
+routing around the window assumed an answer nobody has. 和歌山's 本会議 window —
+252 documents — is the one hole left, and closing it is a decision, not an
+oversight.
 
 ## Things that will bite again
 
@@ -291,6 +298,25 @@ quirks.
   failure one field over. The 本会議 side does not do this (131 sessions, each
   written one way). Check a metadata field for digit-width variants the same way
   you check speakers for honorifics.
+- **A bracket class is a claim about two different kinds of bracket.** 兵庫 writes
+  「○まちづくり部参事(園芸・公園担当)兼公園緑地課長（北村智顕）」: the marker's own
+  brackets are full-width and the *office* contains half-width ones. A role class
+  that stopped at any opening bracket cut the office at 「参事」 and let the name
+  group swallow 「園芸・公園担当)兼公園緑地課長（北村智顕」 — **a speaker made of an
+  office, 124 speeches of it, and nothing warned.** Check which bracket a site
+  uses for the marker itself before excluding the other.
+- **A length bound on a role is the same claim as one on a name.** 「○高校教育課学校
+  支援推進官兼義務教育課学校支援推進官（辻　登志雄）」 is a 26-character office, and a
+  24-character cap matched *nothing* on that line — so the speech was swallowed
+  into the speaker before it, 9 of them in one committee sitting. The corpus was
+  short 55 speeches on that bound alone.
+- **Excluding digits is usually wrong.** Two false positives — a numbered heading
+  「○３　閉会中の継続調査事件」 and a speech opening 「（１）（２）（３）とあるんですが」 —
+  invite a no-digits rule for speakers. It costs **33 real speeches**, because
+  兵庫 puts name and office in one pair of brackets and offices are numbered:
+  「○（陰山　地域整備第１局長）」. The guard that works is narrower: a speaker may not
+  be *only* digits, and may not *begin* with one.
+
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing. But it decides it only for
   the URLs you know about: SSP's `/tenant/` is allowed and its `/dnp/search/` API

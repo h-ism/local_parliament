@@ -85,13 +85,42 @@ years = []
 # 三重 47,279 and 愛媛 39,624 unchanged to the speech, 兵庫 **+8** — eight markers
 # whose text began on the next line, which the 本会議 rule had been dropping since
 # it was written. Nothing was lost anywhere.
+#
+# **The main brackets are full-width, and the office may contain half-width ones.**
+# That correction was worth 55 speeches and 124 broken speaker names. 兵庫 writes
+# 「○まちづくり部参事(園芸・公園担当)兼公園緑地課長（北村智顕）」, and a role class that
+# stopped at *any* opening bracket cut the office at 「参事」 and then let the name
+# group swallow 「園芸・公園担当)兼公園緑地課長（北村智顕」 whole — a speaker made of an
+# office, which nothing warns about. Requiring 「（」 for the marker's own brackets
+# separates the two: verified over the three corpora that **no marker anywhere uses
+# a half-width bracket as its own**, while offices routinely do.
+#
+# **And the office runs past 24 characters.** 「○高校教育課学校支援推進官兼義務教育課
+# 学校支援推進官（辻　登志雄）」 is 26, so the old bound matched *nothing* on that line
+# and the speech was swallowed into the previous speaker's text — 9 of them in one
+# 文教常任委員会 alone. 60 now, which is what the longest real office needs.
+#
+# Re-parsed over all 10,006 collected sittings from cache: 兵庫 **+47**, 三重 **+8**,
+# 愛媛 unchanged, and nothing lost anywhere.
+#
+# **A number is not a speaker, and excluding numbers loses speakers.** Two false
+# positives survived everything above: 「○３　閉会中の継続調査事件」 is a numbered
+# heading with branch 4's shape, and 「○伊藤副委員長　　（１）（２）（３）とあるんですが」
+# is a speech whose *text* opens with a bracketed number, which branch 1 read as
+# the name. The obvious fix — no digits in a speaker — costs **33 real speeches**:
+# 兵庫 writes 「○（陰山　地域整備第１局長）」, name and office inside one pair of
+# brackets, and offices are numbered. So the guard is narrower than that: a
+# speaker may not be *only* digits (branch 1 must end on something else) and may
+# not *begin* with one (branch 4). Measured over all 10,006 sittings: -1 speech,
+# which is the heading.
+#
 # Laid out with `(?x)`, which ignores the layout but not the spaces inside a
 # character class — those are the ones that matter here.
 speech_split = '''(?xm)
   ^○ (?:
-      (?P<role>[^（(\n]{0,24}) [（(] (?P<speaker>[^）\n]{1,40}?) (?:議員)? [）)] (?=[ 　（(])
-    | (?P<role2>[^（(\n]{1,24}) [（(] (?P<speaker2>[^）\n0-9０-９]{1,40}?) [）)] $
-    | [（(] (?P<speaker3>[^）\n]{1,40}?)
-          (?P<role3>(?:議員|委員長|副委員長|委員|議長|副議長) (?:発言の概要)?) [）)] $
-    | (?P<speaker4>[^（(\n]{1,20}?) (?=[ 　]+\S)
+      (?P<role>[^（\n]{0,60}?) （ (?P<speaker>[^）\n]{0,39}?[^）\n0-9０-９]) (?:議員)? ） (?=[ 　（(])
+    | (?P<role2>[^（\n]{1,60}?) （ (?P<speaker2>[^）\n0-9０-９]{1,40}?) ） $
+    | （ (?P<speaker3>[^）\n]{1,40}?)
+          (?P<role3>(?:議員|委員長|副委員長|委員|議長|副議長) (?:発言の概要)?) ） $
+    | (?P<speaker4>[^（(\n0-9０-９][^（(\n]{0,19}?) (?=[ 　]+\S)
   )'''

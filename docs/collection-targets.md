@@ -13,11 +13,11 @@ a second listing level — plus one small parsing addition, opens **four prefect
 
 ## Tier 1 — collectable now, nothing to ask anyone
 
-**Collected on this product (2026-08-28):** 三重 819 sittings / 47,279 speeches /
-1989-02-28 .. 2026-03-31, 兵庫 809 / 42,314 / **1986-02-22** .. 2026-06-11 — the
-oldest material in the corpus — and 愛媛 666 / 39,624 / 1991-06-27 .. 2026-03-19.
-Nothing is left uncollected on any of the three except the corpus window itself.
-Detail in `docs/kensakusystem.md`.
+**Collected on this product (2026-09-04), 本会議 and 委員会 both, corpus window
+included:** 三重 1,485 sittings / 102,470 speeches, 愛媛 3,123 / 208,333, 兵庫
+5,398 / 274,822 — 兵庫 from **1986** on both sides, which is the oldest material in
+the corpus. Each tenant's listing reconciles item by item against its corpus;
+nothing is left uncollected on any of the three. Detail in `docs/kensakusystem.md`.
 
 ### 1. 和歌山 — the best target found — **implemented 2026-08-27**
 
@@ -171,12 +171,17 @@ our side can establish.
    the addressee is still 要確認. One email, and it decides whether 2011-04 ..
    2019-03 has to be crawled for 47 assemblies at all.
 2. ~~Add the intermediate listing level to `GenericScraper`.~~ — done.
-3. ~~`sites/wakayama.toml`~~ — done, and the archive is collected: 907 sittings,
-   46,839 speeches, 1989-02-27 .. 2025-12-19. Only 2011-04 .. 2019-03 is missing,
-   and item 1 decides whether we crawl it. 委員会会議録 (`/gijiroku2/`) untouched.
-4. ~~`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`~~ — done. The three
-   needed a scraper change each, not a config each; 兵庫 reaches 昭和61年 (1986).
-   Still uncollected on this product: every 委員会. The 本会議 archives are done.
+3. ~~`sites/wakayama.toml`~~ — done: 916 本会議 sittings, 47,377 speeches,
+   1989-02-27 .. 2026-03-17, and ~~委員会会議録 (`/gijiroku2/`)~~ done too —
+   `sites/wakayama_committee.toml`, 163 sittings, 7,814 speeches, 令和5年 onwards,
+   which is all the index offers. Only 2011-04 .. 2019-03 is missing on the 本会議
+   side; the other three prefectures now hold their window, so closing 和歌山's is
+   a decision rather than an oversight.
+4. ~~`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`~~ — done, and
+   ~~every 委員会~~ with them (2026-09-04): 兵庫 4,378 committee sittings back to
+   昭和61年, 愛媛 2,214 back to 平成19年, 三重 426 back to 令和5年. `sessions = '.'`
+   opens them, and it also recovered a 本会議 sitting that a truncated tree label
+   had been hiding since the archive was collected.
 5. Send the SSP letters. Now a permission request, not a how-to: the API is
    disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
    it is the only one of the 18 that names a destination on its own page.

@@ -93,18 +93,25 @@ _DOCUMENT = re.compile(
     re.IGNORECASE,
 )
 # `R080225A` — era initial, era year, month, day, serial letter, and on 三重's
-# older documents a two-digit continuation: `H010518A01`. Everything else the tree
-# offers is not a sitting: 決議案・請願・意見書 (`R07060004KETS.html`), 目次
+# older documents a two-digit continuation: `H010518A01`. A committee that sits
+# twice in one day adds `_2` before the serial: `R080119_2B10`. Everything else
+# the tree offers is not a sitting: 決議案・請願・意見書 (`R07060004KETS.html`), 目次
 # (`H010228MOKU.html`), 名簿 (`MEIB`), 議案 (`GIAN`) — all of them dotted.
 #
-# The `\d{0,2}` was not in the first version of this rule, and 52 三重 sittings
-# from the 平成 archive were rejected by it. They were *reported*, which is the
-# only reason this line is right now: a shape rule about which documents matter
-# has to say what it is dropping, because it will be wrong about something.
-_SITTING = re.compile(r"^[RHS]\d{6}[A-Z]\d{0,2}$")
+# **Both optional parts were added after this rule rejected real sittings**, and
+# both times the rejection was *reported* rather than silent, which is the only
+# reason either was ever found. `\d{0,2}` came first: 52 三重 sittings from the
+# 平成 archive. `_\d` came with the committees: 52 more, 7 on 三重 and 45 on 兵庫,
+# one of them a 88-speech 総務地域連携交通常任委員会. A shape rule about which
+# documents matter has to say what it is dropping, because it will be wrong about
+# something.
+_SITTING = re.compile(r"^[RHS]\d{6}(?:_\d)?[A-Z]\d{0,2}$")
 _DOWNLOAD_POS = re.compile(r'name="downloadPos"\s+value="(\d+)"')
 _CODE = re.compile(r"(cgi-bin\d*)/See\.exe\?Code=([A-Za-z0-9]+)")
-_INDEX_URL = re.compile(r"/(cgi-bin\d*)/r_Speakers\.exe\?([A-Za-z0-9]+)/([A-Za-z0-9]+)/")
+# The sitting id may carry the `_2` of a second sitting on one day, so it is not
+# `[A-Za-z0-9]+`. Reading it wrong does not 404 — it raises before any request,
+# which is at least loud.
+_INDEX_URL = re.compile(r"/(cgi-bin\d*)/r_Speakers\.exe\?([A-Za-z0-9]+)/([A-Za-z0-9_]+)/")
 
 # `R070303A` — era initial, two-digit era year, month, day, and a serial letter.
 _FILENAME_DATE = re.compile(r"^([RHS])(\d{2})(\d{2})(\d{2})")

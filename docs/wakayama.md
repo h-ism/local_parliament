@@ -229,3 +229,24 @@ URL tells an index from a transcript; a fourth will announce itself the same way
 
 「令和８年６月23 日（火）」 — a space between the 23 and the 日, in one record of 163.
 The pattern now allows whitespace before every unit, not only between them.
+
+
+## A whole session that the last crawl did not have (2026-09-04)
+
+Counting the index against the corpus after the committee run turned up **9
+sittings of 令和8年2月定例会** (`d00222247`..`d00222255`, 2026-02-27 .. 2026-03-17)
+that the 2026-08-27 crawl had not collected. Collected with `--start-url` on the
+session page rather than re-running the whole index, which would have re-fetched
+the 252 documents of the corpus window to discard them again.
+
+This is the third time on this site that counting per item — not per total — has
+found something. It costs nothing, because every index page is cached.
+
+
+## One sitting the site itself dates wrongly
+
+`p042602.html`, 平成８年６月定例会第６号, prints its own date as
+**「平成八年七年十日（水曜日）」** — 月 typed as 年. `dates.py` refuses it, correctly,
+and the record is the one undated sitting in 1,079. The title says 平成８年６月 and
+the day is 七月十日 (1996-07-10); nothing in the parser should be taught to guess
+that.

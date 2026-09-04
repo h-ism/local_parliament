@@ -123,10 +123,27 @@ level, as `fileName=R07060004KETS.html`. 三重 lists a table of contents as
 kind **with the `.html` cut off**, which then 404s one request later, and took the
 second kind as a sitting with a real-looking date.
 
-A sitting's name is `[RHS]YYMMDD` plus a serial letter, and `_SITTING` now requires
+A sitting's name is `[RHS]YYMMDD` plus a serial letter, and `_SITTING` requires
 exactly that. A dotted name is a known kind and is dropped quietly; **any other
 shape is logged as a warning**, because a silently dropped sitting is the failure
 this project keeps paying for.
+
+**That warning has now caught the rule out twice.** Both times it was a real
+sitting the rule had never seen:
+
+| Form | What it is | Cost |
+| --- | --- | --- |
+| `H010518A01` | 三重's 平成 archive numbering a continued sitting | 52 sittings |
+| `R080119_2B10` | a committee meeting **twice in one day** | 52 sittings, 7 三重 and 45 兵庫 |
+
+`R080119_2B10` is 令和8年 総務地域連携交通常任委員会・分科会（1月19日）, 88 speeches.
+The infix also has to survive `_INDEX_URL`, which reads the id back out of the
+speaker-index URL to build the download — otherwise the sitting lists and then
+fails to fetch.
+
+Neither would have been findable without the warning. A rule that decides which
+documents matter has to declare what it drops, because it will be wrong about
+something.
 
 ## One marker rule, and what each bound cost
 

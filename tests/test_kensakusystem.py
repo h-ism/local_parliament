@@ -663,3 +663,72 @@ def test_the_split_is_off_unless_a_config_asks_for_it() -> None:
     assert KensakuConfig.from_toml(SITES_DIR / "ehime.toml").roster_split
     assert not KensakuConfig.from_toml(SITES_DIR / "mie.toml").roster_split
     assert not KensakuConfig.from_toml(SITES_DIR / "hyogo.toml").roster_split
+
+
+def test_a_second_sitting_on_one_day_is_a_sitting_too() -> None:
+    """`R080119_2B10` — a committee that meets twice in a day numbers the second
+    one with an infix. The rule rejected 52 such documents across 三重 and 兵庫,
+    one of them an 88-speech 常任委員会, and reported every one of them."""
+    from prefectural_transcripts.scrapers.kensakusystem import _INDEX_URL, _SITTING
+
+    assert _SITTING.match("R080119_2B10")
+    assert _SITTING.match("R060613_3B12")
+    assert _SITTING.match("R080225A")
+    assert not _SITTING.match("R080119_2MOKU")
+    # The id has to survive being read back out of the speaker-index URL, or the
+    # sitting fails to fetch instead of failing to list.
+    url = "https://www.kensakusystem.jp/mie/cgi-bin3/r_Speakers.exe?abc123/R080119_2B10/0/0//"
+    assert _INDEX_URL.search(url).group(3) == "R080119_2B10"  # type: ignore[union-attr]
+
+
+def test_an_office_may_contain_half_width_brackets() -> None:
+    """兵庫 writes 「○まちづくり部参事(園芸・公園担当)兼公園緑地課長（北村智顕）」.
+
+    A role class that stopped at any opening bracket cut the office at 「参事」 and
+    let the name group swallow 「園芸・公園担当)兼公園緑地課長（北村智顕」 — a speaker
+    made of an office, 124 speeches of it, and nothing warns about that. The
+    marker's own brackets are full-width; no marker on any of the three tenants
+    uses a half-width one as its own.
+    """
+    from prefectural_transcripts.scrapers.generic import split_speeches
+
+    text = "\n".join(
+        [
+            "○まちづくり部参事(園芸・公園担当)兼公園緑地課長（北村智顕）　　旧図書館の撤去は、",
+            "○高校教育課学校支援推進官兼義務教育課学校支援推進官（辻　登志雄）　　26字の役職。",
+            "○（大北秀特命担当部長(会計管理者)）　　愛媛は括弧の中に半角括弧を置く。",
+        ]
+    )
+
+    assert [(s.role, s.speaker) for s in split_speeches(text, UNIFIED_SPLIT)] == [
+        ("まちづくり部参事(園芸・公園担当)兼公園緑地課長", "北村智顕"),
+        # 24 characters was the old bound: this line matched *nothing*, and the
+        # speech was swallowed into the speaker before it.
+        ("高校教育課学校支援推進官兼義務教育課学校支援推進官", "辻　登志雄"),
+        # And the 愛媛 form still keeps its half-width pair inside the name.
+        (None, "大北秀特命担当部長(会計管理者)"),
+    ]
+
+
+def test_a_number_is_not_a_speaker_but_a_numbered_office_still_is() -> None:
+    """The narrow version of a guard that is wrong when it is wide.
+
+    「○３　閉会中の継続調査事件」 is a numbered heading and 「（１）」 at the head of a
+    speech is not a name — but refusing digits outright costs 33 real speeches,
+    because 兵庫 puts name and office inside one pair of brackets and offices are
+    numbered: 「○（陰山　地域整備第１局長）」.
+    """
+    from prefectural_transcripts.scrapers.generic import split_speeches
+
+    text = "\n".join(
+        [
+            "○３　閉会中の継続調査事件を議題とし、説明を聴取した。",
+            "○伊藤副委員長　　（１）（２）（３）とあるんですが、市町の計画について伺います。",
+            "○（陰山　地域整備第１局長）　　播磨科学公園都市においてはお答えする。",
+        ]
+    )
+
+    assert [(s.role, s.speaker) for s in split_speeches(text, UNIFIED_SPLIT)] == [
+        (None, "伊藤副委員長"),
+        (None, "陰山　地域整備第１局長"),
+    ]

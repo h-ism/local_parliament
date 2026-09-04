@@ -63,17 +63,64 @@ roster does not list those people.
 **Collected**
 
 ```
-和歌山 委員会   163 sittings   7,814 speeches   1,294,507 chars   2023-05-19 .. 2026-06-23
-三重   委員会   351 sittings  33,640 speeches   7,432,344 chars   2023-01-18 .. 2026-05-22
-愛媛   委員会   — collecting
-兵庫   委員会   — queued behind it (one host, so they run one at a time)
+              本会議                              委員会
+和歌山    916  47,377 speeches  1989-02-27..    163    7,814  2023-05-19 .. 2026-06-23
+三重    1,059  62,940           1989-02-28..    426   39,530  2023-01-18 .. 2026-05-22
+愛媛      909  53,631           1991-06-27..  2,214  154,702  2007-05-11 .. 2026-07-08
+兵庫    1,020  55,035           1986-02-22..  4,378  219,787  1986-03-05 .. 2026-07-16
 ```
 
-Committee coverage is shallower than 本会議 everywhere: 和歌山 and 三重 begin at
-2023, 愛媛 at 平成19年, 兵庫's 常任委員会 at 平成17年 and its 予算・決算特別委員会 at
-昭和61年. **The corpus window is collected too** — deliberately, because whether
-the 地方議会会議録コーパス includes committee minutes is unverified and the letter
-asking is the one still unsent.
+**The corpus is 11,198 sittings and 642,211 speeches** (290,961,845 characters),
+against 3,314 and 177,451 when the branch began.
+
+Committee coverage is shallower than 本会議 in two of the four: 和歌山 and 三重 begin
+at 2023. 愛媛 reaches 平成19年, and 兵庫's 予算・決算特別委員会 reach **昭和61年** —
+as deep as its 本会議 archive.
+
+**The corpus window (2011-04 .. 2019-03) is filled now, on 本会議 as well.** That
+went further than the question that was asked, which was about committees: the
+runs were made without `--since/--until`, so the three kensakusystem tenants
+picked up their 本会議 window too — 240 三重, 243 愛媛, 210 兵庫. It is consistent
+with the answer given (collect everything obtainable; a hole costs a re-crawl if
+the assumption about the 地方議会会議録コーパス turns out wrong), and it is recorded
+here because it was not what was authorised. **和歌山 still has its 本会議 window
+open**, 252 documents, because that config was not re-run.
+
+**What the audit found afterwards, and it was not nothing**
+
+Counting the listing against the corpus, and the speaker list against itself,
+turned up four more — every one of them a bound that was a claim about the data:
+
+- **`R080119_2B10`** — a committee sitting **twice in one day** numbers the second
+  with an infix, and `_SITTING` had never seen it. **52 sittings**, 7 三重 and 45
+  兵庫, one of them an 88-speech 総務地域連携交通常任委員会. Reported, not dropped in
+  silence, which is the only reason it was found — the second time that warning
+  has caught this rule out.
+- **A half-width bracket inside an office.** 兵庫 writes 「○まちづくり部参事(園芸・
+  公園担当)兼公園緑地課長（北村智顕）」. A role class stopping at any opening bracket
+  cut the office at 「参事」 and let the name group swallow the rest — **124
+  speeches whose speaker was an office**, and nothing warns about that. The
+  marker's own brackets are full-width; no marker on any tenant uses the other.
+- **A 24-character cap on an office.** 「○高校教育課学校支援推進官兼義務教育課学校支援
+  推進官（辻　登志雄）」 is 26, so the line matched *nothing* and the speech was
+  swallowed into the speaker before it — 9 in one 文教常任委員会. Those two
+  corrections together are **+55 speeches**, 兵庫 +47 and 三重 +8, with nothing lost.
+- **Two numeric false positives, and the wrong fix for them.** 「○３　閉会中の継続
+  調査事件」 is a numbered heading, and 「（１）（２）（３）とあるんですが」 is a speech
+  whose text opens with a number. Refusing digits in a speaker costs **33 real
+  speeches** — 兵庫 writes 「○（陰山　地域整備第１局長）」 and offices are numbered. The
+  guard that works: not *only* digits, and not *beginning* with one. -1 speech
+  over 10,006 sittings, which is the heading.
+- **和歌山 was missing a whole session**: 9 sittings of 令和8年2月定例会, which the
+  2026-08-27 crawl did not have. Collected with `--start-url` rather than
+  re-running the index, which would have re-fetched 252 window documents to throw
+  them away again.
+
+After all of it: **three tenants reconcile exactly against their listings** (三重
+1,485 / 愛媛 3,123 / 兵庫 5,398, nothing missing), 和歌山's only gap is its 252
+window documents, and the speaker lists carry no numeric or bracket-broken names.
+One 和歌山 sitting stays undated because the site prints 「平成八年七年十日（水曜日）」
+— 月 typed as 年.
 
 **Two more things that would have been invisible**
 
