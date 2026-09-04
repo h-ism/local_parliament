@@ -2,6 +2,175 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-04 — the committees, and three ways a config loses what it never opened (`feat/committees`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The remaining code work: **委員会会議録**, untouched on all four collectable
+prefectures. It turned into four separate findings, three of which are about the
+same thing — a rule that describes what you expect, applied to a site that types
+what it likes.
+
+**1. `sessions = '定例会|臨時会'` was losing a sitting.** 兵庫's tree carries
+「昭和61年 第198回定 」 — 「第198回定例会」 truncated mid-word by whoever typed it.
+The node was never opened, and **the sitting of 1986-06-05 was absent from the
+corpus** with nothing in any log to say so. All three kensakusystem configs now
+say `sessions = '.'`, and the year's own node is skipped by the scraper rather
+than by the regex. A node that is never opened cannot warn.
+
+**2. 委員会 write the marker three ways the 本会議 rule had never seen**, each of
+which parsed to **zero speeches**:
+
+```
+兵庫 委員会  「○委員長（門間雄司）」   the speech begins on the *next* line
+兵庫 委員会  「○（庄本えつこ委員）」   likewise, office inside the brackets
+三重 委員会  「○小島委員長　　…」     no brackets at all
+```
+
+So the rule grew three branches, each guarded against a heading wearing its exact
+shape: a digit inside the brackets rejects 「○議事日程（第７号）」, an office suffix
+rejects 「○（議事日程）」, and text on the same line rejects 「○議事日程　　」. A regex
+cannot name a group twice, so the branches number theirs and `split_speeches`
+reads whichever matched.
+
+Re-parsed over all 2,294 collected 本会議 sittings from cache before shipping it:
+三重 47,279 and 愛媛 39,624 unchanged to the speech, 兵庫 **+8** — markers whose
+text began on the next line, which the 本会議 rule had been dropping since it was
+written. Nothing lost anywhere.
+
+**3. 和歌山's committees are not transcripts.** `/gijiroku2/` is a second site:
+要点筆記 with 「●委員長」 and 「Ｑ／Ａ」 markers — and by 令和8年 the 予算特別委員会's
+総括質疑 is a verbatim transcript in a third form, 「○濱口委員長　山家委員。」, which is
+本会議's shape without the 「君」 本会議's rule requires. 予算特別委員会 also sits one
+level deeper, but only in the sessions where it actually meets. Three documents
+parsed to zero speeches at 5.5–6.4 KB — too big to be a 「質疑なし」 day — and behind
+them were nine real records.
+
+**4. 愛媛's `role` could be filled after all.** This repository has said for a week
+that it could not: 「○（三宅浩正議長）」 is a name and an office in one run with
+nothing to split on. True of the marker, not of the document, which opens with
+「　　９番　　三　宅　浩　正」. **The roster is the missing delimiter.**
+
+What that was costing was not an empty column. 「中畑保一」 spoke 51 times as a
+member and 「中畑保一議長」 1,772 times as chair — **two speakers** — and 38 people
+were counted twice that way, every one of them somebody who had held an office.
+Re-parsed from cache: 39,624 speeches before and after, speakers **717 → 455**,
+**35,518 speeches now carrying a role**, 54 left glued because the sitting's own
+roster does not list those people.
+
+**Collected**
+
+```
+和歌山 委員会   163 sittings   7,814 speeches   1,294,507 chars   2023-05-19 .. 2026-06-23
+三重   委員会   351 sittings  33,640 speeches   7,432,344 chars   2023-01-18 .. 2026-05-22
+愛媛   委員会   — collecting
+兵庫   委員会   — queued behind it (one host, so they run one at a time)
+```
+
+Committee coverage is shallower than 本会議 everywhere: 和歌山 and 三重 begin at
+2023, 愛媛 at 平成19年, 兵庫's 常任委員会 at 平成17年 and its 予算・決算特別委員会 at
+昭和61年. **The corpus window is collected too** — deliberately, because whether
+the 地方議会会議録コーパス includes committee minutes is unverified and the letter
+asking is the one still unsent.
+
+**Two more things that would have been invisible**
+
+- On committees a **zero-speech sitting is often correct** — 「質疑　なし」 is a real
+  record of a few hundred characters. That breaks this project's oldest smoke
+  test, so the warning now carries the document size.
+- 和歌山's committees type their own headers, and 「令和８年２月」/「令和8年2月」/
+  「令和８年2月」 are one session written three ways. `session` is therefore not
+  recorded on that side at all.
+
+**Not done, and why**
+
+静岡's 委員会 (`comgiji.nsf`) was opened and not collected: it is the same Domino
+application, paginated 30 rows at a time, and collecting it is the
+thousands-of-documents case `docs/shizuoka.md` already says to write to 議事課
+about first.
+
+**Files**
+
+`scrapers/kensakusystem.py`, `scrapers/generic.py`, `scrapers/base.py`,
+`sites/{ehime,mie,hyogo}.toml`, **`sites/wakayama_committee.toml`** (new),
+`tests/test_kensakusystem.py`, `tests/test_generic_scraper.py`, `CLAUDE.md`,
+`docs/kensakusystem.md`, `docs/wakayama.md`, `docs/shizuoka.md`.
+
+### 日本語
+
+残っていたコード作業は**委員会会議録**で、収集可能な4県すべてで未着手だった。結果は
+4つの発見になり、うち3つは同じことを言っている — **期待した形を書いた規則が、
+サイトが実際に打った字に当たると黙って落とす**。
+
+**1. `sessions = '定例会|臨時会'` が会議を1件落としていた。** 兵庫のツリーには
+「昭和61年 第198回定 」がある。「第198回定例会」が入力途中で切れたラベルで、
+ノードは一度も開かれず、**1986-06-05の会議がコーパスに無かった**。ログには何も
+残っていない。3県とも `sessions = '.'` にし、年ノード自身は正規表現ではなく
+スクレイパー側で除く。**開かれないノードは警告を出せない。**
+
+**2. 委員会の標識は本会議規則が見たことのない3形。** どれも**発言0件**になった。
+
+```
+兵庫 委員会  「○委員長（門間雄司）」   本文は*次の行*から始まる
+兵庫 委員会  「○（庄本えつこ委員）」   同じ。役職は括弧の中
+三重 委員会  「○小島委員長　　…」     括弧が無い
+```
+
+規則を4分岐にし、各分岐を「同形の見出し」から守った — 括弧内の数字が
+「○議事日程（第７号）」を、役職語尾が「○（議事日程）」を、同一行の本文が
+「○議事日程　　」を弾く。正規表現は同名グループを繰り返せないので、分岐が番号を
+振り `split_speeches` が一致した方を読む。
+
+出す前にキャッシュから**収集済み本会議2,294件を全て再パースして差分**を取った:
+三重47,279・愛媛39,624は発言単位で不変、兵庫**+8**（本文が次行から始まる標識で、
+本会議規則が最初から落としていた実在の発言）。**失ったものはゼロ。**
+
+**3. 和歌山の委員会は会議録ではない。** `/gijiroku2/` は別サイトで、記録は要点筆記
+（「●委員長」「Ｑ／Ａ」）。しかも令和8年の予算特別委員会・総括質疑は**逐語**で、
+第3の形「○濱口委員長　山家委員。」— 本会議の形から本会議規則が要求する「君」を
+抜いたもの。予算特別委員会だけ階層が1つ深く、しかも開催した会期でのみそうなる。
+5.5〜6.4KBで発言0件の文書が3件出て（「質疑なし」の日にしては大きすぎる）、その裏に
+実在の記録が9件あった。
+
+**4. 愛媛の `role` は埋められた。** このリポジトリは1週間「分離できない」と書いて
+いた。「○（三宅浩正議長）」は氏名と役職が一続きで切れ目が無い — *標識*については
+その通りだが、*文書*は違う。同じ文書が「　　９番　　三　宅　浩　正」で始まる。
+**名簿が、無いはずの区切りだった。**
+
+失っていたのは空の列ではない。「中畑保一」は議員として51発言、「中畑保一議長」は
+議長として1,772発言 — **別々の話者**。**38人が二重に数えられ**、全員が役職に就いた
+人だった。キャッシュから再パース: 発言数39,624で不変、話者**717→455**、
+**35,518発言が role を持つ**ように。残り54発言は、その会議の名簿に載っていない人。
+
+**収集**
+
+```
+和歌山 委員会   163会議   7,814発言   1,294,507字   2023-05-19 .. 2026-06-23
+三重   委員会   351会議  33,640発言   7,432,344字   2023-01-18 .. 2026-05-22
+愛媛   委員会   収集中
+兵庫   委員会   その後（同一ホストなので直列）
+```
+
+委員会の収録は本会議より浅い。和歌山・三重は2023年から、愛媛は平成19年、兵庫は
+常任委員会が平成17年・予算/決算特別委員会が昭和61年。**コーパス窓も収集する** —
+地方議会会議録コーパスに委員会が含まれるかは未確認で、それを訊く文面がまさに
+未送だから。
+
+**他に、見えなかったはずのもの**
+
+- 委員会では**発言0件が正常なことが多い**（「質疑　なし」は数百字の実在の記録）。
+  このプロジェクト最古のスモークテストが効かなくなるので、警告に文書サイズを付けた。
+- 和歌山の委員会は各委員会が見出しを自分で打つので、「令和８年２月」「令和8年2月」
+  「令和８年2月」が同一会期の3表記になる。よってこちら側では `session` を記録しない。
+
+**やらなかったこと**
+
+静岡の委員会（`comgiji.nsf`）は開いたが収集していない。同じDominoアプリで30行ずつ
+のページ送りであり、収集は `docs/shizuoka.md` が「先に議事課へ一報を」と書いている
+数千文書の case そのものだから。
+
 ## 2026-08-28 — 愛媛's archive, and a rule that had to be widened twice (`feat/ehime-archive`)
 
 *English and Japanese. / 英語と日本語で併記する。*
