@@ -1,0 +1,138 @@
+# 和歌山県議会 — 委員会会議記録
+#
+# The same CMS as `wakayama.toml` and the same politeness answer (robots.txt 404,
+# every page `index, follow`), but a **separate site** in every way that a config
+# cares about: a different index (`/gijiroku2/`), a different page shape, and a
+# record that is not a transcript at all.
+#
+# It writes into the same `data/和歌山県.jsonl`, where `committee` is what tells
+# the two apart.
+#
+# Coverage: **令和5年 (2023) 〜 令和8年** — 17 sessions, 157 sittings. That is the
+# whole of what the index offers; the 本会議 archive reaches 平成2年 and the
+# committees simply do not go back. Nothing here falls inside the corpus window
+# (2011-04 .. 2019-03), so the hole 和歌山's 本会議 carries does not apply.
+#
+# See `docs/wakayama.md`.
+
+prefecture = "和歌山県"
+name = "wakayama_committee"
+
+# 会議録の検索と閲覧（委員会用）
+start_urls = [
+    "https://www.pref.wakayama.lg.jp/gijiroku2/test.html",
+]
+
+[list]
+max_pages = 1
+# Three levels for most committees, **four for 予算特別委員会** — see below.
+max_depth = 3
+
+# index → session → sitting, as on the 本会議 side, and both links are a bare <a>
+# under div.article, so only the label separates them.
+#
+# A session is 「2月定例会」「5月臨時会」「10月・11月決算特別委員会」: always a month
+# first. A sitting is 「総務委員会」「予算特別委員会」「審査１日目（10月21日）」: never.
+# Counted over all 17 sessions before this was written — 157 sittings, and every
+# label falls on one side or the other.
+index_link = 'div.article a[href*="/gijiroku2/"]'
+index_include = '^[0-9０-９]{1,2}月|予算特別委員会'
+
+# 予算特別委員会 is a level deeper than everything else, and only in the sessions
+# where it actually sits: in 2月定例会 its page is an *index* of 「総括質疑1日目」,
+# 「総括質疑2日目」 and 「採決」, while in 5月臨時会 and 6月定例会 the same label leads
+# straight to a three-minute record of electing a chair. Both are followed, so
+# both are collected; a transcript page has no links and descending into it costs
+# nothing.
+#
+# It was found the way these things are always found: three documents parsed to
+# **zero speeches** at 5.5–6.4 KB, which is too big to be a 「質疑なし」 day. Behind
+# them were nine real records.
+
+# The same links are candidates for *both* levels, so the sitting rule has to
+# push the session links back out — 「10月決算特別委員会」 would otherwise be
+# collected as a sitting, fetched, and stored as a listing page with no speeches.
+meeting_link = 'div.article a[href*="/gijiroku2/"]'
+include = '委員会|審査|総括質疑|採決'
+
+# What `exclude` throws out, in order: the session links on the index page (a
+# month first), the 予算特別委員会 index pages themselves, and the 「部局別質疑
+# （常任委員会）」 link, which is a *back-link* to the session page and would
+# otherwise be stored as a sitting with no speeches.
+#
+# The three ids are named because nothing in the label or the URL distinguishes an
+# index from a transcript — both are 「予算特別委員会」 on the session page. Verified
+# 2026-09-04: each is a list of links whose first line is
+# 「令和N年2月和歌山県議会予算特別委員会」 with no 「会議記録」. A fourth 2月定例会 will
+# add a fourth, and it will announce itself as a several-kilobyte sitting with no
+# speeches — which is exactly how these three were found.
+exclude = '^[0-9０-９]{1,2}月|d00221920|d00220431|d00219474|部局別質疑'
+
+[detail]
+container = "div.article"
+
+# 和歌山's committees do not publish a transcript. The record is 要点筆記 and its
+# markers are its own:
+#
+#   ●玄素委員長            the chair, then 「◎開会宣告」 lines summarising what
+#                          they did — those are the chair's block, not speakers
+#   ●                      a bare marker; the officials are named in the text
+#                          under it (「高橋会計管理者、…説明」)
+#   ●北廣知事室長説明      a marker with 説明 appended
+#   Ｑ　谷口委員           a question
+#   Ａ　平田人事委員会委員長  the answer
+#
+# So `role` is Ｑ or Ａ where the record says so, and empty for the chair's own
+# procedural blocks — which is a real distinction in this format and worth
+# keeping.
+#
+# Two details, both paid for by a document:
+#
+# * **The 説明 suffix is stripped.** 「●北廣知事室長説明」 and 「Ａ　北廣知事室長」 are
+#   the same person, and leaving it on would make them two speakers — the failure
+#   this corpus already paid for once with 「太田栄子さん」 and 「太田栄子」.
+# * **The separator after Ｑ／Ａ is not always a space.** One line uses U+00A0
+#   (NO-BREAK SPACE), so `[ 　]` misses it. It cost one speech in a six-document
+#   sample, which is the rate at which this kind of thing is normally invisible.
+# * **「（年長委員）」 and 「（委員外議員）」 come off, and nothing else does.** They are
+#   role notes, not part of a name, and leaving them on split one person in two:
+#   「山田委員（年長委員）」 5 speeches against 「山田委員」 88, 「奥村議員（委員外議員）」 21
+#   against 1. Only those two, matched literally — cutting at any bracket would
+#   merge 「鈴木(德)委員」 into 「鈴木」 and silently join two members who share a
+#   surname, which is the same failure pointing the other way.
+#
+# **And 予算特別委員会's 総括質疑 is a verbatim transcript**, in a third form the
+# other two never use: 「○濱口委員長　山家委員。」 — 本会議's shape without the 「君」
+# that 本会議's rule requires. 令和7年's 総括質疑 is still 要点筆記 and 令和8年's is
+# not, so the site changed generation inside the range this config covers, and a
+# rule for either alone takes zero speeches from the other.
+#
+# Counted on 9 sittings — every committee type, both formats, 令和5年–令和8年:
+# 476 markers, all taken, nothing matched off a marker line.
+speech_split = '''(?xm)
+  ^ (?: ●  (?P<speaker>[^\n]{0,24}?)  (?:説明)? (?:（(?:年長委員|委員外議員)）)? $
+      | (?P<role2>[ＱＡ]) [^\S\n]+ (?P<speaker2>[^\n]{1,30}?) (?:（(?:年長委員|委員外議員)）)? $
+      | ○  (?P<speaker3>[^\n 　]{1,20}?) (?:（(?:年長委員|委員外議員)）)? [ 　]
+    )'''
+
+[detail.patterns]
+# 「１　日時　　令和7年６月24日（火）午前10時０分～」. Two differences from the
+# 本会議 pattern, each of which produced an undated record:
+#
+# * 「（火）」, not 「（火曜日）」. The 本会議 pattern requires the longer form and
+#   matches nothing at all here.
+# * **A space can fall inside the date.** 令和8年6月経済警察委員会 writes
+#   「令和８年６月23 日（火）」 — one record in 163, undated until `\s*` was allowed
+#   before every unit, not only between them.
+date = '((?:令和|平成|昭和)\s*[0-9０-９元]{1,3}\s*年\s*[0-9０-９]{1,2}\s*月\s*[0-9０-９]{1,2}\s*日)\s*（[日月火水木金土]）'
+# 「令和7年6月和歌山県議会総務委員会会議記録」 — the first line carries all three.
+title = '^(.{0,60}?会議記録)'
+committee = '和歌山県議会(.{1,40}?委員会)会議記録'
+
+# `session` is deliberately absent. Each committee types its own header and the
+# digit width varies document by document: the three sittings of 令和8年2月 call
+# it 「令和８年２月」, 「令和8年2月」 and 「令和８年2月」, which would file one session
+# under three names — the same failure as 「太田栄子さん」 and 「太田栄子」, one field
+# over. The 本会議 side does not have this (131 sessions, each written one way,
+# checked over all 907 records). `date` and `committee` identify a sitting here,
+# and `title` keeps the document's own wording verbatim.

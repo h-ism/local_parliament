@@ -268,6 +268,29 @@ quirks.
   **3 were fetch failures nobody had noticed**. Re-listing costs nothing because
   every page is cached, and it is the only check that catches a document the
   crawler asked for and failed to get.
+- **Naming the nodes you want is a way of losing them.** `sessions = '定例会|臨時会'`
+  read as a scope decision and worked as a filter on the site's typing: 兵庫's tree
+  carries 「昭和61年 第198回定 」, a label truncated mid-word, and the node was never
+  opened — the sitting of 1986-06-05 was simply absent, with nothing in any log.
+  All three kensakusystem configs now say `sessions = '.'`. **A node that is never
+  opened cannot warn**, which is the listing-level version of the same lesson.
+- **委員会 are not 本会議 in a different room.** On the same tenant, with the same
+  fetch route, the marker moves: 兵庫 leaves it alone on its line and starts the
+  speech on the next one, 三重 drops the brackets entirely (「○小島委員長　　…」),
+  and 和歌山 does not publish a transcript at all — its committees are 要点筆記 with
+  「●委員長」 and 「Ｑ／Ａ」 markers. Sample a committee document from every
+  prefecture before assuming its 本会議 rule carries over; all three cases took
+  **zero speeches** under the rule that collected 本会議.
+- **On committees, zero speeches is often correct.** A 「質疑　なし」 day is a real
+  record of a few hundred characters. That breaks the project's oldest smoke test,
+  so the warning now carries the document size: 1,570 bytes is a procedural
+  sitting, 60,000 is a rule that has stopped matching.
+- **Full-width and ASCII digits split a name in two.** 和歌山's committees type
+  their own headers, and the three sittings of 令和8年2月 write it 「令和８年２月」,
+  「令和8年2月」 and 「令和８年2月」 — one session under three names, the speaker-split
+  failure one field over. The 本会議 side does not do this (131 sessions, each
+  written one way). Check a metadata field for digit-width variants the same way
+  you check speakers for honorifics.
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing. But it decides it only for
   the URLs you know about: SSP's `/tenant/` is allowed and its `/dnp/search/` API

@@ -558,3 +558,75 @@ def test_both_honorifics_are_stripped_from_a_speaker() -> None:
     # 兵庫 hears outside witnesses as 「酒井隆明氏」 and members of the same name
     # without it, which split three more identities in two.
     assert _clean_speaker("酒井隆明氏") == "酒井隆明"
+
+
+# --- 和歌山's committees, which are not transcripts ----------------------------
+
+
+def _committee_split(text: str) -> list[tuple[str | None, str]]:
+    """Through the rule as `wakayama_committee.toml` ships it."""
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig, split_speeches
+
+    config = SiteConfig.from_toml(SITES_DIR / "wakayama_committee.toml")
+    assert config.detail.speech_split
+    return [(s.role, s.speaker) for s in split_speeches(text, config.detail.speech_split)]
+
+
+def test_the_committee_record_has_three_marker_forms() -> None:
+    """和歌山's committees publish 要点筆記, and 予算特別委員会 publishes a transcript.
+
+    All three shapes appear inside the same four-year range, so a rule for any one
+    of them takes zero speeches from the others.
+    """
+    text = "\n".join(
+        [
+            "●玄素委員長",
+            "◎開会宣告　挨拶",  # the chair's own block, not a second speaker
+            "●",  # a bare marker; the officials are named in the text under it
+            "高橋会計管理者、平田人事委員会委員長説明",
+            "●北廣知事室長説明",
+            "資料に沿って説明した。",
+            "Ｑ　谷口委員",
+            "辞退率はどれぐらいか。",
+            "Ａ　平田人事委員会委員長",
+            "おおむね半分である。",
+            "○濱口委員長　山家委員。",
+            "○山家委員　まず知事にお伺いします。",
+        ]
+    )
+
+    assert _committee_split(text) == [
+        (None, "玄素委員長"),
+        (None, ""),  # the record names no one on this line
+        (None, "北廣知事室長"),  # 説明 comes off: 「Ａ　北廣知事室長」 is the same person
+        ("Ｑ", "谷口委員"),
+        ("Ａ", "平田人事委員会委員長"),
+        (None, "濱口委員長"),
+        (None, "山家委員"),
+    ]
+
+
+def test_a_role_note_is_not_part_of_a_committee_name() -> None:
+    """「（年長委員）」 and 「（委員外議員）」 split one person into two speakers —
+    「山田委員（年長委員）」 5 speeches against 「山田委員」 88 — and only those two come
+    off. Cutting at any bracket would merge 「鈴木(德)委員」, which exists to tell two
+    members of one surname apart, into a 「鈴木」 that is neither of them."""
+    text = "\n".join(
+        [
+            "●山田委員（年長委員）",
+            "◎開会宣告",
+            "Ｑ　奥村議員（委員外議員）",
+            "２点伺いたい。",
+            "Ａ　末松県立医科大学事務局次長（病院担当）",
+            "お答えします。",
+            "○鈴木(德)委員　関連して伺います。",
+        ]
+    )
+
+    assert _committee_split(text) == [
+        (None, "山田委員"),
+        ("Ｑ", "奥村議員"),
+        ("Ａ", "末松県立医科大学事務局次長（病院担当）"),
+        (None, "鈴木(德)委員"),
+    ]
