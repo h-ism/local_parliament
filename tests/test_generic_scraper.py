@@ -630,3 +630,66 @@ def test_a_role_note_is_not_part_of_a_committee_name() -> None:
         ("Ａ", "末松県立医科大学事務局次長（病院担当）"),
         (None, "鈴木(德)委員"),
     ]
+
+
+# --- 静岡's Domino navigation, which offers three "next" links -----------------
+
+DOMINO_1 = """
+<html><body>
+<a href="/v?OpenView&Start=1&ExpandView"><img src="/first.gif"></a>
+<a href="/v?OpenView&Start=12.25.6&ExpandView"><img src="/next.gif"></a>
+<a href="/d/1?OpenDocument">一般質問</a>
+</body></html>
+"""
+
+# The second page keeps the link it arrived by *and* offers the one after it,
+# in that order and with nothing to tell them apart.
+DOMINO_2 = """
+<html><body>
+<a href="/v?OpenView&Start=1&ExpandView"><img src="/first.gif"></a>
+<a href="/v?OpenView&Start=12.25.6&ExpandView"><img src="/prev.gif"></a>
+<a href="/v?OpenView&Start=19.15.6&ExpandView"><img src="/next.gif"></a>
+<a href="/d/2?OpenDocument">代表質問</a>
+</body></html>
+"""
+
+DOMINO_3 = """
+<html><body>
+<a href="/v?OpenView&Start=12.25.6&ExpandView"><img src="/prev.gif"></a>
+<a href="/v?OpenView&Start=19.15.6&ExpandView"><img src="/prev2.gif"></a>
+<a href="/d/3?OpenDocument">委員長報告</a>
+</body></html>
+"""
+
+
+def _domino_scraper() -> GenericScraper:
+    return GenericScraper(
+        SiteConfig(
+            prefecture="静岡県",
+            name="domino",
+            start_urls=["https://x.test/v?OpenView&Start=1&ExpandView"],
+            list=ListSelectors(
+                meeting_link='a[href*="OpenDocument"]',
+                next_page='a[href*="ExpandView"]',
+                max_pages=10,
+            ),
+            detail=DetailSelectors(),
+        )
+    )
+
+
+def test_the_next_page_is_the_first_one_not_already_walked() -> None:
+    """静岡's view puts the page before, the current one and the page after in its
+    navigation, in document order, with no text and no `alt`. Taking the first
+    walks one page and stops — indistinguishable from reaching the end, and on the
+    real site it cost every sitting before 令和2年9月."""
+    client = FakeClient(
+        {
+            "https://x.test/v?OpenView&Start=1&ExpandView": DOMINO_1,
+            "https://x.test/v?OpenView&Start=12.25.6&ExpandView": DOMINO_2,
+            "https://x.test/v?OpenView&Start=19.15.6&ExpandView": DOMINO_3,
+        }
+    )
+    refs = list(_domino_scraper().list_meetings(cast(PoliteClient, client)))
+
+    assert [r.title for r in refs] == ["一般質問", "代表質問", "委員長報告"]

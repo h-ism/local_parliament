@@ -1,0 +1,121 @@
+# 静岡県議会 — 委員会会議録
+#
+# The same Lotus Domino application as `shizuoka.toml` under a different `.nsf`
+# (`comgiji.nsf`), the same `WebView1` 開催別 view, the same cp932, and the same
+# `<meta name="robots" content="none">` — see `docs/shizuoka.md` for what that tag
+# is and the decision recorded against it.
+#
+# One document is one 発言単位, as on the 本会議 side. Coverage: **平成19年5月 (2007)
+# onwards**, 999 committee sittings in the view.
+#
+# It writes into the same `data/静岡県.jsonl`; `committee` separates the two.
+
+prefecture = "静岡県"
+name = "shizuoka_committee"
+
+# `ExpandView` opens every row of the view and `Count=1000` takes a thousand rows
+# at a time — a handful of large index pages rather than several hundred small
+# ones, which is also the kinder way to ask.
+#
+# **Windowed, and here it is not optional.** Following the view's own 「次へ」 from
+# the first page dead-ends at 平成26年11月 — six years short of the 平成19年5月 the
+# collapsed view plainly lists — and a dead end reads exactly like the end of the
+# archive. `Start=<n>` opens the view at the n-th sitting instead; a window of
+# 1,000 rows covers 46 to 54 of them, so a step of 25 lists everything twice.
+# 41 windows over 999 sittings, the last pinned to the oldest row.
+start_urls = [
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=1",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=26",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=51",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=76",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=101",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=126",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=151",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=176",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=201",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=226",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=251",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=276",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=301",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=326",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=351",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=376",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=401",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=426",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=451",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=476",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=501",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=526",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=551",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=576",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=601",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=626",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=651",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=676",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=701",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=726",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=751",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=776",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=801",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=826",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=851",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=876",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=901",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=926",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=951",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=976",
+    "https://www2.pref.shizuoka.jp/all/comgiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=999",
+]
+
+[list]
+meeting_link = 'a[href*="OpenDocument"]'
+
+# `Start` is not a number here: Domino positions rows hierarchically and the next
+# page begins at something like `Start=12.25.6`, so the walk follows the view's own
+# link. The navigation offers three of them — the page before, the current one and
+# the page after — with no text, no `alt`, and image ids that change between
+# renders, so `_next_page` takes the first one this walk has *not* already been to.
+# Taking simply the first walks one page and stops, which looks exactly like
+# reaching the end; it silently cost everything before 令和2年9月.
+#
+# This is redundant with the windows above and kept anyway: two independent
+# traversals of the same view, and documents dedupe by URL.
+next_page = 'a[href*="ExpandView"]'
+max_pages = 40
+
+# 【委員会概要】 is a summary of the sitting, not a speech in it, and its two 「○」
+# lines are 「○　第１日目（３月５日）」 — day headings with a marker's shape. It also
+# dates itself 開会日 rather than 発言日, so it would land in the corpus undated and
+# with two invented speakers.
+exclude = '委員会概要|目次'
+
+[detail]
+container = "div#notes"
+
+# 「○鈴木（澄）委員」, 「○稲葉スポーツ振興課長」, 「○山田委員長」 — surname and office in
+# one run, the parentheses telling two 鈴木 apart rather than separating a name from
+# a title, and the speech beginning on the *next* line. Nothing like 本会議's
+# 「○知事（鈴木康友君）」: there is no 「君」 here, and a rule requiring one takes
+# **zero speeches** from every committee document.
+#
+# So the marker is the whole line, and the line is the whole marker. Counted on
+# sittings from 平成29年 and 令和8年: every 「○」 line is a speaker and no speaker
+# line carries anything else — which is why 【委員会概要】 has to be excluded above
+# rather than guarded against here.
+#
+# Name and office are not split. The record runs them together and there is no
+# delimiter to split on: 「鈴木（澄）委員」 is how the minutes name that person.
+speech_split = '(?m)^○(?P<speaker>[^\s][^\n]{0,29})$'
+
+[detail.patterns]
+# Domino writes dates month-first; `dates.py` handles that form explicitly.
+date = '(?:質問日|発言日)：\s*(\d{1,2}/\d{1,2}/\d{4})'
+
+# Two generations in the header, and one pattern has to take both:
+#
+#   令和８年２月定例会文化観光委員会      (the 定例会 is named)
+#   平成29年１月スポーツ振興等特別委員会  (it is not)
+#
+# So 定例会・臨時会 is optional, and the committee is what follows it.
+session = '((?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月(?:定例会|臨時会)?)'
+committee = '(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月(?:定例会|臨時会)?\s*(.{2,24}?委員会)'

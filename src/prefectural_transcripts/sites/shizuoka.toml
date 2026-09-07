@@ -17,15 +17,67 @@
 prefecture = "静岡県"
 name = "shizuoka"
 
-# `ExpandView` opens every 議会 in the 開催別 view, so the whole tree of documents
-# arrives in one page and there is nothing to paginate.
+# `ExpandView` opens every 議会 in the 開催別 view — but the view still paginates,
+# and that was misread for a week: with the default `Count` it returns **30 rows**,
+# which is one session's documents and nothing else. The 2025 collection worked
+# only because it was pointed at five sessions by hand with `--start-url`.
+#
+# `Count=1000` is the whole archive in a handful of requests, which is also kinder
+# than three hundred small ones. `Start` is not an integer: Domino numbers rows
+# hierarchically and the next page begins at `Start=12.25.6`, so the walk has to
+# follow the view's own link rather than count.
+# **The walk is windowed, because following the view's own navigation is not
+# enough.** `Start=<n>` opens the view at the n-th 議会 and `Count=1000` takes a
+# thousand rows from there — 8 to 12 sessions' worth of documents. Stepping by 5
+# gives every session two chances to be listed, and documents dedupe by URL, so
+# the overlap costs nothing.
+#
+# Following `次へ` alone reached 平成11年5月 here but **dead-ended at 平成26年11月 on
+# the committee side of the same application** — the navigation is not a linear
+# sequence and a dead end reads exactly like the end of the archive. 31 windows,
+# and the last one is pinned to the oldest row rather than to a multiple of 5.
 start_urls = [
-    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=1",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=6",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=11",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=16",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=21",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=26",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=31",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=36",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=41",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=46",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=51",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=56",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=61",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=66",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=71",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=76",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=81",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=86",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=91",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=96",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=101",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=106",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=111",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=116",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=121",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=126",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=131",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=136",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=141",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=146",
+    "https://www2.pref.shizuoka.jp/all/ggiji.nsf/WebView1?OpenView&ExpandView&Count=1000&Start=151",
 ]
 
 [list]
 meeting_link = 'a[href*="OpenDocument"]'
-max_pages = 1
+
+# Six navigation links, no text, no `alt`, and image ids that change between
+# renders — only the href tells 「次へ」 from 「先頭へ」. `select_one` takes the first,
+# which is 「先頭へ」, and the crawl then walks one page and stops without a sound.
+next_page = 'a[href*="ExpandView"]'
+max_pages = 40
 
 # Every 議会 opens with a 【目次】 document: a table of contents with no speeches
 # and no 質問日, which would otherwise land in the corpus as an empty meeting.

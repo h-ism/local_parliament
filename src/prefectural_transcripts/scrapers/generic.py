@@ -225,7 +225,7 @@ class GenericScraper(BaseScraper):
                 if depth < sel.max_depth:
                     for child in self._index_links(soup, page.url, visited):
                         pending.append((child, depth + 1))
-                url = self._next_page(soup, page.url)
+                url = self._next_page(soup, page.url, visited)
 
     def _index_links(self, soup: BeautifulSoup, base_url: str, visited: set[str]) -> list[str]:
         """Links on this page that lead to another listing page."""
@@ -278,12 +278,27 @@ class GenericScraper(BaseScraper):
                     title=label or None,
                 )
 
-    def _next_page(self, soup: BeautifulSoup, base_url: str) -> str | None:
-        if not self.config.list.next_page:
+    def _next_page(self, soup: BeautifulSoup, base_url: str, visited: set[str]) -> str | None:
+        """The next listing page: the first candidate this walk has not seen.
+
+        Not simply the first candidate. 静岡's Domino view puts *three* row
+        positions in its navigation — the page before, the current one, and the
+        page after — in document order and with nothing to tell them apart. Taking
+        the first walked one page and stopped, which is indistinguishable from
+        reaching the end: it cost the archive everything before 令和2年9月.
+        """
+        sel = self.config.list
+        if not sel.next_page:
             return None
-        link = soup.select_one(self.config.list.next_page)
-        href = link.get("href") if link else None
-        return urljoin(base_url, href) if isinstance(href, str) else None
+        for link in soup.select(sel.next_page):
+            href = link.get("href")
+            if not isinstance(href, str):
+                continue
+            url = urljoin(base_url, href)
+            if url in visited:
+                continue
+            return url
+        return None
 
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         sel = self.config.detail
