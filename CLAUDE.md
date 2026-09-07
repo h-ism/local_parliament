@@ -94,19 +94,20 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 
 | | 本会議 | 委員会 | Range |
 | --- | --- | --- | --- |
-| **和歌山** | 916 / 47,377 | 163 / 7,814 | 本会議 1989-02-27〜, 委員会 2023-05-19〜 |
+| **和歌山** | 1,168 / 67,356 | 163 / 7,814 | 本会議 1989-02-27〜, 委員会 2023-05-19〜 |
 | **三重** | 1,059 / 62,940 | 426 / 39,530 | 本会議 1989-02-28〜, 委員会 2023-01-18〜 |
 | **愛媛** | 909 / 53,631 | 2,214 / 154,702 | 本会議 1991-06-27〜, 委員会 2007-05-11〜 |
 | **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
 | **静岡** | 113 / 1,395 | — | 2025 only |
 
-**11,198 sittings, 642,211 speeches, 290,961,845 characters.** Sittings/speeches
+**11,450 sittings, 662,190 speeches, 298,365,885 characters.** Sittings/speeches
 per cell. Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka}.toml`.
 
-- The **corpus window (2011-04 .. 2019-03) is collected** on 三重・愛媛・兵庫, both
-  本会議 and 委員会, decided 2026-09-04: whether the 地方議会会議録コーパス includes
-  committee minutes is unverified, and its letter is still unsent. **和歌山 still
-  has the window open on its 本会議 side** — 252 documents, its config not re-run.
+- The **corpus window (2011-04 .. 2019-03) is collected on all four**, 本会議 and
+  委員会 alike — 三重・愛媛・兵庫 on 2026-09-04 and 和歌山's 252 本会議 documents on
+  2026-09-07. Whether the 地方議会会議録コーパス includes committee minutes is
+  unverified and its letter is still unsent, so routing around the window would
+  have assumed an answer nobody has. **There is no window hole left anywhere.**
 - 静岡's full archive and its 委員会 (`comgiji.nsf`, surveyed 2026-09-04, paginated
   30 rows at a time) both wait on the `meta robots` question; see `docs/shizuoka.md`.
 - Each tenant's listing reconciles item by item against its corpus. 和歌山 carries
@@ -174,12 +175,12 @@ rather than re-crawling it; the letter is drafted and unsent
 **2019-04 .. 2019-12** falls between that corpus and any collection that starts at a
 calendar year.
 
-**Superseded 2026-09-04 for 三重・愛媛・兵庫**, which were re-run without
-`--since/--until` and now hold the window itself, 本会議 and 委員会 alike. The
-reason is in the letter: it *asks* whether that corpus includes 委員会 at all, so
-routing around the window assumed an answer nobody has. 和歌山's 本会議 window —
-252 documents — is the one hole left, and closing it is a decision, not an
-oversight.
+**Superseded 2026-09-04/07 for all four collectable prefectures**, which were
+re-run without `--since/--until` and now hold the window itself, 本会議 and 委員会
+alike. The reason is in the letter: it *asks* whether that corpus includes 委員会
+at all, so routing around the window assumed an answer nobody has. The letter is
+still worth sending — it would confirm the overlap and say whether their
+collection continues past 2019-04 — but nothing waits on it now.
 
 ## Things that will bite again
 

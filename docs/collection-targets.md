@@ -135,7 +135,9 @@ were known tomorrow. It belongs in the inquiry letters for these 18.
 
 ## Before collecting anything: ask for what already exists
 
-**Scope is settled (2026-08-27): every period we can obtain, no research window.**
+**Scope is settled (2026-08-27): every period we can obtain, no research window
+— and as of 2026-09-07 that includes the corpus window itself, on all four
+collectable prefectures.**
 
 The 地方議会会議録コーパスプロジェクト (<http://local-politics.jp/>) publishes a
 都道府県議会 corpus covering **all 47 assemblies** for **2011-04 .. 2019-03** —
@@ -171,12 +173,11 @@ our side can establish.
    the addressee is still 要確認. One email, and it decides whether 2011-04 ..
    2019-03 has to be crawled for 47 assemblies at all.
 2. ~~Add the intermediate listing level to `GenericScraper`.~~ — done.
-3. ~~`sites/wakayama.toml`~~ — done: 916 本会議 sittings, 47,377 speeches,
-   1989-02-27 .. 2026-03-17, and ~~委員会会議録 (`/gijiroku2/`)~~ done too —
-   `sites/wakayama_committee.toml`, 163 sittings, 7,814 speeches, 令和5年 onwards,
-   which is all the index offers. Only 2011-04 .. 2019-03 is missing on the 本会議
-   side; the other three prefectures now hold their window, so closing 和歌山's is
-   a decision rather than an oversight.
+3. ~~`sites/wakayama.toml`~~ — done: **1,168 本会議 sittings, 67,356 speeches,
+   1989-02-27 .. 2026-03-17, the whole index with no gap**, and
+   ~~委員会会議録 (`/gijiroku2/`)~~ done too — `sites/wakayama_committee.toml`, 163
+   sittings, 7,814 speeches, 令和5年 onwards, which is all that index offers. The
+   corpus window was filled 2026-09-07.
 4. ~~`sites/ehime.toml`, `sites/mie.toml`, `sites/hyogo.toml`~~ — done, and
    ~~every 委員会~~ with them (2026-09-04): 兵庫 4,378 committee sittings back to
    昭和61年, 愛媛 2,214 back to 平成19年, 三重 426 back to 令和5年. `sessions = '.'`

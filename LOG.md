@@ -64,13 +64,13 @@ roster does not list those people.
 
 ```
               本会議                              委員会
-和歌山    916  47,377 speeches  1989-02-27..    163    7,814  2023-05-19 .. 2026-06-23
+和歌山  1,168  67,356 speeches  1989-02-27..    163    7,814  2023-05-19 .. 2026-06-23
 三重    1,059  62,940           1989-02-28..    426   39,530  2023-01-18 .. 2026-05-22
 愛媛      909  53,631           1991-06-27..  2,214  154,702  2007-05-11 .. 2026-07-08
 兵庫    1,020  55,035           1986-02-22..  4,378  219,787  1986-03-05 .. 2026-07-16
 ```
 
-**The corpus is 11,198 sittings and 642,211 speeches** (290,961,845 characters),
+**The corpus is 11,450 sittings and 662,190 speeches** (298,365,885 characters),
 against 3,314 and 177,451 when the branch began.
 
 Committee coverage is shallower than 本会議 in two of the four: 和歌山 and 三重 begin
@@ -83,8 +83,13 @@ runs were made without `--since/--until`, so the three kensakusystem tenants
 picked up their 本会議 window too — 240 三重, 243 愛媛, 210 兵庫. It is consistent
 with the answer given (collect everything obtainable; a hole costs a re-crawl if
 the assumption about the 地方議会会議録コーパス turns out wrong), and it is recorded
-here because it was not what was authorised. **和歌山 still has its 本会議 window
-open**, 252 documents, because that config was not re-run.
+here because it was not what was authorised.
+
+**和歌山's 252 本会議 window documents followed on 2026-09-07**, on the researcher's
+instruction to make the four consistent. There is no window hole left anywhere.
+和歌山's index carries no dates, so the run had nothing to prune with and simply
+fetched what `--resume` did not already hold: 252 documents, 252 sittings, none
+with zero speeches, and the listing reconciles exactly afterwards.
 
 **What the audit found afterwards, and it was not nothing**
 

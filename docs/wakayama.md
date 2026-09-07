@@ -250,3 +250,19 @@ found something. It costs nothing, because every index page is cached.
 and the record is the one undated sitting in 1,079. The title says 平成８年６月 and
 the day is 七月十日 (1996-07-10); nothing in the parser should be taught to guess
 that.
+
+
+## The corpus window, filled (2026-09-07)
+
+The 2011-04 .. 2019-03 hole this site was deliberately scoped around is closed:
+**252 sittings**, collected on the instruction to make the four prefectures
+consistent after 三重・愛媛・兵庫 picked theirs up.
+
+Nothing had to be narrowed for it. This index carries no dates, so `--since` and
+`--until` could only have discarded documents after fetching them; a plain run
+with `--resume` fetched exactly what the corpus did not hold. 252 documents, 252
+sittings, none parsing to zero speeches, and the listing reconciles item for item
+afterwards — 1,168 本会議 sittings against 1,168 listed.
+
+**和歌山 総計: 1,331 sittings, 75,170 speeches**, 946 speakers, one undated
+sitting (the site's own 「平成八年七年十日」).
