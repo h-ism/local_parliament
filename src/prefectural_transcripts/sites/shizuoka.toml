@@ -94,7 +94,19 @@ container = "div#notes"
 # 「○出　席　議　員（六十七名）」 — structurally identical to a speech marker, and
 # without this it lands in the corpus as a speech by 「六十七名」. Over a 40-document
 # sample, 632 markers matched and the only four lacking 「君」 were rosters.
-speech_split = '○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]'
+#
+# **The 「○」 is not always there.** Two documents in 817 write the marker with no
+# circle at all — 「健康福祉部長（八木敏裕君）　第四次静岡県がん対策…」 as the whole of a
+# 答弁文書, and 「議長（中沢公彦君）　会期についてお諮りします。」 inside a sitting that
+# parsed three other speeches perfectly well. The first warned (zero speeches);
+# **the second was silent**, which is the failure this repository keeps meeting.
+#
+# So the rule has two branches and the second is line-anchored: without the circle
+# there is no anchor but the start of a line, and 「知事（鈴木康友君）に伺います」 occurs
+# mid-sentence in question text. Branch one is the original rule (plus 〇 U+3007,
+# which 和歌山 uses for the same marker), so nothing that matched before can stop
+# matching — checked by re-parsing all 817 cached documents: **+2 speeches, 0 lost.**
+speech_split = '(?m)[○〇](?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]|^(?P<role2>[^（(\n\s]{1,24})[（(](?P<speaker2>[^）)\n]{1,24}君)[）)]'
 
 [detail.patterns]
 # Three document types, three ways of writing the same label, and the third one

@@ -718,3 +718,34 @@ def test_shizuoka_dates_every_document_type_it_publishes() -> None:
     assert SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.patterns["date"] == (
         pattern
     )
+
+
+def test_shizuoka_marker_without_the_circle() -> None:
+    """静岡 writes some markers with no 「○」 at all, and one of them was silent.
+
+    「健康福祉部長（八木敏裕君）　…」 is the whole of a 答弁文書 — that one warned,
+    because the document parsed to zero speeches. 「議長（中沢公彦君）　…」 sits inside
+    a sitting that parsed three other speeches perfectly well, and nothing warned.
+
+    The second branch is line-anchored because without the circle there is no other
+    anchor, and question text says 「知事（鈴木康友君）に伺います」 mid-sentence. The
+    roster guard the original rule earned has to survive: 「○出　席　議　員（六十七名）」
+    lacks 「君」 and must still match nothing.
+    """
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig, split_speeches
+
+    pattern = SiteConfig.from_toml(SITES_DIR / "shizuoka.toml").detail.speech_split
+    assert pattern is not None
+
+    circled = split_speeches("○知事（鈴木康友君）\nお答えいたします。", pattern)
+    assert [(s.role, s.speaker) for s in circled] == [("知事", "鈴木康友")]
+
+    bare = split_speeches("健康福祉部長（八木敏裕君）\n第四次計画につきましては、", pattern)
+    assert [(s.role, s.speaker) for s in bare] == [("健康福祉部長", "八木敏裕")]
+
+    # Mid-sentence mention of an official: not a marker, and the reason for `^`.
+    assert split_speeches("　この点について知事（鈴木康友君）に伺います。", pattern) == []
+
+    # The attendance roster keeps its guard — no 「君」, so no speaker.
+    assert split_speeches("○出　席　議　員（六十七名）\n一番　山田太郎", pattern) == []
