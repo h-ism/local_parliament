@@ -118,7 +118,12 @@ speech_split = '(?m)^[○〇](?P<speaker>[^\s][^\n]{0,29})$'
 # 質問文書 and 議会補足文書 write 「発言日：」 with a full-width colon; 答弁文書 writes
 # 「（質問日:」 with a half-width one, on its own line. Both, or two thirds of the
 # archive arrives undated.
-date = '(?:質問日|発言日)[:：]\s*(\d{1,2}/\d{1,2}/\d{4})'
+# **A fourth way, and this one leaves the label empty.** Four 委員会補足文書 print
+# 「発言日：」 with nothing after it and put the real date in the body instead:
+# 「１　日時　令和３年８月10日（火）」, in 和暦 rather than Domino's month-first form.
+# The first branch still wins wherever the label is filled in, because `re.search`
+# takes the leftmost match and 発言日 is printed above 日時.
+date = '(?:(?:質問日|発言日)[:：]\s*|日時[\s\u3000]*)((?:\d{1,2}/\d{1,2}/\d{4})|(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月\s*[０-９0-9]{1,2}日)'
 
 # Two generations in the header, and one pattern has to take both:
 #

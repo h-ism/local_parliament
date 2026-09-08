@@ -119,5 +119,10 @@ speech_split = '(?m)[○〇](?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]
 # 答弁文書 is one document per answering official — 「知事」, 「教育部長」 — and it is
 # most of the archive by count. 26 of the first 40 documents came back undated
 # because of one character.
-date = '(?:質問日|発言日)[:：]\s*(\d{1,2}/\d{1,2}/\d{4})'
+# **A fourth way, and this one leaves the label empty.** Four 委員会補足文書 print
+# 「発言日：」 with nothing after it and put the real date in the body instead:
+# 「１　日時　令和３年８月10日（火）」, in 和暦 rather than Domino's month-first form.
+# The first branch still wins wherever the label is filled in, because `re.search`
+# takes the leftmost match and 発言日 is printed above 日時.
+date = '(?:(?:質問日|発言日)[:：]\s*|日時[\s\u3000]*)((?:\d{1,2}/\d{1,2}/\d{4})|(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月\s*[０-９0-9]{1,2}日)'
 session = '(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月静岡県議会(?:定例会|臨時会)'

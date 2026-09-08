@@ -705,6 +705,7 @@ def test_shizuoka_dates_every_document_type_it_publishes() -> None:
     """
     import re
 
+    from prefectural_transcripts.dates import parse_japanese_date
     from prefectural_transcripts.scrapers import SITES_DIR
     from prefectural_transcripts.scrapers.generic import SiteConfig
 
@@ -715,6 +716,18 @@ def test_shizuoka_dates_every_document_type_it_publishes() -> None:
         "（質問日:\n02/24/2026\n番目）",
     ):
         assert re.search(pattern, body), body
+
+    # A fourth way: four 委員会補足文書 leave the label empty and date themselves in
+    # the body instead, in 和暦 rather than Domino's month-first form.
+    blank = "発言日： \n会派名：\n１　日時　令和３年８月10日（火）\n午前10時29分開会"
+    match = re.search(pattern, blank)
+    assert match and parse_japanese_date(match.group(1)) == date(2021, 8, 10)
+
+    # Wherever the label *is* filled in, it still wins: 発言日 is printed above 日時
+    # and `re.search` takes the leftmost match.
+    filled = "発言日： 06/15/2009\n１　日時　平成21年６月15日（月）"
+    both = re.search(pattern, filled)
+    assert both and both.group(1) == "06/15/2009"
     assert SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.patterns["date"] == (
         pattern
     )
