@@ -693,3 +693,28 @@ def test_the_next_page_is_the_first_one_not_already_walked() -> None:
     refs = list(_domino_scraper().list_meetings(cast(PoliteClient, client)))
 
     assert [r.title for r in refs] == ["一般質問", "代表質問", "委員長報告"]
+
+
+def test_shizuoka_dates_every_document_type_it_publishes() -> None:
+    """静岡 writes the same label three ways, and the third is most of the archive.
+
+    答弁文書 — one document per answering official — puts the label on its own line
+    with a **half-width** colon. Requiring the full-width one left 26 of the first
+    40 documents of the full crawl undated, in a corpus whose index carries no
+    dates at all.
+    """
+    import re
+
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig
+
+    pattern = SiteConfig.from_toml(SITES_DIR / "shizuoka.toml").detail.patterns["date"]
+    for body in (
+        "質問日：　02/24/2026",
+        "発言日： 02/17/2026",
+        "（質問日:\n02/24/2026\n番目）",
+    ):
+        assert re.search(pattern, body), body
+    assert SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.patterns["date"] == (
+        pattern
+    )

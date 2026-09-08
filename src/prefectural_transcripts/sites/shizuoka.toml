@@ -97,7 +97,15 @@ container = "div#notes"
 speech_split = '○(?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]'
 
 [detail.patterns]
-# 質問文書 label this 質問日, 議会補足文書 (報告事項, 知事提案説明, 委員長報告) use
-# 発言日. Domino writes both month-first; `dates.py` handles that form explicitly.
-date = '(?:質問日|発言日)：\s*(\d{1,2}/\d{1,2}/\d{4})'
+# Three document types, three ways of writing the same label, and the third one
+# was found only by collecting the whole archive:
+#
+#   質問文書    「質問日：　02/24/2026」      full-width colon
+#   議会補足文書 「発言日：　02/17/2026」      full-width colon
+#   答弁文書    「（質問日:\n02/24/2026\n番目）」  **half-width**, and on its own line
+#
+# 答弁文書 is one document per answering official — 「知事」, 「教育部長」 — and it is
+# most of the archive by count. 26 of the first 40 documents came back undated
+# because of one character.
+date = '(?:質問日|発言日)[:：]\s*(\d{1,2}/\d{1,2}/\d{4})'
 session = '(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月静岡県議会(?:定例会|臨時会)'

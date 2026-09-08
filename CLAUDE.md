@@ -194,9 +194,14 @@ quirks.
   because 8 documents parsed to zero speeches. `sniff_encoding` maps Shift_JIS to
   cp932 for this reason. When a parse comes back suspiciously empty, check the
   decoded text before touching the selectors.
-- **One label is rarely enough.** 静岡 labels the date 質問日 on question
-  documents and 発言日 on report documents; matching one left 60 of 113 records
-  undated. Check a sample of *each document type*, not just the interesting one.
+- **One label is rarely enough, and neither is two.** 静岡 labels the date 質問日 on
+  question documents and 発言日 on report documents; matching one left 60 of 113
+  records undated. Collecting the whole archive then turned up a third type —
+  答弁文書, one document per answering official, and most of the archive by count —
+  which writes 「（質問日:」 with a **half-width** colon on its own line. One
+  character left 26 of the first 40 documents of the full crawl undated. Check a
+  sample of *each document type*, and remember that a scoped run only shows you
+  the types inside the scope.
 - **Speech markers come in more than one form on the same page.** 和歌山 writes
   office-holders as 「○知事（岸本周平君）」 but members as bare 「○濱口太史君」, with no
   parentheses at all; 愛媛 runs name and office together as 「○（福羅浩一議長）」.
