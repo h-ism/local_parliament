@@ -24,6 +24,11 @@ uv run ruff check . && uv run ruff format .
 uv run mypy                   # strict; must stay clean
 uv run pt --help              # the CLI
 uv run pt export data/<pref>.jsonl   # JSONL corpus -> CSV (one row per speech)
+
+# The two checks the conventions below keep asking for. Both read only the cache,
+# so both cost zero requests and can be run as often as you like.
+uv run python scripts/reparse.py <site> data/<pref>.jsonl   # re-parse in place, and diff
+uv run python scripts/audit.py <site> data/<pref>.jsonl     # listing vs corpus, per item
 ```
 
 ## Architecture

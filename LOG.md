@@ -2,6 +2,155 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-08 — 静岡 opened, and a wait loop that waited on itself (`feat/committees`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**The decision first.** 静岡's archive is collected without a prior note to 議事課
+(researcher's call, 2026-09-07). `docs/shizuoka.md` keeps the reasoning that was
+weighed — no `robots.txt`, no `Disallow`, three meta tags that are indexing
+directives rather than access rules — and now records what was decided: the note
+would have been courtesy about *volume*, not permission. The politeness that
+remains is in the crawl: 2s per request, everything cached, and `Count=1000` on
+the listing so the index is a few dozen large pages instead of several hundred
+small ones.
+
+**Two navigation traps, both the same failure.** A listing that stops early looks
+exactly like one that ended.
+
+- **The view paginates even under `ExpandView`.** With the default `Count` it
+  returns 30 rows, which is one session's documents. The 2025 collection worked
+  only because it was pointed at five sessions by hand.
+- **Its navigation offers three positions** — the page before, the current one and
+  the page after — in document order, with no text, no `alt`, and image ids that
+  change between renders. `_next_page` took the first, walked one page and
+  stopped: everything before 令和2年9月 was simply absent. It now takes the first
+  position this walk has not already been to.
+
+That was still not enough. Following 「次へ」 reaches 平成11年5月 on the 本会議 side but
+**dead-ends at 平成26年11月 on the committee side**, six years short of what the
+collapsed view plainly lists. So both configs walk **windows**: `Start=<n>` opens
+the view at the n-th sitting, a 1,000-row window covers 8-12 sessions on 本会議 and
+46-54 on 委員会, and the step is half of that. The 「次へ」 walk is kept alongside as
+a second, independent traversal; documents dedupe by URL.
+
+**The cross-check was worth the 151 requests it cost.** Expanding each session one
+at a time finds 5,428 documents; the windowed walk finds 14,181; the first is a
+*subset* of the second. `Expand=<n>` opens one level and these sessions have
+sub-categories — the route that looked like the careful one was missing 8,753
+documents.
+
+**And a third date label.** 答弁文書 — one document per answering official, and most
+of the archive by count — writes 「（質問日:」 with a **half-width** colon on its own
+line, where 質問文書 and 議会補足文書 write 「質問日：」 and 「発言日：」 with a full-width
+one. 26 of the first 40 documents came back undated because of that character, on
+a site whose index carries no dates at all. Both configs take either colon now.
+A scoped run only ever shows you the document types inside the scope.
+
+**My own failure, and it cost a day.** The crawl was queued behind
+`while pgrep -f "[l]istonly.py"; do sleep; done` — and that command's *own* line
+contained `listonly.py`, because the same command also launched the next probe.
+The wait matched itself and never ended. **The chain sat for 27 hours without
+issuing a single request**, and I reported it as running. The replacement gates on
+nothing: the two crawls are sequential lines in one script.
+
+**Where 静岡 stands: partially collected, deliberately stopped.**
+
+```
+233 documents, 1,904 speeches, 2025-02-18 .. 2026-02-27
+98 of them undated — collected before the 答弁文書 fix, by a process that had
+already loaded the old config
+```
+
+### Next run — 静岡 re-collection
+
+In this order. The first step costs **zero requests**, and must come first or
+`--resume` will keep every one of those 98 records undated:
+
+```bash
+# 1. re-parse what is already collected, from cache, with the fixed date pattern
+uv run python scripts/reparse.py shizuoka data/静岡県.jsonl
+
+# 2. resume the 本会議 archive (14,030 listed, 233 held, 13,797 to go)
+uv run pt scrape shizuoka
+
+# 3. then the committees (10,762 documents, nothing collected yet)
+uv run pt scrape shizuoka_committee
+
+# 4. audit and rebuild, as for the other four prefectures
+uv run python scripts/audit.py shizuoka data/静岡県.jsonl
+uv run python scripts/audit.py shizuoka_committee data/静岡県.jsonl
+uv run pt export data/静岡県.jsonl
+```
+
+`scripts/reparse.py` and `scripts/audit.py` are in the repository now. Both were
+written ad hoc twice during this branch, and both perform checks this project's
+own conventions require after every run — so they stop being scratch files.
+
+Run them as **sequential lines in one script**, not gated on `pgrep`. Roughly 17
+hours at 2s per request. The cache (1.2 GB, 256 entries at the point of stopping)
+means nothing already fetched is asked for twice.
+
+### 日本語
+
+**まず判断。** 静岡の書庫は議事課への事前連絡なしで収集する（研究者の判断、2026-09-07）。
+`docs/shizuoka.md` には天秤にかけた材料——robots.txt が無い、`Disallow` も無い、3つの
+meta タグは索引に関する指示でアクセス制限ではない——をそのまま残し、決定を追記した。
+連絡は「許可」ではなく「分量への礼儀」だった。礼儀の実質はクロール側に置く（2秒間隔、
+全キャッシュ、索引は `Count=1000` で数十の大きなページ）。
+
+**走査の罠が2つ。どちらも同じ失敗で、一覧が途中で止まると終わったのと見分けがつかない。**
+
+- **`ExpandView` でもページ送りされる。** 既定の `Count` では30行＝1会期分。2025年分が
+  取れていたのは5会期を手で指定していたから。
+- **ナビゲーションが3つの位置を同じ見た目で出す**（前・現在・次。文字も alt も無く、
+  画像IDは描画ごとに変わる）。先頭を取ると1ページで止まり、**令和2年9月より前が
+  丸ごと消える**。「まだ訪れていない最初の位置」を取るよう直した。
+
+それでも足りない。「次へ」を辿ると本会議は平成11年5月まで届くが、**委員会は平成26年11月で
+行き止まり**（折りたたみビューには平成19年5月まで並んでいる）。そこで両方とも**窓**で走査する
+（`Start=<n>` で n 番目の会議から開き、1000行の窓が本会議で8〜12会期・委員会で46〜54会期を
+覆うので、刻みはその半分）。「次へ」の走査も第2の経路として残す。
+
+**突合は151リクエストを払う価値があった。** 会期を1つずつ開くと5,428文書、窓方式では
+14,181文書で、前者は後者の**部分集合**。`Expand=N` は1階層しか開かず、会期の下に下位階層が
+ある。**慎重に見えた方が8,753文書を落としていた。**
+
+**そして第3の日付ラベル。** 答弁文書（答弁者ごとに1文書で、件数では書庫の大半）は
+「（質問日:」と**半角コロン**で、しかも改行の後に書く。質問文書・議会補足文書は全角の
+「質問日：」「発言日：」。最初の40文書のうち26文書が、この1文字のために日付なしになった。
+索引が日付を持たないサイトで、である。両設定を両対応にした。**限定収集では、その範囲内の
+文書種しか見えない。**
+
+**自分の失敗。1日を失った。** クロールを
+`while pgrep -f "[l]istonly.py"; do sleep; done` の後ろに並べたが、**そのコマンド自身の
+行に `listonly.py` が入っていた**（同じコマンドで次の計測も起動していたため）。待ちが自分に
+一致し続け、**チェーンは27時間、1リクエストも出さずに待機**した。しかも私はそれを「実行中」と
+報告した。差し替えた版は何も待たない——2つのクロールを1つのスクリプトに順番に並べただけ。
+
+**静岡の現状: 途中まで収集、意図的に停止。**
+
+```
+233文書・1,904発言・2025-02-18 .. 2026-02-27
+うち98文書が日付なし（答弁文書の修正前に、旧設定を読み込み済みのプロセスが取得したもの）
+```
+
+### 次回の実行 — 静岡の再取得
+
+この順で。**手順1はリクエスト0件**で、かつ最初に行わないと `--resume` が98文書を日付なしの
+まま素通りする。
+
+1. `uv run python scripts/reparse.py shizuoka data/静岡県.jsonl` — キャッシュから再解析
+   （修正済みパターンで日付が埋まる）
+2. `pt scrape shizuoka` — 本会議の続き（一覧14,030文書、残り約13,800）
+3. `pt scrape shizuoka_committee` — 委員会（10,762文書、未着手）
+4. `scripts/audit.py` を2設定ぶん → `pt export` — 他4県と同じ突合とCSV再生成
+
+**`pgrep` で待ち合わせず、1つのスクリプトに順番に並べて実行すること。** 2秒間隔で17時間
+ほど。キャッシュ（停止時点で1.2GB・256エントリ）があるので、取得済みは二度と要求しない。
+
 ## 2026-09-04 — the committees, and three ways a config loses what it never opened (`feat/committees`)
 
 *English and Japanese. / 英語と日本語で併記する。*
