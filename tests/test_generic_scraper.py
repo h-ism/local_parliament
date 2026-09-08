@@ -749,3 +749,24 @@ def test_shizuoka_marker_without_the_circle() -> None:
 
     # The attendance roster keeps its guard — no 「君」, so no speaker.
     assert split_speeches("○出　席　議　員（六十七名）\n一番　山田太郎", pattern) == []
+
+
+def test_clean_speaker_strips_a_doubled_honorific_but_not_a_name_ending_in_one() -> None:
+    """Two markers with the same shape and opposite readings.
+
+    静岡 types 「○十六番（勝俣　昇君君）」 once. A single strip left 「勝俣　昇君」 beside
+    the 「勝俣　昇」 of every other sitting — one member counted as two speakers, and
+    nothing warned.
+
+    三重 writes 「○書記（城島清氏君）」 for all 20 of that clerk's speeches, and
+    「城島清」 appears nowhere in its 62,940-speech corpus. There the 「氏」 ends the
+    given name 清氏. Stripping whatever repeats would invent a person; stripping
+    only a repeat of the *same* honorific tells the two apart.
+    """
+    from prefectural_transcripts.scrapers.generic import _clean_speaker
+
+    assert _clean_speaker("勝俣　昇君君") == "勝俣　昇"
+    assert _clean_speaker("城島清氏君") == "城島清氏"
+    assert _clean_speaker("鈴木康友君") == "鈴木康友"
+    assert _clean_speaker("太田栄子さん") == "太田栄子"
+    assert _clean_speaker("酒井隆明氏") == "酒井隆明"

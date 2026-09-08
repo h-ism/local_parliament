@@ -398,5 +398,14 @@ def _clean_speaker(name: str) -> str:
     for the outside witnesses it hears, 「酒井隆明氏」. With a 「君」-only rule those
     were ten names for seven people, and every per-speaker count was wrong for
     exactly the speakers the minutes mark with something other than 「君」.
+
+    **A repeated honorific is stripped only when it repeats itself.** 静岡 types
+    「○十六番（勝俣　昇君君）」 once — a doubled 「君」, and a single strip left
+    「勝俣　昇君」 standing beside the 「勝俣　昇」 of every other sitting: one member,
+    two speakers, no warning. But 三重 writes 「○書記（城島清氏君）」 for every one of
+    that clerk's speeches and 「城島清」 appears nowhere in the corpus — so there the
+    「氏」 is the end of the given name 清氏, not an honorific, and stripping whatever
+    repeats would invent a person. Same shape, opposite readings; the backreference
+    is what tells them apart.
     """
-    return re.sub(r"\s*(?:君|さん|氏)$", "", name.strip())
+    return re.sub(r"\s*(君|さん|氏)(?:\s*\1)*$", "", name.strip())
