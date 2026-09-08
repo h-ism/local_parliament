@@ -770,3 +770,27 @@ def test_clean_speaker_strips_a_doubled_honorific_but_not_a_name_ending_in_one()
     assert _clean_speaker("鈴木康友君") == "鈴木康友"
     assert _clean_speaker("太田栄子さん") == "太田栄子"
     assert _clean_speaker("酒井隆明氏") == "酒井隆明"
+
+
+def test_shizuoka_committee_takes_both_circles() -> None:
+    """静岡's committees mark speeches with ○ (U+25CB) and 〇 (U+3007) alike.
+
+    「〇鈴木緊急事態対策課長」 appears in the same sitting as the ○ form. A marker the
+    rule misses here does not empty the document — it hands the speech to whoever
+    spoke before, which nothing warns about. Six speeches in the first 66 documents.
+    """
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig, split_speeches
+
+    pattern = SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.speech_split
+    assert pattern is not None
+
+    both = split_speeches(
+        "○山田委員長\nただいまから開きます。\n〇鈴木緊急事態対策課長\nお答えいたします。",
+        pattern,
+    )
+    assert [s.speaker for s in both] == ["山田委員長", "鈴木緊急事態対策課長"]
+
+    # 【委員会概要】's day headings are excluded at the listing, not guarded here —
+    # 「○　第１日目（３月５日）」 has a space after the circle, so it cannot match.
+    assert split_speeches("○　第１日目（３月５日）\n本文", pattern) == []
