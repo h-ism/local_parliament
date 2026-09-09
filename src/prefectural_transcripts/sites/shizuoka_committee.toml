@@ -147,5 +147,19 @@ date = '(?:(?:質問日|発言日)[:：]\s*|日時[\s\u3000]*)((?:\d{1,2}/\d{1,2
 #   平成29年１月スポーツ振興等特別委員会  (it is not)
 #
 # So 定例会・臨時会 is optional, and the committee is what follows it.
-session = '((?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月(?:定例会|臨時会)?)'
-committee = '(?:令和|平成)\s*[０-９0-9元]{1,2}年\s*[０-９0-9]{1,2}月(?:定例会|臨時会)?\s*(.{2,24}?委員会)'
+#
+# **決算特別委員会 writes no month at all** — 「令和７年決算特別委員会文教警察分科会」
+# against 「令和８年２月定例会文化観光委員会」 — so the month is optional. 2,730
+# documents, 15% of the archive, matched nothing on this field.
+session = '((?:令和|平成)\s*[０-９0-9元]{1,2}年(?:\s*[０-９0-9]{1,2}月)?(?:定例会|臨時会)?)'
+# The same month, and 分科会 as well: 決算特別委員会 sits in subcommittees, and a
+# rule ending at 委員会 stops inside 「決算特別委員会文教警察分科会」 and loses which
+# one it was. The 分科会 branch is tried first for that reason — non-greedy, it
+# would otherwise stop at the 委員会 in the middle.
+#
+# **An unmatched header did not leave this field empty; it filled it with speech.**
+# `re.search` scans the whole document, so when the header failed the pattern
+# found a committee named *inside a member's speech*: 「に刑が確定したことによりまして、
+# 県教育委員会」 and 「で、人口減少社会課題対応特別委員会」 were committee names in the
+# corpus, on 20 documents. Plausible garbage, and nothing warns about it.
+committee = '(?:令和|平成)\s*[０-９0-9元]{1,2}年(?:\s*[０-９0-9]{1,2}月)?(?:定例会|臨時会)?\s*(.{2,30}?分科会|.{2,24}?委員会)'

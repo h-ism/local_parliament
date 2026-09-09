@@ -926,3 +926,38 @@ def test_the_one_gaiji_that_could_be_identified() -> None:
 
     assert normalize_speaker("奥之山") == "奥之山隆"
     assert normalize_speaker("奥之山　隆") == "奥之山隆"
+
+
+def test_shizuoka_committee_metadata_takes_the_decision_committee() -> None:
+    """決算特別委員会 writes no month, and it is 15% of 静岡's committee archive.
+
+    「令和７年決算特別委員会文教警察分科会」 against 「令和８年２月定例会文化観光委員会」.
+    2,730 documents matched nothing — and an unmatched header did not leave the
+    field empty, it filled it from the body: `re.search` scans the whole document,
+    so 「に刑が確定したことによりまして、県教育委員会」 was a committee name in the
+    corpus. The 分科会 branch comes first because a non-greedy rule ending at 委員会
+    stops in the middle of 「決算特別委員会文教警察分科会」.
+    """
+    import re
+
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig
+
+    patterns = SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.patterns
+    committee, session = patterns["committee"], patterns["session"]
+
+    def first(pattern: str, text: str) -> str:
+        m = re.search(pattern, text)
+        return (m.group(1) if m.re.groups else m.group(0)).strip() if m else ""
+
+    monthless = "委員会補足文書\n令和７年決算特別委員会文教警察分科会\n決算等の説明"
+    assert first(committee, monthless) == "決算特別委員会文教警察分科会"
+    assert first(session, monthless) == "令和７年"
+
+    plain = "委員会補足文書\n平成29年決算特別委員会 質疑・質問\n本文"
+    assert first(committee, plain) == "決算特別委員会"
+
+    # The dated form still wins, month and all.
+    dated = "委員会補足文書\n令和８年２月定例会文化観光委員会\n開会"
+    assert first(committee, dated) == "文化観光委員会"
+    assert first(session, dated) == "令和８年２月定例会"
