@@ -116,7 +116,8 @@ Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka,shizuoka_c
   unverified and its letter is still unsent, so routing around the window would
   have assumed an answer nobody has. **There is no window hole left anywhere.**
 - **静岡 is complete** (2026-09-09): both archives end to end, `audit.py` reporting
-  0 listed-but-not-collected on each, and 0 undated in 32,275 documents. The
+  0 listed-but-not-collected on each, 0 undated in 32,275 documents, and — after
+  the 決算特別委員会 fix below — 0 committee documents without a `committee`. The
   `meta robots` question was decided on 2026-09-07 — see `docs/shizuoka.md`.
   Its committee side is 18,245 documents, not the 10,762 the survey estimated.
 - Each tenant's listing reconciles item by item against its corpus. 和歌山 carries
@@ -332,6 +333,17 @@ quirks.
   「○（陰山　地域整備第１局長）」. The guard that works is narrower: a speaker may not
   be *only* digits, and may not *begin* with one.
 
+- **A `patterns` field that misses does not come back empty — it comes back with
+  the wrong answer.** `re.search` scans the whole document, so when 静岡's committee
+  header failed to match, the rule kept looking and found a committee named inside
+  a member's speech: 「に刑が確定したことによりまして、県教育委員会」 and
+  「で、人口減少社会課題対応特別委員会」 were committee names in the corpus. Twenty
+  documents, no warning. **Check a metadata field the way you check speakers**:
+  count how many records have it empty, and sort the distinct values by length —
+  a value that begins mid-sentence or carries a 「、」 came from the body.
+  (The miss itself: 15% of 静岡's committee archive is 決算特別委員会, which writes
+  「令和７年決算特別委員会文教警察分科会」 with **no month**, where every other
+  committee writes 「令和８年２月定例会文化観光委員会」.)
 - **A swallowed marker is still in the corpus — grep for it.** When a speech
   marker fails to match, the speech is not dropped: it is appended to the previous
   speaker's text, marker and all. So `grep`ping speech text for a line beginning

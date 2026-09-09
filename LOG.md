@@ -2,6 +2,101 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-09 — 静岡's 決算特別委員会, and a metadata field that lied (`fix/shizuoka-committee-metadata`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Found while answering "how much has been collected". Splitting 静岡 by the
+`committee` field gave 16,760 / 15,515; splitting it by URL gave 14,030 / 18,245.
+**2,730 committee documents — 15% of the archive — had no `committee` and no
+`session`.**
+
+Every one of them is 決算特別委員会. Its 54 header shapes all write
+「令和７年決算特別委員会文教警察分科会」 with **no month**, where every other committee
+writes 「令和８年２月定例会文化観光委員会」. The month is now optional, and 分科会 is
+matched before 委員会 — non-greedy, a rule ending at 委員会 stops in the middle of
+「決算特別委員会文教警察分科会」 and loses which subcommittee it was.
+
+**The important part is what an unmatched header actually did.** It did not leave
+the field empty. `re.search` scans the whole document, so the rule kept looking
+past the header and found a committee named inside a member's speech:
+
+```
+'に刑が確定したことによりまして、県教育委員会'   -> 決算特別委員会文教警察分科会
+'で、人口減少社会課題対応特別委員会'          -> 決算特別委員会総務分科会
+'に第１回目の準備委員会'                    -> 決算特別委員会厚生分科会
+```
+
+Those were committee names in the corpus, on 21 documents. Not empty, not a
+warning — plausible garbage, which this repository already lists as the failure
+mode nothing catches, and which had gone unnoticed through a full collection, an
+audit and a merge.
+
+Re-parsed from cache: **2,730 filled, 21 corrected, 0 lost**, speeches unchanged
+at 219,425, no date lost. Afterwards: 0 committee documents without a `committee`,
+0 本会議 documents with one, 193 distinct committee names. That restores the claim
+`CLAUDE.md` makes about every corpus — that `committee` separates the two in a
+prefecture's file — which on 静岡 had not been true.
+
+**Checked the other four for the same thing, and they are clean.** `committee` is
+empty on exactly 1,059 / 1,020 / 909 / 1,168 records in 三重・兵庫・愛媛・和歌山,
+which is each one's 本会議 count to the record. 愛媛's 47-character committee name
+「愛媛県手話言語の普及及び障がいの特性に応じた意思疎通手段の利用の促進に関する条例審査特別委員会」
+is stored whole, not truncated, and the 2,214 and 426 `session` values that contain
+「委員会」 are those configs' design, matching their committee counts exactly.
+
+**Also corrected: the character total in `CLAUDE.md`.** 425,269,704 had been
+arrived at by adding the previous four-prefecture figure to 静岡's, across a
+re-parse that changed both. Measured across all five corpora it is **424,049,474**
+— 1,220,230 fewer, in the direction re-parsing predicts, because recognising a
+marker removes its text from the speech that used to swallow it. Documents and
+speeches were right. **Measure the total; never add two figures taken at different
+times.**
+
+### 日本語
+
+「どれくらい集まったか」に答える過程で見つかった。静岡を `committee` フィールドで分けると
+16,760 / 15,515、URL で分けると 14,030 / 18,245。**委員会文書2,730件（書庫の15%）に
+`committee` も `session` も無かった。**
+
+全件が決算特別委員会である。54の見出し形すべてが「令和７年決算特別委員会文教警察分科会」と
+**月を書かない**。他の委員会はすべて「令和８年２月定例会文化観光委員会」である。月を任意にし、
+`分科会` を `委員会` より先に照合するようにした（非貪欲では「決算特別委員会文教警察分科会」の
+途中で止まり、どの分科会か分からなくなる）。
+
+**重要なのは、見出しが一致しなかったときに何が起きていたかである。**フィールドは空にならない。
+`re.search` は文書全体を走査するので、規則は見出しを通り過ぎて探し続け、**議員の発言の中の
+委員会名**を拾っていた:
+
+```
+'に刑が確定したことによりまして、県教育委員会'   -> 決算特別委員会文教警察分科会
+'で、人口減少社会課題対応特別委員会'          -> 決算特別委員会総務分科会
+'に第１回目の準備委員会'                    -> 決算特別委員会厚生分科会
+```
+
+これが21文書のコーパス上の委員会名だった。空欄でも警告でもない、もっともらしいゴミ —
+本リポジトリが「何も捕まえない失敗モード」として既に記載しているものであり、全期間の収集・
+突合・マージを通り抜けていた。
+
+キャッシュから再解析: **2,730件を補完、21件を修正、喪失0件**。発言数は219,425で不変、
+日付の喪失も無し。適用後は `committee` の空欄0件、本会議側に committee が入った文書0件、
+委員会名は193種。これで `CLAUDE.md` が全コーパスについて謳う「`committee` が県ファイル内で
+両者を分ける」が回復した。静岡では成り立っていなかった。
+
+**他4県も同じ観点で確認し、いずれも正常。**`committee` の空欄は三重1,059・兵庫1,020・
+愛媛909・和歌山1,168で、各県の本会議件数と1件も違わない。愛媛の47文字の委員会名
+「愛媛県手話言語の普及及び障がいの特性に応じた意思疎通手段の利用の促進に関する条例審査特別委員会」
+は切り詰められず完全に保存されており、「委員会」を含む session 値2,214件・426件はその設定の
+仕様どおりで、委員会文書数と完全に一致する。
+
+**あわせて `CLAUDE.md` の総文字数を修正した。**425,269,704は、再解析を挟んだ2時点の数字
+（4県の旧合計と静岡）を足して得たものだった。5コーパスを実測すると **424,049,474**、
+1,220,230字少ない。差の向きは再解析の予測どおりで、marker を認識するとそれを飲み込んでいた
+発言からその文字列が消えるためである。文書数と発言数は正しかった。**合計は実測せよ。
+異なる時点の数字を足してはならない。**
+
 ## 2026-09-09 — one spelling per person, across all five corpora (`fix/shizuoka-uncircled-marker`)
 
 *English and Japanese. / 英語と日本語で併記する。*
