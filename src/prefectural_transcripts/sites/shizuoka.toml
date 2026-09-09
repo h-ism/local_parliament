@@ -106,7 +106,30 @@ container = "div#notes"
 # mid-sentence in question text. Branch one is the original rule (plus 〇 U+3007,
 # which 和歌山 uses for the same marker), so nothing that matched before can stop
 # matching — checked by re-parsing all 817 cached documents: **+2 speeches, 0 lost.**
-speech_split = '(?m)[○〇](?P<role>[^（(\n]{1,24})[（(](?P<speaker>[^）)\n]{1,24}君)[）)]|^(?P<role2>[^（(\n\s]{1,24})[（(](?P<speaker2>[^）)\n]{1,24}君)[）)]'
+#
+# **The marker is not always on one line.** Before about 2004 the Domino markup
+# puts each piece in its own cell, so the text comes out as four lines:
+#
+#     ○議長 / ( / 水口俊太郎君 / ) / 異議なしと認めます｡
+#
+# 97 markers arrive that way. Whitespace is therefore allowed on both sides of
+# both brackets — and only there. It is deliberately *not* allowed inside the name
+# group: 「(望月\n暹\n君)」 splits a name across lines too, and matching it would
+# put a newline inside a speaker and invent a second 望月　暹. Those 11 are left
+# uncollected on purpose; see LOG.md.
+#
+# Two more shapes the older years use, both real speeches:
+#   ○増井浩二君　一言御挨拶…        a bare name, no brackets at all (和歌山's shape)
+#   ○条例制定請求代表者（鈴木　望氏） 氏 and さん, not 君 — outside petitioners
+#   ○静岡県理事（池谷　廣君登壇）    「登壇」 printed inside the brackets
+#
+# The guards that earn their keep are unchanged: 「○出　席　議　員（六十七名）」 is a
+# roster and still matches nothing, because 「六十七名」 carries no honorific; and
+# 「〇七年版ですが、…」 is 〇 used as the *numeral* zero at the start of a line, which
+# the honorific rejects too. Both appear in this archive.
+#
+# Measured over all 14,030 documents before shipping: 62,656 -> 62,780 speeches.
+speech_split = '(?m)[○〇](?P<role>[^（(\n]{1,24})\s*[（(]\s*(?P<speaker>[^）)\n]{1,24}(?:君|氏|さん))(?:\s*登壇)?\s*[）)]|^(?P<role2>[^（(\n\s]{1,24})[（(](?P<speaker2>[^）)\n]{1,24}君)[）)]|^[○〇](?P<speaker3>[^（(\n\s][^（(\n]{0,11}(?:君|氏|さん))　'
 
 [detail.patterns]
 # Three document types, three ways of writing the same label, and the third one

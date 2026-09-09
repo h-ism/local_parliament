@@ -842,3 +842,38 @@ def test_shizuoka_committee_cap_and_tab() -> None:
     # The day heading keeps its guard, which is why the full-width space is not
     # allowed after the circle even though tab and ASCII space are.
     assert split_speeches("○　第１日目（３月５日）\n本文", pattern) == []
+
+
+def test_shizuoka_marker_split_across_lines_and_its_other_shapes() -> None:
+    """Before about 2004 静岡's markup puts each piece of the marker in its own cell.
+
+    The text then comes out as four lines — 「○議長」 「(」 「水口俊太郎君」 「)」 — and
+    97 markers arrive that way. Whitespace is allowed around both brackets and
+    nowhere else: a name split across lines would put a newline inside a speaker
+    and invent a second person, so those are left alone.
+    """
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig, split_speeches
+
+    pattern = SiteConfig.from_toml(SITES_DIR / "shizuoka.toml").detail.speech_split
+    assert pattern is not None
+
+    split = split_speeches("○議長\n(\n水口俊太郎君\n)\n異議なしと認めます｡", pattern)
+    assert [(s.role, s.speaker) for s in split] == [("議長", "水口俊太郎")]
+
+    # 氏 and さん, for the outside petitioners this assembly hears.
+    petitioner = split_speeches("○条例制定請求代表者（鈴木　望氏）　磐田市の鈴木望です。", pattern)
+    assert [s.speaker for s in petitioner] == ["鈴木　望"]
+
+    # 「登壇」 printed inside the brackets, after the honorific.
+    entering = split_speeches("○静岡県理事（池谷　廣君登壇）　お答えいたします。", pattern)
+    assert [s.speaker for s in entering] == ["池谷　廣"]
+
+    # A bare name with no brackets — 和歌山's shape, which 静岡 uses for greetings.
+    bare = split_speeches("○増井浩二君　一言御挨拶を申し上げます。", pattern)
+    assert [s.speaker for s in bare] == ["増井浩二"]
+
+    # Both guards survive: the roster carries no honorific, and 〇 opening a line
+    # as the numeral zero is not a speaker.
+    assert split_speeches("○出　席　議　員（六十七名）\n一番　山田太郎", pattern) == []
+    assert split_speeches("〇七年版ですが、 政府が発行している白書を読みました。", pattern) == []
