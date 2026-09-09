@@ -84,7 +84,16 @@ class BaseScraper(ABC):
             if meeting.date and not _in_range(meeting.date, since, until):
                 continue
             if not meeting.speeches:
-                log.warning("no speeches extracted from %s — check selectors", ref.url)
+                # The size is here because 委員会 made this warning ambiguous: a
+                # sitting where 「質疑　なし」 is a real record of a few hundred
+                # characters and no speeches, and it looks in the log exactly like
+                # a 60,000-character transcript whose marker rule has stopped
+                # matching. One number separates them.
+                log.warning(
+                    "no speeches extracted from %s (%d bytes) — check selectors",
+                    ref.url,
+                    len(page.body),
+                )
 
             produced += 1
             yield meeting

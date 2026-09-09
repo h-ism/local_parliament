@@ -2,6 +2,697 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-09 — one spelling per person, across all five corpora (`fix/shizuoka-uncircled-marker`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The previous entry left the name-variance finding as a decision for the
+researcher. The decision came back: **常用漢字 に直しつつ、同一人物と確認されたものは
+統合** — convert to 常用漢字, and merge what is confirmed to be the same person.
+
+`normalize_speaker` now runs on every site: 常用漢字 conversion, NFKC, and
+whitespace removed. Applied to all five corpora.
+
+| | speakers before | after | speeches renamed |
+| --- | --- | --- | --- |
+| 三重 | 1,211 | 1,191 | 5,191 |
+| 兵庫 | 5,529 | 5,180 | 106,639 |
+| 和歌山 | 946 | 933 | 24,014 |
+| 愛媛 | 1,146 | 1,130 | 4,398 |
+| 静岡 | 5,295 | 5,126 | 44,768 |
+
+**567 duplicate speakers merged**, and afterwards not one corpus holds two names
+that differ only by whitespace, codepoint or kanji form.
+
+**The table is evidence, not memory.** All 55 characters in `_JOYO` occur in a
+collected name; none was written down from knowledge of 旧字体. They were found by
+listing every kanji used in a speaker name and by grouping names that differ in
+exactly one character.
+
+**The check is the work, not the table.** A blanket 常用漢字 conversion can merge
+two people who merely share a normalised name, so every collision it creates was
+listed with its prefecture, office and years before anything was applied. All of
+them are one person, several unmistakably so:
+
+```
+髙橋交通部参事官 / 高橋交通部参事官   静岡 2019-2020   one office
+安川　德 / 安川　徳               兵庫 2013 / 2013  the same year
+國廣 / 国廣 / 国広　土木部次長      兵庫 1986-1989   one office, three spellings
+尾﨑太郎 / 尾崎太郎               和歌山 2015-2025 / 2003-2014
+```
+
+Not one pair is two people serving at once. **Had one been, the fix would have
+been wrong and nothing in the corpus would have said so.**
+
+**Three causes, and only one of them is about kanji.** Whitespace is the biggest:
+546 groups differ by nothing else, because the minutes align names in a column —
+「渡部浩」 3,031 speeches against 「渡部　浩」 4. Whitespace is *removed* rather than
+collapsed, because collapsing cannot merge a form that has no space at all. Then
+codepoint: 「吉井和視」 uses 視 U+FA61 until 2022 and U+8996 after, and NFKC settles
+it — the same normalisation merges 「鈴木（澄）委員」 with 「鈴木(澄)委員」, 静岡's
+committee brackets, 874 speeches against 26.
+
+**The 外字 was identified from the record, not the codepoint.** 「奥之山\ue002」 is a
+cp932 user-defined character that decoded to a private-use codepoint. It appears
+in one name in 126 million characters, as 議長, 2004-2005; the archive holds one
+奥之山 議長, 「奥之山　隆」, 666 speeches over 1999-2010. Same surname, same office,
+inside the same span, no second candidate. Mapped, with the reasoning in the code
+and a warning that **this is a claim about one corpus, not about U+E002.**
+
+**Migration, and why it was not a re-parse.** The change is a pure function of the
+stored name, so the corpora were migrated directly instead of re-parsing 43,612
+documents. That equivalence was *checked* rather than assumed: on 12 sampled
+documents, a fresh parse from cache equals the migrated record exactly. The
+`.prenorm` copies are beside each corpus.
+
+**Left alone, deliberately**
+
+- 「大﨏一也」 (兵庫) — 﨏 U+FA0F has no 常用 counterpart.
+- 「奥之山」 as a bare surname (議長, 2005, 1 speech) — the same person, but merging
+  it needs a rule that completes a surname into a full name, and that rule would
+  take other people with it.
+- Names with no counterpart form are still converted: 「齋藤元彦」 → 「斎藤元彦」. The
+  goal is one spelling per person, not one spelling per document. Reversible by
+  removing a character from `_JOYO` and re-running the migration — minutes, no
+  requests.
+
+15 existing tests changed expectation. **Only the expected side was edited**; every
+fixture keeps its original 濱・齋・﨑, or the tests would stop testing anything.
+
+### 日本語
+
+前回の記録では氏名の揺れを「研究者の判断待ち」として残した。判断は
+**「常用漢字に直しつつ、同一人物と確認されたものは統合」**。
+
+`normalize_speaker` を全サイトに適用した（常用漢字変換・NFKC・空白除去）。5コーパス
+すべてに適用済み。
+
+| | 変更前 | 変更後 | 変更発言数 |
+| --- | --- | --- | --- |
+| 三重 | 1,211 | 1,191 | 5,191 |
+| 兵庫 | 5,529 | 5,180 | 106,639 |
+| 和歌山 | 946 | 933 | 24,014 |
+| 愛媛 | 1,146 | 1,130 | 4,398 |
+| 静岡 | 5,295 | 5,126 | 44,768 |
+
+**重複話者567人を統合。**適用後、空白・符号位置・字体のみが違う氏名は全コーパスで0。
+
+**変換表は記憶ではなく実証。**`_JOYO` の55文字はすべて収集済みの氏名に実在する。氏名に
+使われている全漢字の列挙と、1文字だけ違う氏名の突合から導出した。
+
+**表そのものより、検証が本体である。**常用漢字への一律変換は、正規化後に同名となる別人を
+統合しうる。したがって**適用前に、生じる衝突を県・役職・年代とともに全件列挙した**。すべて
+同一人物であり、うち数件は疑いようがない:
+
+```
+髙橋交通部参事官 / 高橋交通部参事官   静岡 2019-2020   同一役職
+安川　德 / 安川　徳               兵庫 2013 / 2013  同一年
+國廣 / 国廣 / 国広　土木部次長      兵庫 1986-1989   同一役職・3表記
+尾﨑太郎 / 尾崎太郎               和歌山 2015-2025 / 2003-2014
+```
+
+同時期に在職する別人の組は1件も無かった。**もし有れば修正は誤りであり、コーパスには
+それを知らせるものが何も無い。**
+
+**原因は3つで、漢字の話は1つだけ。**最大は空白（546群）。議事録が氏名を段組みで整列する
+ためで、「渡部浩」3,031発言に対し「渡部　浩」4発言。空白は*除去*する — 詰めるだけでは
+空白の無い表記と統合できないため。次が符号位置。「吉井和視」は2022年まで視 U+FA61、以降
+U+8996 で、NFKC が解決する。同じ正規化が静岡委員会の「鈴木（澄）委員」と「鈴木(澄)委員」
+（874発言と26発言）も統合する。
+
+**外字は符号位置ではなく記録から同定した。**「奥之山\ue002」は cp932 の外字が私用領域に
+落ちたもの。1億2,657万文字中この1名にのみ出現し、役職は議長・2004-2005年。書庫の奥之山
+議長は「奥之山　隆」（666発言、1999-2010）ただ1人。同姓・同役職・同期間内・他候補なし。
+写像したうえで、**これは1コーパスに対する主張であって U+E002 に対する主張ではない**旨を
+コード内に明記した。
+
+**移行は再解析ではない。**変更は保存済みの氏名だけの関数なので、43,612文書を再解析せず
+コーパスを直接移行した。その等価性は仮定せず**検証した** — 標本12文書で、キャッシュからの
+新規解析と移行後レコードが完全一致。`.prenorm` を各コーパスの隣に残してある。
+
+**意図的に手を付けていないもの**
+
+- 「大﨏一也」（兵庫）— 﨏 U+FA0F に常用漢字の対応字が無い。
+- 「奥之山」（姓のみ、議長、2005年、1発言）— 同一人物だが、統合には姓から氏名を補完する
+  規則が要り、その規則は他人を巻き込む。
+- 対応形が無い氏名も変換する（「齋藤元彦」→「斎藤元彦」）。目的は「文書ごとに1表記」では
+  なく「1人1表記」。`_JOYO` から該当文字を外して移行し直せば戻せる（数分・リクエスト0）。
+
+既存テスト15件の期待値を更新した。**変更したのは期待値のみ**で、入力側の原表記
+（濱・齋・﨑）はすべて残してある。残さなければテストが何も検証しなくなる。
+
+## 2026-09-09 — 静岡 collected whole, and five rules that were losing it quietly (`fix/shizuoka-uncircled-marker`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**静岡 is collected.** Both archives, end to end, reconciled item by item.
+
+| | documents | speeches | characters | range | undated |
+| --- | --- | --- | --- | --- | --- |
+| 本会議 | 14,030 | 62,780 | 46,372,977 | 1999-05-19 .. 2026-06-17 | 0 |
+| 委員会 | 18,245 | 156,645 | 80,196,927 | 2007-05-18 .. 2026-03-06 | 0 |
+| **total** | **32,275** | **219,425** | **126,569,904** | | **0** |
+
+`audit.py` reports **0 listed but not collected** on both sites. The committee
+side came in at 18,245 documents against the 10,762 the survey estimated.
+
+**Every fix below cost zero requests.** Each was found in the corpus or the cache
+and applied by re-parsing, which is what the cache is for. The crawl itself ran
+once, 2s per request, ~18 hours.
+
+**Five rules, and four of them failed silently.**
+
+1. **The marker sometimes has no circle.** 「健康福祉部長（八木敏裕君）　…」 is the
+   whole of a 答弁文書; that one warned, because the document parsed to zero.
+   「議長（中沢公彦君）　…」 sits inside a sitting that parsed three other speeches
+   perfectly well, and **nothing warned at all**. A second, line-anchored branch
+   takes them; without the circle there is no other anchor, and question text says
+   「知事（鈴木康友君）に伺います」 mid-sentence.
+
+2. **The circle is not always ○.** 静岡 writes 〇 (U+3007) for a whole class of
+   答弁文書 and for committee speeches in the same sitting as the other form. This
+   is the 和歌山 lesson arriving unchanged — and on the committee side a missed
+   marker does not empty a document, it hands the speech to whoever spoke before.
+
+3. **The committee cap was two offices short.** 156,651 「○」 lines over 18,245
+   documents; 34 did not match. 「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）
+   兼危機管理部理事（災害医療担当）」 is 41 characters against a cap of 30, and eight
+   markers put a **tab** after the circle. 30 speeches, all silent. Cap is now 60
+   against a longest-observed 41, and both numbers are in the config so the next
+   run re-measures rather than trusts.
+
+4. **The marker is not always on one line.** Before about 2004 the Domino markup
+   puts each piece in its own cell: 「○議長」 「(」 「水口俊太郎君」 「)」. 97 markers
+   arrive that way. Whitespace is now allowed around both brackets and nowhere
+   else. Older years also use 「氏」 and 「さん」 (the outside 条例制定請求代表者),
+   「登壇」 inside the brackets, and bare 「○増井浩二君　…」 with no brackets at all.
+
+5. **A fifth date label, and this one is empty.** Four 委員会補足文書 print
+   「発言日：」 with nothing after it and date themselves in the body instead:
+   「１　日時　令和３年８月10日（火）」, 和暦 where everything else is Domino's
+   month-first form.
+
+Totals recovered by re-parsing from cache: **+781, then +28, then +124.** No
+record lost a speech at any step; that was checked per document each time.
+
+**The technique worth keeping: a swallowed marker is still in the corpus.** When a
+marker fails to match, the speech is not dropped — it is appended to the previous
+speaker's text, marker and all. So `grep`ping speech text for a line beginning
+with a circle finds every miss, with no cache reads and no requests. That is how
+findings 3 and 4 were located, and it is faster than the cache scan that found 3.
+
+**Guards that had to survive, and did.** 「○出　席　議　員（六十七名）」 is a roster
+with a marker's exact shape, and 「〇七年版ですが、…」 opens a line with 〇 as the
+*numeral zero* — eight such lines in this archive. The honorific requirement
+rejects both, which is why loosening it was done branch by branch with the roster
+and the numeral in the test.
+
+**`reparse.py` would have destroyed the corpus, and the instruction to run it was
+in this file.** The previous entry told this run to type
+`reparse.py shizuoka data/静岡県.jsonl`. That script parsed every record with the
+one named site — true when a corpus was one site, false now: 18,245 of these
+records are committee documents, and the 本会議 rule requires a 「君」 no committee
+marker carries. It would not have failed. It would have rewritten 18,245 documents
+to zero speeches, printed the loss as an ordinary diff, and left the `.bak` as the
+only copy. Records are now routed by URL, and an unclaimed record stops the run
+before the backup is taken.
+
+**Known and left alone, deliberately**
+
+- **11 markers whose *name* is split across lines** — 「(望月\n暹\n君)」. Matching
+  them would put a newline inside a speaker and invent a second 望月　暹.
+- **~8 markers with no honorific at all** — 「○総務部長 (石川総務部長)」,
+  「○議長 (水口俊太郎)」 on one line. The honorific is what separates a marker from
+  the roster; dropping it for a single-line shape is not worth 8 speeches.
+- **20 names that differ only by whitespace, covering 6,887 speeches** —
+  「伴　卓」「伴　　卓」「伴卓」, 「植田　徹」「植田 徹」, 「森　竹治郎」「森竹治郎」「森  竹治郎」.
+  One of them, 「奥之山　\ue002」 (4 speeches), carries a **private-use character**:
+  cp932 外字 that decoded to U+E002 rather than to a name. This is the split
+  already fixed for 「さん」 and 「氏」, arriving through whitespace and 外字 instead —
+  but the repair lives in `_clean_speaker`, which every prefecture shares, so it
+  would rewrite names across all 662,190 speeches (「河原﨑　全」 → 「河原﨑全」).
+  **That is a decision about the corpus, not a bug fix, and it is the researcher's
+  to make.** Not touched.
+
+**My own failure, again, and it is the one this file already warned about.** The
+committee length-check was queued behind
+`while pgrep -f "check_cap.py"; do sleep; done`, and **that command's own line
+contained `check_cap.py`**, so the wait matched itself. The analysis had finished;
+I reported it as still running until the user asked. Same trap as the previous
+entry, read and repeated. A wait must never be written so that its own command
+line can satisfy it — match on a pid, as the later steps here do
+(`until ! kill -0 <pid>`).
+
+### 日本語
+
+**静岡は取り切った。** 両書庫とも端から端まで、一覧と1件ずつ突合済み。
+
+| | 文書 | 発言 | 文字 | 期間 | 日付なし |
+| --- | --- | --- | --- | --- | --- |
+| 本会議 | 14,030 | 62,780 | 46,372,977 | 1999-05-19 .. 2026-06-17 | 0 |
+| 委員会 | 18,245 | 156,645 | 80,196,927 | 2007-05-18 .. 2026-03-06 | 0 |
+| **計** | **32,275** | **219,425** | **126,569,904** | | **0** |
+
+`audit.py` は両設定とも「一覧にあって未収集」**0件**。委員会は下見の見積り10,762に対し
+18,245文書だった。
+
+**以下の修正はすべてリクエスト0件。** コーパスかキャッシュから見つけ、再解析で適用した。
+クロール自体は1回、2秒間隔で約18時間。
+
+**規則が5つ壊れており、うち4つは無言で壊れていた。**
+
+1. **「○」が無い marker がある。** 「健康福祉部長（八木敏裕君）　…」は答弁文書の全体で、
+   これは発言0件として警告が出た。「議長（中沢公彦君）　…」は他に3発言が正常に取れている
+   議事の中にあり、**何の警告も出なかった**。行頭固定の第2分岐で拾う。○が無いと他に手掛
+   かりが無く、質問文には「知事（鈴木康友君）に伺います」が文中に出るためである。
+2. **「○」は ○ とは限らない。** 静岡は答弁文書の一群と、委員会発言の一部を 〇 (U+3007) で
+   書く（同じ議事の中に両方ある）。和歌山の教訓がそのまま再来した。しかも委員会側では、
+   取りこぼしても文書は空にならず、**直前の発言者に吸収される**。
+3. **委員会の文字数上限が役職2つ分足りなかった。** 18,245文書に「○」行が156,651行、
+   うち34行が不一致。「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事
+   （災害医療担当）」は41文字（上限30）。さらに8件は ○ の直後がタブ。計30発言、すべて無言。
+   上限は実測最長41に対し60とし、**両方の数字を設定ファイルに書いた**。次回は信じずに測り直す。
+4. **marker が1行に収まらない。** 2004年頃までの markup は各部品を別セルに置くため、
+   「○議長」「(」「水口俊太郎君」「)」の4行になる。97件。括弧の両側にのみ空白を許可した。
+   古い年代は他に「氏」「さん」（外部の条例制定請求代表者）、括弧内の「登壇」、括弧なしの
+   「○増井浩二君　…」も使う。
+5. **5つ目の日付ラベルは空。** 委員会補足文書4件が「発言日：」の後に何も書かず、本文に
+   「１　日時　令和３年８月10日（火）」と和暦で書いていた。他はすべて Domino の月先頭形式。
+
+キャッシュからの再解析で回収した合計は **+781 → +28 → +124**。**どの段階でも発言を失った
+文書は0件**で、毎回文書ごとに確認した。
+
+**残す技法: 吸収された marker はコーパスの中にまだ居る。** 一致しなかった marker は捨て
+られず、marker ごと直前の発言テキストに連結される。したがって**発言テキストから行頭が
+○ の行を grep すれば取りこぼしが全部出る** — キャッシュを読まず、リクエストも0。所見3と4は
+これで見つけた。キャッシュ全走査より速い。
+
+**守るべき防御は守られている。** 「○出　席　議　員（六十七名）」は marker と同形の名簿、
+「〇七年版ですが、…」は行頭の 〇 が**数字のゼロ**（この書庫に8行ある）。敬称必須の条件が
+両方を弾くので、緩めるときは分岐ごとに、名簿と数字をテストに入れて行った。
+
+**`reparse.py` はコーパスを破壊するところだった。しかもその実行を指示していたのはこの
+ファイルである。** 前回の記録は今回の実行に `reparse.py shizuoka data/静岡県.jsonl` と
+打てと書いていた。あの版は全レコードを単一の設定で解析する。1コーパス＝1サイトなら正しい
+が、今は違う。**18,245件は委員会文書で、本会議の規則は委員会 marker に無い「君」を要求する。**
+失敗はしない。18,245文書を発言0件に書き換え、その損失を普通の差分として印字し、`.bak` だけを
+唯一の控えとして残す。URL でサイトに振り分け、どのサイトにも属さないレコードがあれば
+**バックアップを取る前に**停止するようにした。
+
+**承知の上で手を付けていないもの**
+
+- **氏名自体が改行で割れた marker 11件** — 「(望月\n暹\n君)」。拾うと話者名に改行が入り、
+  「望月　暹」がもう1人生まれる。
+- **敬称が全く無い marker 約8件** — 1行の「○総務部長 (石川総務部長)」「○議長 (水口俊太郎)」。
+  敬称こそが名簿と marker を分ける条件で、8発言のために単行形で外す価値は無い。
+- **空白だけが違う氏名20名・6,887発言** — 「伴　卓」「伴　　卓」「伴卓」、「植田　徹」「植田 徹」、
+  「森　竹治郎」「森竹治郎」「森  竹治郎」。うち「奥之山　\ue002」（4発言）は **私用領域文字**で、
+  cp932 の外字が氏名に復号されず U+E002 のまま残ったもの。「さん」「氏」で一度直したのと
+  **同じ分裂**が、空白と外字で起きている。ただし修正箇所は全県が共有する `_clean_speaker` で、
+  662,190発言すべての氏名表記を変える（「河原﨑　全」→「河原﨑全」）。**これはバグ修正では
+  なくコーパスの仕様判断であり、研究者が決めること。**未着手。
+
+**自分の失敗。しかもこのファイルが既に警告していたもの。** 委員会の文字数チェックを
+`while pgrep -f "check_cap.py"; do sleep; done` の後ろに置いたが、**そのコマンド自身の行に
+`check_cap.py` が入っており**、待ちが自分自身に一致し続けた。解析は終わっていたのに、
+利用者に問われるまで「実行中」と報告していた。前回の記録と同じ罠を、読んだ上で繰り返した。
+**待ち合わせは、自分のコマンド行で条件が満たされ得る書き方をしてはならない。**以降の工程で
+使った `until ! kill -0 <pid>` のように pid で待つこと。
+
+## 2026-09-08 — 静岡 opened, and a wait loop that waited on itself (`feat/committees`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**The decision first.** 静岡's archive is collected without a prior note to 議事課
+(researcher's call, 2026-09-07). `docs/shizuoka.md` keeps the reasoning that was
+weighed — no `robots.txt`, no `Disallow`, three meta tags that are indexing
+directives rather than access rules — and now records what was decided: the note
+would have been courtesy about *volume*, not permission. The politeness that
+remains is in the crawl: 2s per request, everything cached, and `Count=1000` on
+the listing so the index is a few dozen large pages instead of several hundred
+small ones.
+
+**Two navigation traps, both the same failure.** A listing that stops early looks
+exactly like one that ended.
+
+- **The view paginates even under `ExpandView`.** With the default `Count` it
+  returns 30 rows, which is one session's documents. The 2025 collection worked
+  only because it was pointed at five sessions by hand.
+- **Its navigation offers three positions** — the page before, the current one and
+  the page after — in document order, with no text, no `alt`, and image ids that
+  change between renders. `_next_page` took the first, walked one page and
+  stopped: everything before 令和2年9月 was simply absent. It now takes the first
+  position this walk has not already been to.
+
+That was still not enough. Following 「次へ」 reaches 平成11年5月 on the 本会議 side but
+**dead-ends at 平成26年11月 on the committee side**, six years short of what the
+collapsed view plainly lists. So both configs walk **windows**: `Start=<n>` opens
+the view at the n-th sitting, a 1,000-row window covers 8-12 sessions on 本会議 and
+46-54 on 委員会, and the step is half of that. The 「次へ」 walk is kept alongside as
+a second, independent traversal; documents dedupe by URL.
+
+**The cross-check was worth the 151 requests it cost.** Expanding each session one
+at a time finds 5,428 documents; the windowed walk finds 14,181; the first is a
+*subset* of the second. `Expand=<n>` opens one level and these sessions have
+sub-categories — the route that looked like the careful one was missing 8,753
+documents.
+
+**And a third date label.** 答弁文書 — one document per answering official, and most
+of the archive by count — writes 「（質問日:」 with a **half-width** colon on its own
+line, where 質問文書 and 議会補足文書 write 「質問日：」 and 「発言日：」 with a full-width
+one. 26 of the first 40 documents came back undated because of that character, on
+a site whose index carries no dates at all. Both configs take either colon now.
+A scoped run only ever shows you the document types inside the scope.
+
+**My own failure, and it cost a day.** The crawl was queued behind
+`while pgrep -f "[l]istonly.py"; do sleep; done` — and that command's *own* line
+contained `listonly.py`, because the same command also launched the next probe.
+The wait matched itself and never ended. **The chain sat for 27 hours without
+issuing a single request**, and I reported it as running. The replacement gates on
+nothing: the two crawls are sequential lines in one script.
+
+**Where 静岡 stands: partially collected, deliberately stopped.**
+
+```
+233 documents, 1,904 speeches, 2025-02-18 .. 2026-02-27
+98 of them undated — collected before the 答弁文書 fix, by a process that had
+already loaded the old config
+```
+
+### Next run — 静岡 re-collection
+
+In this order. The first step costs **zero requests**, and must come first or
+`--resume` will keep every one of those 98 records undated:
+
+```bash
+# 1. re-parse what is already collected, from cache, with the fixed date pattern
+uv run python scripts/reparse.py shizuoka data/静岡県.jsonl
+
+# 2. resume the 本会議 archive (14,030 listed, 233 held, 13,797 to go)
+uv run pt scrape shizuoka
+
+# 3. then the committees (10,762 documents, nothing collected yet)
+uv run pt scrape shizuoka_committee
+
+# 4. audit and rebuild, as for the other four prefectures
+uv run python scripts/audit.py shizuoka data/静岡県.jsonl
+uv run python scripts/audit.py shizuoka_committee data/静岡県.jsonl
+uv run pt export data/静岡県.jsonl
+```
+
+`scripts/reparse.py` and `scripts/audit.py` are in the repository now. Both were
+written ad hoc twice during this branch, and both perform checks this project's
+own conventions require after every run — so they stop being scratch files.
+
+Run them as **sequential lines in one script**, not gated on `pgrep`. Roughly 17
+hours at 2s per request. The cache (1.2 GB, 256 entries at the point of stopping)
+means nothing already fetched is asked for twice.
+
+### 日本語
+
+**まず判断。** 静岡の書庫は議事課への事前連絡なしで収集する（研究者の判断、2026-09-07）。
+`docs/shizuoka.md` には天秤にかけた材料——robots.txt が無い、`Disallow` も無い、3つの
+meta タグは索引に関する指示でアクセス制限ではない——をそのまま残し、決定を追記した。
+連絡は「許可」ではなく「分量への礼儀」だった。礼儀の実質はクロール側に置く（2秒間隔、
+全キャッシュ、索引は `Count=1000` で数十の大きなページ）。
+
+**走査の罠が2つ。どちらも同じ失敗で、一覧が途中で止まると終わったのと見分けがつかない。**
+
+- **`ExpandView` でもページ送りされる。** 既定の `Count` では30行＝1会期分。2025年分が
+  取れていたのは5会期を手で指定していたから。
+- **ナビゲーションが3つの位置を同じ見た目で出す**（前・現在・次。文字も alt も無く、
+  画像IDは描画ごとに変わる）。先頭を取ると1ページで止まり、**令和2年9月より前が
+  丸ごと消える**。「まだ訪れていない最初の位置」を取るよう直した。
+
+それでも足りない。「次へ」を辿ると本会議は平成11年5月まで届くが、**委員会は平成26年11月で
+行き止まり**（折りたたみビューには平成19年5月まで並んでいる）。そこで両方とも**窓**で走査する
+（`Start=<n>` で n 番目の会議から開き、1000行の窓が本会議で8〜12会期・委員会で46〜54会期を
+覆うので、刻みはその半分）。「次へ」の走査も第2の経路として残す。
+
+**突合は151リクエストを払う価値があった。** 会期を1つずつ開くと5,428文書、窓方式では
+14,181文書で、前者は後者の**部分集合**。`Expand=N` は1階層しか開かず、会期の下に下位階層が
+ある。**慎重に見えた方が8,753文書を落としていた。**
+
+**そして第3の日付ラベル。** 答弁文書（答弁者ごとに1文書で、件数では書庫の大半）は
+「（質問日:」と**半角コロン**で、しかも改行の後に書く。質問文書・議会補足文書は全角の
+「質問日：」「発言日：」。最初の40文書のうち26文書が、この1文字のために日付なしになった。
+索引が日付を持たないサイトで、である。両設定を両対応にした。**限定収集では、その範囲内の
+文書種しか見えない。**
+
+**自分の失敗。1日を失った。** クロールを
+`while pgrep -f "[l]istonly.py"; do sleep; done` の後ろに並べたが、**そのコマンド自身の
+行に `listonly.py` が入っていた**（同じコマンドで次の計測も起動していたため）。待ちが自分に
+一致し続け、**チェーンは27時間、1リクエストも出さずに待機**した。しかも私はそれを「実行中」と
+報告した。差し替えた版は何も待たない——2つのクロールを1つのスクリプトに順番に並べただけ。
+
+**静岡の現状: 途中まで収集、意図的に停止。**
+
+```
+233文書・1,904発言・2025-02-18 .. 2026-02-27
+うち98文書が日付なし（答弁文書の修正前に、旧設定を読み込み済みのプロセスが取得したもの）
+```
+
+### 次回の実行 — 静岡の再取得
+
+この順で。**手順1はリクエスト0件**で、かつ最初に行わないと `--resume` が98文書を日付なしの
+まま素通りする。
+
+1. `uv run python scripts/reparse.py shizuoka data/静岡県.jsonl` — キャッシュから再解析
+   （修正済みパターンで日付が埋まる）
+2. `pt scrape shizuoka` — 本会議の続き（一覧14,030文書、残り約13,800）
+3. `pt scrape shizuoka_committee` — 委員会（10,762文書、未着手）
+4. `scripts/audit.py` を2設定ぶん → `pt export` — 他4県と同じ突合とCSV再生成
+
+**`pgrep` で待ち合わせず、1つのスクリプトに順番に並べて実行すること。** 2秒間隔で17時間
+ほど。キャッシュ（停止時点で1.2GB・256エントリ）があるので、取得済みは二度と要求しない。
+
+## 2026-09-04 — the committees, and three ways a config loses what it never opened (`feat/committees`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The remaining code work: **委員会会議録**, untouched on all four collectable
+prefectures. It turned into four separate findings, three of which are about the
+same thing — a rule that describes what you expect, applied to a site that types
+what it likes.
+
+**1. `sessions = '定例会|臨時会'` was losing a sitting.** 兵庫's tree carries
+「昭和61年 第198回定 」 — 「第198回定例会」 truncated mid-word by whoever typed it.
+The node was never opened, and **the sitting of 1986-06-05 was absent from the
+corpus** with nothing in any log to say so. All three kensakusystem configs now
+say `sessions = '.'`, and the year's own node is skipped by the scraper rather
+than by the regex. A node that is never opened cannot warn.
+
+**2. 委員会 write the marker three ways the 本会議 rule had never seen**, each of
+which parsed to **zero speeches**:
+
+```
+兵庫 委員会  「○委員長（門間雄司）」   the speech begins on the *next* line
+兵庫 委員会  「○（庄本えつこ委員）」   likewise, office inside the brackets
+三重 委員会  「○小島委員長　　…」     no brackets at all
+```
+
+So the rule grew three branches, each guarded against a heading wearing its exact
+shape: a digit inside the brackets rejects 「○議事日程（第７号）」, an office suffix
+rejects 「○（議事日程）」, and text on the same line rejects 「○議事日程　　」. A regex
+cannot name a group twice, so the branches number theirs and `split_speeches`
+reads whichever matched.
+
+Re-parsed over all 2,294 collected 本会議 sittings from cache before shipping it:
+三重 47,279 and 愛媛 39,624 unchanged to the speech, 兵庫 **+8** — markers whose
+text began on the next line, which the 本会議 rule had been dropping since it was
+written. Nothing lost anywhere.
+
+**3. 和歌山's committees are not transcripts.** `/gijiroku2/` is a second site:
+要点筆記 with 「●委員長」 and 「Ｑ／Ａ」 markers — and by 令和8年 the 予算特別委員会's
+総括質疑 is a verbatim transcript in a third form, 「○濱口委員長　山家委員。」, which is
+本会議's shape without the 「君」 本会議's rule requires. 予算特別委員会 also sits one
+level deeper, but only in the sessions where it actually meets. Three documents
+parsed to zero speeches at 5.5–6.4 KB — too big to be a 「質疑なし」 day — and behind
+them were nine real records.
+
+**4. 愛媛's `role` could be filled after all.** This repository has said for a week
+that it could not: 「○（三宅浩正議長）」 is a name and an office in one run with
+nothing to split on. True of the marker, not of the document, which opens with
+「　　９番　　三　宅　浩　正」. **The roster is the missing delimiter.**
+
+What that was costing was not an empty column. 「中畑保一」 spoke 51 times as a
+member and 「中畑保一議長」 1,772 times as chair — **two speakers** — and 38 people
+were counted twice that way, every one of them somebody who had held an office.
+Re-parsed from cache: 39,624 speeches before and after, speakers **717 → 455**,
+**35,518 speeches now carrying a role**, 54 left glued because the sitting's own
+roster does not list those people.
+
+**Collected**
+
+```
+              本会議                              委員会
+和歌山  1,168  67,356 speeches  1989-02-27..    163    7,814  2023-05-19 .. 2026-06-23
+三重    1,059  62,940           1989-02-28..    426   39,530  2023-01-18 .. 2026-05-22
+愛媛      909  53,631           1991-06-27..  2,214  154,702  2007-05-11 .. 2026-07-08
+兵庫    1,020  55,035           1986-02-22..  4,378  219,787  1986-03-05 .. 2026-07-16
+```
+
+**The corpus is 11,450 sittings and 662,190 speeches** (298,365,885 characters),
+against 3,314 and 177,451 when the branch began.
+
+Committee coverage is shallower than 本会議 in two of the four: 和歌山 and 三重 begin
+at 2023. 愛媛 reaches 平成19年, and 兵庫's 予算・決算特別委員会 reach **昭和61年** —
+as deep as its 本会議 archive.
+
+**The corpus window (2011-04 .. 2019-03) is filled now, on 本会議 as well.** That
+went further than the question that was asked, which was about committees: the
+runs were made without `--since/--until`, so the three kensakusystem tenants
+picked up their 本会議 window too — 240 三重, 243 愛媛, 210 兵庫. It is consistent
+with the answer given (collect everything obtainable; a hole costs a re-crawl if
+the assumption about the 地方議会会議録コーパス turns out wrong), and it is recorded
+here because it was not what was authorised.
+
+**和歌山's 252 本会議 window documents followed on 2026-09-07**, on the researcher's
+instruction to make the four consistent. There is no window hole left anywhere.
+和歌山's index carries no dates, so the run had nothing to prune with and simply
+fetched what `--resume` did not already hold: 252 documents, 252 sittings, none
+with zero speeches, and the listing reconciles exactly afterwards.
+
+**What the audit found afterwards, and it was not nothing**
+
+Counting the listing against the corpus, and the speaker list against itself,
+turned up four more — every one of them a bound that was a claim about the data:
+
+- **`R080119_2B10`** — a committee sitting **twice in one day** numbers the second
+  with an infix, and `_SITTING` had never seen it. **52 sittings**, 7 三重 and 45
+  兵庫, one of them an 88-speech 総務地域連携交通常任委員会. Reported, not dropped in
+  silence, which is the only reason it was found — the second time that warning
+  has caught this rule out.
+- **A half-width bracket inside an office.** 兵庫 writes 「○まちづくり部参事(園芸・
+  公園担当)兼公園緑地課長（北村智顕）」. A role class stopping at any opening bracket
+  cut the office at 「参事」 and let the name group swallow the rest — **124
+  speeches whose speaker was an office**, and nothing warns about that. The
+  marker's own brackets are full-width; no marker on any tenant uses the other.
+- **A 24-character cap on an office.** 「○高校教育課学校支援推進官兼義務教育課学校支援
+  推進官（辻　登志雄）」 is 26, so the line matched *nothing* and the speech was
+  swallowed into the speaker before it — 9 in one 文教常任委員会. Those two
+  corrections together are **+55 speeches**, 兵庫 +47 and 三重 +8, with nothing lost.
+- **Two numeric false positives, and the wrong fix for them.** 「○３　閉会中の継続
+  調査事件」 is a numbered heading, and 「（１）（２）（３）とあるんですが」 is a speech
+  whose text opens with a number. Refusing digits in a speaker costs **33 real
+  speeches** — 兵庫 writes 「○（陰山　地域整備第１局長）」 and offices are numbered. The
+  guard that works: not *only* digits, and not *beginning* with one. -1 speech
+  over 10,006 sittings, which is the heading.
+- **和歌山 was missing a whole session**: 9 sittings of 令和8年2月定例会, which the
+  2026-08-27 crawl did not have. Collected with `--start-url` rather than
+  re-running the index, which would have re-fetched 252 window documents to throw
+  them away again.
+
+After all of it: **three tenants reconcile exactly against their listings** (三重
+1,485 / 愛媛 3,123 / 兵庫 5,398, nothing missing), 和歌山's only gap is its 252
+window documents, and the speaker lists carry no numeric or bracket-broken names.
+One 和歌山 sitting stays undated because the site prints 「平成八年七年十日（水曜日）」
+— 月 typed as 年.
+
+**Two more things that would have been invisible**
+
+- On committees a **zero-speech sitting is often correct** — 「質疑　なし」 is a real
+  record of a few hundred characters. That breaks this project's oldest smoke
+  test, so the warning now carries the document size.
+- 和歌山's committees type their own headers, and 「令和８年２月」/「令和8年2月」/
+  「令和８年2月」 are one session written three ways. `session` is therefore not
+  recorded on that side at all.
+
+**Not done, and why**
+
+静岡's 委員会 (`comgiji.nsf`) was opened and not collected: it is the same Domino
+application, paginated 30 rows at a time, and collecting it is the
+thousands-of-documents case `docs/shizuoka.md` already says to write to 議事課
+about first.
+
+**Files**
+
+`scrapers/kensakusystem.py`, `scrapers/generic.py`, `scrapers/base.py`,
+`sites/{ehime,mie,hyogo}.toml`, **`sites/wakayama_committee.toml`** (new),
+`tests/test_kensakusystem.py`, `tests/test_generic_scraper.py`, `CLAUDE.md`,
+`docs/kensakusystem.md`, `docs/wakayama.md`, `docs/shizuoka.md`.
+
+### 日本語
+
+残っていたコード作業は**委員会会議録**で、収集可能な4県すべてで未着手だった。結果は
+4つの発見になり、うち3つは同じことを言っている — **期待した形を書いた規則が、
+サイトが実際に打った字に当たると黙って落とす**。
+
+**1. `sessions = '定例会|臨時会'` が会議を1件落としていた。** 兵庫のツリーには
+「昭和61年 第198回定 」がある。「第198回定例会」が入力途中で切れたラベルで、
+ノードは一度も開かれず、**1986-06-05の会議がコーパスに無かった**。ログには何も
+残っていない。3県とも `sessions = '.'` にし、年ノード自身は正規表現ではなく
+スクレイパー側で除く。**開かれないノードは警告を出せない。**
+
+**2. 委員会の標識は本会議規則が見たことのない3形。** どれも**発言0件**になった。
+
+```
+兵庫 委員会  「○委員長（門間雄司）」   本文は*次の行*から始まる
+兵庫 委員会  「○（庄本えつこ委員）」   同じ。役職は括弧の中
+三重 委員会  「○小島委員長　　…」     括弧が無い
+```
+
+規則を4分岐にし、各分岐を「同形の見出し」から守った — 括弧内の数字が
+「○議事日程（第７号）」を、役職語尾が「○（議事日程）」を、同一行の本文が
+「○議事日程　　」を弾く。正規表現は同名グループを繰り返せないので、分岐が番号を
+振り `split_speeches` が一致した方を読む。
+
+出す前にキャッシュから**収集済み本会議2,294件を全て再パースして差分**を取った:
+三重47,279・愛媛39,624は発言単位で不変、兵庫**+8**（本文が次行から始まる標識で、
+本会議規則が最初から落としていた実在の発言）。**失ったものはゼロ。**
+
+**3. 和歌山の委員会は会議録ではない。** `/gijiroku2/` は別サイトで、記録は要点筆記
+（「●委員長」「Ｑ／Ａ」）。しかも令和8年の予算特別委員会・総括質疑は**逐語**で、
+第3の形「○濱口委員長　山家委員。」— 本会議の形から本会議規則が要求する「君」を
+抜いたもの。予算特別委員会だけ階層が1つ深く、しかも開催した会期でのみそうなる。
+5.5〜6.4KBで発言0件の文書が3件出て（「質疑なし」の日にしては大きすぎる）、その裏に
+実在の記録が9件あった。
+
+**4. 愛媛の `role` は埋められた。** このリポジトリは1週間「分離できない」と書いて
+いた。「○（三宅浩正議長）」は氏名と役職が一続きで切れ目が無い — *標識*については
+その通りだが、*文書*は違う。同じ文書が「　　９番　　三　宅　浩　正」で始まる。
+**名簿が、無いはずの区切りだった。**
+
+失っていたのは空の列ではない。「中畑保一」は議員として51発言、「中畑保一議長」は
+議長として1,772発言 — **別々の話者**。**38人が二重に数えられ**、全員が役職に就いた
+人だった。キャッシュから再パース: 発言数39,624で不変、話者**717→455**、
+**35,518発言が role を持つ**ように。残り54発言は、その会議の名簿に載っていない人。
+
+**収集**
+
+```
+和歌山 委員会   163会議   7,814発言   1,294,507字   2023-05-19 .. 2026-06-23
+三重   委員会   351会議  33,640発言   7,432,344字   2023-01-18 .. 2026-05-22
+愛媛   委員会   収集中
+兵庫   委員会   その後（同一ホストなので直列）
+```
+
+委員会の収録は本会議より浅い。和歌山・三重は2023年から、愛媛は平成19年、兵庫は
+常任委員会が平成17年・予算/決算特別委員会が昭和61年。**コーパス窓も収集する** —
+地方議会会議録コーパスに委員会が含まれるかは未確認で、それを訊く文面がまさに
+未送だから。
+
+**他に、見えなかったはずのもの**
+
+- 委員会では**発言0件が正常なことが多い**（「質疑　なし」は数百字の実在の記録）。
+  このプロジェクト最古のスモークテストが効かなくなるので、警告に文書サイズを付けた。
+- 和歌山の委員会は各委員会が見出しを自分で打つので、「令和８年２月」「令和8年2月」
+  「令和８年2月」が同一会期の3表記になる。よってこちら側では `session` を記録しない。
+
+**やらなかったこと**
+
+静岡の委員会（`comgiji.nsf`）は開いたが収集していない。同じDominoアプリで30行ずつ
+のページ送りであり、収集は `docs/shizuoka.md` が「先に議事課へ一報を」と書いている
+数千文書の case そのものだから。
+
 ## 2026-08-28 — 愛媛's archive, and a rule that had to be widened twice (`feat/ehime-archive`)
 
 *English and Japanese. / 英語と日本語で併記する。*

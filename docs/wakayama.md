@@ -1,4 +1,4 @@
-# 和歌山県議会 — 本会議会議録
+# 和歌山県議会 — 本会議会議録と委員会会議記録
 
 Verified 2026-08-27. **Collectable, and the best target in the survey.**
 
@@ -172,3 +172,97 @@ The archive changes numeral form partway through — 「令和６年６月19日�
 recent years, 「平成十二年十二月八日（金曜日）」 before that. `dates.py` gained a
 漢数字 reader for this (`kanji_to_int`), which also covers 「昭和六十一年」 and so will
 be needed again for 兵庫.
+
+
+## 委員会 — a second site, not a second index (2026-09-04)
+
+`/gijiroku2/test.html`, `sites/wakayama_committee.toml`. Same CMS, same
+politeness answer, and almost nothing else in common with the 本会議 side.
+
+**Collected: 163 sittings, 7,814 speeches, 1,294,507 chars, 2023-05-19 ..
+2026-06-23**, into the same `data/和歌山県.jsonl` where `committee` separates them.
+No undated record, no sitting with zero speeches, 471 distinct speakers.
+
+**Coverage stops at 令和5年 (2023).** The 本会議 archive reaches 平成2年; the
+committee index simply does not go back, so nothing here falls inside the corpus
+window and the hole 和歌山's 本会議 carries does not apply to it.
+
+### The record is not a transcript, and by 令和8年 it is
+
+Three marker forms inside four years, and a rule for any one takes **zero
+speeches** from the others:
+
+```
+●玄素委員長            要点筆記: the chair, then 「◎…」 lines summarising what they did
+Ｑ　谷口委員           a question, 要点筆記 again
+○濱口委員長　山家委員。 予算特別委員会 総括質疑, 令和8年: a verbatim transcript
+```
+
+令和7年's 総括質疑 is still 要点筆記 and 令和8年's is not. The site changed
+generation inside the range this config covers.
+
+### 予算特別委員会 is a level deeper, in some sessions only
+
+In a 2月定例会 its page is an index of 「総括質疑1日目」「総括質疑2日目」「採決」; in a
+5月臨時会 the same label leads straight to a three-minute record of electing a
+chair. `max_depth = 3` follows both.
+
+Found the way these are always found: three documents parsed to zero speeches at
+5.5–6.4 KB — too large to be a 「質疑なし」 day. Nine real records were behind them.
+The three index pages are named in `exclude` because nothing in the label or the
+URL tells an index from a transcript; a fourth will announce itself the same way.
+
+### Three things that split one person in two
+
+- **「（年長委員）」 and 「（委員外議員）」** are role notes, not names.
+  「山田委員（年長委員）」 had 5 speeches against 「山田委員」's 88. Only those two are
+  stripped: cutting at any bracket would merge 「鈴木(德)委員」 — which exists to tell
+  two members of one surname apart — into a 「鈴木」 that is neither of them.
+- **「●北廣知事室長説明」** is the same person as 「Ａ　北廣知事室長」. The 説明 comes off.
+- **`session` is not recorded at all.** Each committee types its own header and
+  the digit width varies by document: the three sittings of 令和8年2月 write it
+  「令和８年２月」, 「令和8年2月」 and 「令和８年2月」. `date` and `committee` identify a
+  sitting; `title` keeps the wording verbatim. The 本会議 side does not have this
+  (131 sessions, each written one way, over all 907 records).
+
+### And one date that was not a date
+
+「令和８年６月23 日（火）」 — a space between the 23 and the 日, in one record of 163.
+The pattern now allows whitespace before every unit, not only between them.
+
+
+## A whole session that the last crawl did not have (2026-09-04)
+
+Counting the index against the corpus after the committee run turned up **9
+sittings of 令和8年2月定例会** (`d00222247`..`d00222255`, 2026-02-27 .. 2026-03-17)
+that the 2026-08-27 crawl had not collected. Collected with `--start-url` on the
+session page rather than re-running the whole index, which would have re-fetched
+the 252 documents of the corpus window to discard them again.
+
+This is the third time on this site that counting per item — not per total — has
+found something. It costs nothing, because every index page is cached.
+
+
+## One sitting the site itself dates wrongly
+
+`p042602.html`, 平成８年６月定例会第６号, prints its own date as
+**「平成八年七年十日（水曜日）」** — 月 typed as 年. `dates.py` refuses it, correctly,
+and the record is the one undated sitting in 1,079. The title says 平成８年６月 and
+the day is 七月十日 (1996-07-10); nothing in the parser should be taught to guess
+that.
+
+
+## The corpus window, filled (2026-09-07)
+
+The 2011-04 .. 2019-03 hole this site was deliberately scoped around is closed:
+**252 sittings**, collected on the instruction to make the four prefectures
+consistent after 三重・愛媛・兵庫 picked theirs up.
+
+Nothing had to be narrowed for it. This index carries no dates, so `--since` and
+`--until` could only have discarded documents after fetching them; a plain run
+with `--resume` fetched exactly what the corpus did not hold. 252 documents, 252
+sittings, none parsing to zero speeches, and the listing reconciles item for item
+afterwards — 1,168 本会議 sittings against 1,168 listed.
+
+**和歌山 総計: 1,331 sittings, 75,170 speeches**, 946 speakers, one undated
+sitting (the site's own 「平成八年七年十日」).

@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import tomllib
+import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -225,7 +226,7 @@ class GenericScraper(BaseScraper):
                 if depth < sel.max_depth:
                     for child in self._index_links(soup, page.url, visited):
                         pending.append((child, depth + 1))
-                url = self._next_page(soup, page.url)
+                url = self._next_page(soup, page.url, visited)
 
     def _index_links(self, soup: BeautifulSoup, base_url: str, visited: set[str]) -> list[str]:
         """Links on this page that lead to another listing page."""
@@ -278,12 +279,27 @@ class GenericScraper(BaseScraper):
                     title=label or None,
                 )
 
-    def _next_page(self, soup: BeautifulSoup, base_url: str) -> str | None:
-        if not self.config.list.next_page:
+    def _next_page(self, soup: BeautifulSoup, base_url: str, visited: set[str]) -> str | None:
+        """The next listing page: the first candidate this walk has not seen.
+
+        Not simply the first candidate. 静岡's Domino view puts *three* row
+        positions in its navigation — the page before, the current one, and the
+        page after — in document order and with nothing to tell them apart. Taking
+        the first walked one page and stopped, which is indistinguishable from
+        reaching the end: it cost the archive everything before 令和2年9月.
+        """
+        sel = self.config.list
+        if not sel.next_page:
             return None
-        link = soup.select_one(self.config.list.next_page)
-        href = link.get("href") if link else None
-        return urljoin(base_url, href) if isinstance(href, str) else None
+        for link in soup.select(sel.next_page):
+            href = link.get("href")
+            if not isinstance(href, str):
+                continue
+            url = urljoin(base_url, href)
+            if url in visited:
+                continue
+            return url
+        return None
 
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         sel = self.config.detail
@@ -323,7 +339,7 @@ class GenericScraper(BaseScraper):
 
         speeches = []
         for i, block in enumerate(root.select(sel.speech)):
-            speaker = _select_text(block, sel.speaker)
+            speaker = _clean_speaker(_select_text(block, sel.speaker))
             role = _select_text(block, sel.role)
             text = _select_text(block, sel.text) if sel.text else _text(block)
             if not text:
@@ -338,6 +354,13 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
     Everything from one marker to the next is that speaker's text. Anything
     before the first marker is procedural chrome (a heading, a table of
     contents) and is dropped.
+
+    A marker may have more than one shape on the same site — 兵庫 writes
+    「○委員長（門間雄司）　…」 in 本会議 and leaves the same marker alone on its line
+    in 委員会, and 三重 drops the brackets entirely there — so a rule needs
+    alternatives, and a regex cannot use the name `speaker` twice. Any group
+    named `speaker2`, `role3`, … therefore counts as that field; the first one
+    that matched wins, in the order the branches are written.
     """
     regex = re.compile(pattern)
     marks = list(regex.finditer(text))
@@ -351,12 +374,132 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
         speeches.append(
             Speech(
                 order=len(speeches),
-                speaker=_clean_speaker(groups.get("speaker", "")),
-                role=(groups.get("role") or "").strip() or None,
+                speaker=_clean_speaker(_branch(groups, "speaker")),
+                role=_branch(groups, "role").strip() or None,
                 text=body,
             )
         )
     return speeches
+
+
+def _branch(groups: dict[str, str | None], field: str) -> str:
+    """The value of `field` from whichever branch of the rule matched."""
+    for name, value in groups.items():
+        if name.startswith(field) and value:
+            return value
+    return ""
+
+
+# 旧字体・異体字 → 常用漢字, for speaker names only.
+#
+# Every one of these 55 characters occurs in a collected name; nothing here is
+# guessed. They matter because **the same person is written both ways**: the
+# minutes change practice mid-career and nothing marks the change.
+#
+#     尾崎太郎   和歌山 2003-2014      尾﨑太郎   和歌山 2015-2025
+#     髙橋交通部参事官 静岡 2019-2020  高橋交通部参事官 静岡 2020
+#     安川　德   兵庫 2013             安川　徳   兵庫 2013   (the same year)
+#     國廣/国廣/国広　土木部次長        兵庫 1986-1989, one office, three spellings
+#
+# Every collision this table creates was checked against prefecture, office and
+# year before it was applied: all of them are one person, and none of them merges
+# two people who served at once. Names with no counterpart form are still
+# converted — 齋藤元彦 becomes 斎藤元彦 — because the point is one spelling per
+# person, not one spelling per document.
+_JOYO = str.maketrans(
+    {
+        "﨑": "崎",
+        "嵜": "崎",
+        "髙": "高",
+        "澤": "沢",
+        "濱": "浜",
+        "濵": "浜",
+        "邉": "辺",
+        "邊": "辺",
+        "齋": "斎",
+        "齊": "斉",
+        "眞": "真",
+        "德": "徳",
+        "廣": "広",
+        "榮": "栄",
+        "藏": "蔵",
+        "龍": "竜",
+        "惠": "恵",
+        "圓": "円",
+        "學": "学",
+        "國": "国",
+        "瀧": "滝",
+        "瀨": "瀬",
+        "栁": "柳",
+        "淺": "浅",
+        "萬": "万",
+        "與": "与",
+        "壽": "寿",
+        "實": "実",
+        "兒": "児",
+        "顯": "顕",
+        "讀": "読",
+        "讓": "譲",
+        "禮": "礼",
+        "曉": "暁",
+        "黑": "黒",
+        "奧": "奥",
+        "臺": "台",
+        "攝": "摂",
+        "擴": "拡",
+        "爲": "為",
+        "隨": "随",
+        "對": "対",
+        "巖": "巌",
+        "桒": "桑",
+        "曾": "曽",
+        "覺": "覚",
+        "條": "条",
+        "團": "団",
+        "氣": "気",
+        "壯": "壮",
+        "釋": "釈",
+        "藪": "薮",
+        "嶌": "島",
+        "嶋": "島",
+        "冨": "富",
+        # cp932 外字: a user-defined character that decoded to a private-use
+        # codepoint instead of a name. U+E002 appears in exactly one name in
+        # 126 million characters — 「奥之山\ue002」, 議長, 2004-2005 — and the
+        # archive holds one 奥之山 議長: 「奥之山　隆」, 666 speeches, 1999-2010.
+        # Same surname, same office, inside the same span, and no second
+        # candidate. **This is a claim about one corpus, not about the
+        # codepoint**: if U+E002 turns up in another surname, re-check it there
+        # rather than trusting this line.
+        "\ue002": "隆",
+    }
+)
+
+
+def normalize_speaker(name: str) -> str:
+    """One spelling per person: 常用漢字, no compatibility codepoints, no spaces.
+
+    Three things split one speaker into several, and none of them warns.
+
+    **Whitespace.** The minutes align names in a column, so the same member is
+    「渡部浩」 in 3,031 speeches and 「渡部　浩」 in 4; 「黒川　治」 in 1,618 and
+    「黒川治」 in 3. 546 groups of names differ by nothing else. Runs of space are
+    therefore removed rather than collapsed — collapsing cannot merge a form that
+    has no space at all, and the separation is column alignment, not part of a name.
+
+    **Codepoint.** 「吉井和視」 is written with 視 U+FA61 until 2022 and 視 U+8996
+    after it; 「奥之山　隆」 uses 隆 U+F9DC. These are CJK compatibility ideographs —
+    the same character at a second codepoint — so NFKC settles them. NFKC also
+    folds the full-width brackets 静岡's committees use to tell two 鈴木 apart,
+    which merges 「鈴木（澄）委員」 with 「鈴木(澄)委員」: the same person, 874 and 26.
+
+    **Kanji form.** See `_JOYO` above.
+
+    What this cannot fix is 外字: 静岡 holds one speaker as 「奥之山　\ue002」, a cp932
+    user-defined character that decoded to a private-use codepoint instead of a
+    name. There is nothing in the codepoint to say what it was; see LOG.md.
+    """
+    return unicodedata.normalize("NFKC", name.translate(_JOYO)).replace(" ", "")
 
 
 def _clean_speaker(name: str) -> str:
@@ -368,5 +511,14 @@ def _clean_speaker(name: str) -> str:
     for the outside witnesses it hears, 「酒井隆明氏」. With a 「君」-only rule those
     were ten names for seven people, and every per-speaker count was wrong for
     exactly the speakers the minutes mark with something other than 「君」.
+
+    **A repeated honorific is stripped only when it repeats itself.** 静岡 types
+    「○十六番（勝俣　昇君君）」 once — a doubled 「君」, and a single strip left
+    「勝俣　昇君」 standing beside the 「勝俣　昇」 of every other sitting: one member,
+    two speakers, no warning. But 三重 writes 「○書記（城島清氏君）」 for every one of
+    that clerk's speeches and 「城島清」 appears nowhere in the corpus — so there the
+    「氏」 is the end of the given name 清氏, not an honorific, and stripping whatever
+    repeats would invent a person. Same shape, opposite readings; the backreference
+    is what tells them apart.
     """
-    return re.sub(r"\s*(?:君|さん|氏)$", "", name.strip())
+    return normalize_speaker(re.sub(r"\s*(君|さん|氏)(?:\s*\1)*$", "", name.strip()))

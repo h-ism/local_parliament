@@ -141,10 +141,20 @@ What it does and does not mean:
   like template accumulation rather than a considered policy, much like 千葉's
   robots.txt gap. That is a guess, though, not a finding.
 
-**Recommendation.** A scoped run is proportionate — 2025 took 119 requests at
-2s apart, and is what a diligent reader could do by hand. Send a short note before
-collecting the full archive, which is 平成11年 to the present and runs to thousands
-of documents. The secretariat is on the page itself:
+**Decided 2026-09-07: the archive is collected without a prior note.** The
+researcher's call, and it is the researcher's to make — the same way
+`PT_RESPECT_ROBOTS` is. The reasoning above is unchanged and stands as the record
+of what was weighed: there is no `robots.txt` and no `Disallow`, the three meta
+tags are indexing directives rather than access rules, and a research corpus is
+neither a public index nor a cached copy. What the note would have added was
+courtesy about *volume*, not permission.
+
+So the politeness that remains is in the crawl itself: 2s per request, everything
+cached so nothing is asked for twice, and `Count=1000` on the listing — a handful
+of large index pages instead of several hundred small ones.
+
+The secretariat is on the page itself, and is still the right address if anything
+about this needs raising later:
 
 > 静岡県議会事務局議事課　〒420-8601 静岡市葵区追手町9-6
 > 電話 054-221-3482 / ファクス 054-221-3179 / gikai_giji@pref.shizuoka.lg.jp
@@ -177,7 +187,19 @@ start URLs is what actually saves the requests.
 
 ## Not done yet
 
-- 委員会会議録 (`comgiji.nsf`) — same host and almost certainly the same shape, but
-  not opened yet. Likely a second `start_urls` entry, or a sibling config.
+- 委員会会議録 (`comgiji.nsf`) — **opened 2026-09-04, not collected.** It is the
+  same Domino application under a different `.nsf`: `WebView1` 開催別, `WebView2`
+  委員会別, `WebView3` 議員別, the same `Expand=N` / `ExpandView` controls, the same
+  three `robots` meta tags, cp932. One document is again one 発言単位 — 【委員会概要】,
+  then 「議案説明及び所管事項等の報告（当局側説明）」, then one per member as
+  「鈴木　澄美（自民改革会議）（質疑・質問）」.
+
+  **What stops it is not the shape, it is the size and the open question.** The
+  view paginates at 30 rows: `?OpenView` returns 30 collapsed nodes and
+  `?OpenView&ExpandView` returns the documents of only that first page (28 of
+  them, 22 KB). Collecting the archive means walking `Start=1,31,61,…`, which is
+  the "thousands of documents" case this document already says to write about
+  first — and that letter is the one waiting on 議事課. Building the config before
+  the answer would be verifying it by doing the thing the answer governs.
 - The exact size of the expanded view, and whether Domino caps it. Unmeasured,
   because measuring it means fetching it.
