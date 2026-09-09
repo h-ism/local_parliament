@@ -105,7 +105,7 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 | **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
 | **静岡** | **14,030 / 62,780** | **18,245 / 156,645** | 本会議 1999-05-19〜, 委員会 2007-05-18〜 |
 
-**43,612 documents, 880,220 speeches, 425,269,704 characters.** Documents/speeches
+**43,612 documents, 880,220 speeches, 424,049,474 characters.** Documents/speeches
 per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,
 so its per-document counts are not comparable with the other four.
 Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka,shizuoka_committee}.toml`.
