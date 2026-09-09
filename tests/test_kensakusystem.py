@@ -372,8 +372,8 @@ def test_printall_is_one_request_and_html() -> None:
     assert len(client.requested) == before + 1
     assert [(s.role, s.speaker) for s in meeting.speeches] == [
         ("議長", "浜田知昭"),
-        (None, "北野　実"),
-        ("知事", "齋藤元彦"),
+        (None, "北野実"),
+        ("知事", "斎藤元彦"),
     ]
     # 「○議事日程（第３号）」 has a marker's shape and is not a speech.
     assert all("議事日程" not in s.speaker for s in meeting.speeches)
@@ -470,7 +470,7 @@ def test_the_marker_rule_takes_every_form_these_sites_write() -> None:
     assert got == [
         ("知事", "一見勝之"),
         (None, "三宅浩正議長"),
-        (None, "北野　実"),
+        (None, "北野実"),
         ("47番", "岡田己宜"),  # 「君」 goes in _clean_speaker
         (None, "毛利修三愛媛県の未来を創る農業・農村振興条例審査特別委員長"),
         (None, "大北秀特命担当部長(会計管理者)"),
@@ -704,7 +704,7 @@ def test_an_office_may_contain_half_width_brackets() -> None:
         ("まちづくり部参事(園芸・公園担当)兼公園緑地課長", "北村智顕"),
         # 24 characters was the old bound: this line matched *nothing*, and the
         # speech was swallowed into the speaker before it.
-        ("高校教育課学校支援推進官兼義務教育課学校支援推進官", "辻　登志雄"),
+        ("高校教育課学校支援推進官兼義務教育課学校支援推進官", "辻登志雄"),
         # And the 愛媛 form still keeps its half-width pair inside the name.
         (None, "大北秀特命担当部長(会計管理者)"),
     ]
@@ -730,5 +730,5 @@ def test_a_number_is_not_a_speaker_but_a_numbered_office_still_is() -> None:
 
     assert [(s.role, s.speaker) for s in split_speeches(text, UNIFIED_SPLIT)] == [
         (None, "伊藤副委員長"),
-        (None, "陰山　地域整備第１局長"),
+        (None, "陰山地域整備第1局長"),
     ]

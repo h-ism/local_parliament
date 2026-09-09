@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import tomllib
+import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -338,7 +339,7 @@ class GenericScraper(BaseScraper):
 
         speeches = []
         for i, block in enumerate(root.select(sel.speech)):
-            speaker = _select_text(block, sel.speaker)
+            speaker = _clean_speaker(_select_text(block, sel.speaker))
             role = _select_text(block, sel.role)
             text = _select_text(block, sel.text) if sel.text else _text(block)
             if not text:
@@ -389,6 +390,118 @@ def _branch(groups: dict[str, str | None], field: str) -> str:
     return ""
 
 
+# 旧字体・異体字 → 常用漢字, for speaker names only.
+#
+# Every one of these 55 characters occurs in a collected name; nothing here is
+# guessed. They matter because **the same person is written both ways**: the
+# minutes change practice mid-career and nothing marks the change.
+#
+#     尾崎太郎   和歌山 2003-2014      尾﨑太郎   和歌山 2015-2025
+#     髙橋交通部参事官 静岡 2019-2020  高橋交通部参事官 静岡 2020
+#     安川　德   兵庫 2013             安川　徳   兵庫 2013   (the same year)
+#     國廣/国廣/国広　土木部次長        兵庫 1986-1989, one office, three spellings
+#
+# Every collision this table creates was checked against prefecture, office and
+# year before it was applied: all of them are one person, and none of them merges
+# two people who served at once. Names with no counterpart form are still
+# converted — 齋藤元彦 becomes 斎藤元彦 — because the point is one spelling per
+# person, not one spelling per document.
+_JOYO = str.maketrans(
+    {
+        "﨑": "崎",
+        "嵜": "崎",
+        "髙": "高",
+        "澤": "沢",
+        "濱": "浜",
+        "濵": "浜",
+        "邉": "辺",
+        "邊": "辺",
+        "齋": "斎",
+        "齊": "斉",
+        "眞": "真",
+        "德": "徳",
+        "廣": "広",
+        "榮": "栄",
+        "藏": "蔵",
+        "龍": "竜",
+        "惠": "恵",
+        "圓": "円",
+        "學": "学",
+        "國": "国",
+        "瀧": "滝",
+        "瀨": "瀬",
+        "栁": "柳",
+        "淺": "浅",
+        "萬": "万",
+        "與": "与",
+        "壽": "寿",
+        "實": "実",
+        "兒": "児",
+        "顯": "顕",
+        "讀": "読",
+        "讓": "譲",
+        "禮": "礼",
+        "曉": "暁",
+        "黑": "黒",
+        "奧": "奥",
+        "臺": "台",
+        "攝": "摂",
+        "擴": "拡",
+        "爲": "為",
+        "隨": "随",
+        "對": "対",
+        "巖": "巌",
+        "桒": "桑",
+        "曾": "曽",
+        "覺": "覚",
+        "條": "条",
+        "團": "団",
+        "氣": "気",
+        "壯": "壮",
+        "釋": "釈",
+        "藪": "薮",
+        "嶌": "島",
+        "嶋": "島",
+        "冨": "富",
+        # cp932 外字: a user-defined character that decoded to a private-use
+        # codepoint instead of a name. U+E002 appears in exactly one name in
+        # 126 million characters — 「奥之山\ue002」, 議長, 2004-2005 — and the
+        # archive holds one 奥之山 議長: 「奥之山　隆」, 666 speeches, 1999-2010.
+        # Same surname, same office, inside the same span, and no second
+        # candidate. **This is a claim about one corpus, not about the
+        # codepoint**: if U+E002 turns up in another surname, re-check it there
+        # rather than trusting this line.
+        "\ue002": "隆",
+    }
+)
+
+
+def normalize_speaker(name: str) -> str:
+    """One spelling per person: 常用漢字, no compatibility codepoints, no spaces.
+
+    Three things split one speaker into several, and none of them warns.
+
+    **Whitespace.** The minutes align names in a column, so the same member is
+    「渡部浩」 in 3,031 speeches and 「渡部　浩」 in 4; 「黒川　治」 in 1,618 and
+    「黒川治」 in 3. 546 groups of names differ by nothing else. Runs of space are
+    therefore removed rather than collapsed — collapsing cannot merge a form that
+    has no space at all, and the separation is column alignment, not part of a name.
+
+    **Codepoint.** 「吉井和視」 is written with 視 U+FA61 until 2022 and 視 U+8996
+    after it; 「奥之山　隆」 uses 隆 U+F9DC. These are CJK compatibility ideographs —
+    the same character at a second codepoint — so NFKC settles them. NFKC also
+    folds the full-width brackets 静岡's committees use to tell two 鈴木 apart,
+    which merges 「鈴木（澄）委員」 with 「鈴木(澄)委員」: the same person, 874 and 26.
+
+    **Kanji form.** See `_JOYO` above.
+
+    What this cannot fix is 外字: 静岡 holds one speaker as 「奥之山　\ue002」, a cp932
+    user-defined character that decoded to a private-use codepoint instead of a
+    name. There is nothing in the codepoint to say what it was; see LOG.md.
+    """
+    return unicodedata.normalize("NFKC", name.translate(_JOYO)).replace(" ", "")
+
+
 def _clean_speaker(name: str) -> str:
     """Drop the honorific the minutes append to a name; keep the name itself.
 
@@ -408,4 +521,4 @@ def _clean_speaker(name: str) -> str:
     repeats would invent a person. Same shape, opposite readings; the backreference
     is what tells them apart.
     """
-    return re.sub(r"\s*(君|さん|氏)(?:\s*\1)*$", "", name.strip())
+    return normalize_speaker(re.sub(r"\s*(君|さん|氏)(?:\s*\1)*$", "", name.strip()))

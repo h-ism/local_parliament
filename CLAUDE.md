@@ -360,13 +360,18 @@ quirks.
   that clerk's speeches. Stripping whatever repeats fixes the first and invents a
   person for the second — 「城島清」 appears nowhere in 三重's 62,940 speeches, so the
   「氏」 there ends the given name 清氏. Strip a repeat only of the *same* honorific.
-- **Names split on whitespace and on 外字, and nothing warns.** 静岡 holds 「伴　卓」,
-  「伴　　卓」 and 「伴卓」 as three speakers, 「植田　徹」 and 「植田 徹」 as two — 20 names
-  over 6,887 speeches — and one speaker is 「奥之山　\ue002」, a cp932 外字 that
-  decoded to a **private-use character** instead of a name. Check for it the way you
-  check honorifics: group speakers by their name with all whitespace removed, and
-  scan for codepoints in U+E000..U+F8FF. Repairing it means changing every name in
-  every corpus, so it is a decision to put to the researcher, not a fix to apply.
+- **Names split on whitespace, on codepoint and on kanji form, and nothing warns.**
+  Fixed on 2026-09-09 in `normalize_speaker`, which every site now runs: names are
+  converted to 常用漢字, NFKC-normalised, and stripped of whitespace. It merged
+  **567 duplicate speakers across the five corpora** — 「渡部浩」 had 3,031 speeches
+  and 「渡部　浩」 4; 「吉井和視」 changed codepoint (視 U+FA61 → U+8996) in 2022;
+  「尾崎太郎」 became 「尾﨑太郎」 in 2015 and 「安川　德」/「安川　徳」 are one person in
+  one year. **Every collision the kanji table creates was checked against
+  prefecture, office and year first**, and all of them were one person — that check
+  is the work, not the table. One 外字 was identified the same way: 「奥之山\ue002」
+  is 議長 in 2004-2005 and the archive holds exactly one 奥之山 議長.
+  **Run the check after every collection**: group speakers by their name with
+  whitespace removed and NFKC applied, and scan for U+E000..U+F8FF.
 - **One corpus file is more than one site, and the tools must know it.**
   `data/静岡県.jsonl` is 14,030 `ggiji.nsf` documents and 18,245 `comgiji.nsf` ones.
   Re-parsing all of them under one config does not fail — the 本会議 rule wants a

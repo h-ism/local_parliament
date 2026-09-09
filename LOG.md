@@ -2,6 +2,147 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-09 — one spelling per person, across all five corpora (`fix/shizuoka-uncircled-marker`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+The previous entry left the name-variance finding as a decision for the
+researcher. The decision came back: **常用漢字 に直しつつ、同一人物と確認されたものは
+統合** — convert to 常用漢字, and merge what is confirmed to be the same person.
+
+`normalize_speaker` now runs on every site: 常用漢字 conversion, NFKC, and
+whitespace removed. Applied to all five corpora.
+
+| | speakers before | after | speeches renamed |
+| --- | --- | --- | --- |
+| 三重 | 1,211 | 1,191 | 5,191 |
+| 兵庫 | 5,529 | 5,180 | 106,639 |
+| 和歌山 | 946 | 933 | 24,014 |
+| 愛媛 | 1,146 | 1,130 | 4,398 |
+| 静岡 | 5,295 | 5,126 | 44,768 |
+
+**567 duplicate speakers merged**, and afterwards not one corpus holds two names
+that differ only by whitespace, codepoint or kanji form.
+
+**The table is evidence, not memory.** All 55 characters in `_JOYO` occur in a
+collected name; none was written down from knowledge of 旧字体. They were found by
+listing every kanji used in a speaker name and by grouping names that differ in
+exactly one character.
+
+**The check is the work, not the table.** A blanket 常用漢字 conversion can merge
+two people who merely share a normalised name, so every collision it creates was
+listed with its prefecture, office and years before anything was applied. All of
+them are one person, several unmistakably so:
+
+```
+髙橋交通部参事官 / 高橋交通部参事官   静岡 2019-2020   one office
+安川　德 / 安川　徳               兵庫 2013 / 2013  the same year
+國廣 / 国廣 / 国広　土木部次長      兵庫 1986-1989   one office, three spellings
+尾﨑太郎 / 尾崎太郎               和歌山 2015-2025 / 2003-2014
+```
+
+Not one pair is two people serving at once. **Had one been, the fix would have
+been wrong and nothing in the corpus would have said so.**
+
+**Three causes, and only one of them is about kanji.** Whitespace is the biggest:
+546 groups differ by nothing else, because the minutes align names in a column —
+「渡部浩」 3,031 speeches against 「渡部　浩」 4. Whitespace is *removed* rather than
+collapsed, because collapsing cannot merge a form that has no space at all. Then
+codepoint: 「吉井和視」 uses 視 U+FA61 until 2022 and U+8996 after, and NFKC settles
+it — the same normalisation merges 「鈴木（澄）委員」 with 「鈴木(澄)委員」, 静岡's
+committee brackets, 874 speeches against 26.
+
+**The 外字 was identified from the record, not the codepoint.** 「奥之山\ue002」 is a
+cp932 user-defined character that decoded to a private-use codepoint. It appears
+in one name in 126 million characters, as 議長, 2004-2005; the archive holds one
+奥之山 議長, 「奥之山　隆」, 666 speeches over 1999-2010. Same surname, same office,
+inside the same span, no second candidate. Mapped, with the reasoning in the code
+and a warning that **this is a claim about one corpus, not about U+E002.**
+
+**Migration, and why it was not a re-parse.** The change is a pure function of the
+stored name, so the corpora were migrated directly instead of re-parsing 43,612
+documents. That equivalence was *checked* rather than assumed: on 12 sampled
+documents, a fresh parse from cache equals the migrated record exactly. The
+`.prenorm` copies are beside each corpus.
+
+**Left alone, deliberately**
+
+- 「大﨏一也」 (兵庫) — 﨏 U+FA0F has no 常用 counterpart.
+- 「奥之山」 as a bare surname (議長, 2005, 1 speech) — the same person, but merging
+  it needs a rule that completes a surname into a full name, and that rule would
+  take other people with it.
+- Names with no counterpart form are still converted: 「齋藤元彦」 → 「斎藤元彦」. The
+  goal is one spelling per person, not one spelling per document. Reversible by
+  removing a character from `_JOYO` and re-running the migration — minutes, no
+  requests.
+
+15 existing tests changed expectation. **Only the expected side was edited**; every
+fixture keeps its original 濱・齋・﨑, or the tests would stop testing anything.
+
+### 日本語
+
+前回の記録では氏名の揺れを「研究者の判断待ち」として残した。判断は
+**「常用漢字に直しつつ、同一人物と確認されたものは統合」**。
+
+`normalize_speaker` を全サイトに適用した（常用漢字変換・NFKC・空白除去）。5コーパス
+すべてに適用済み。
+
+| | 変更前 | 変更後 | 変更発言数 |
+| --- | --- | --- | --- |
+| 三重 | 1,211 | 1,191 | 5,191 |
+| 兵庫 | 5,529 | 5,180 | 106,639 |
+| 和歌山 | 946 | 933 | 24,014 |
+| 愛媛 | 1,146 | 1,130 | 4,398 |
+| 静岡 | 5,295 | 5,126 | 44,768 |
+
+**重複話者567人を統合。**適用後、空白・符号位置・字体のみが違う氏名は全コーパスで0。
+
+**変換表は記憶ではなく実証。**`_JOYO` の55文字はすべて収集済みの氏名に実在する。氏名に
+使われている全漢字の列挙と、1文字だけ違う氏名の突合から導出した。
+
+**表そのものより、検証が本体である。**常用漢字への一律変換は、正規化後に同名となる別人を
+統合しうる。したがって**適用前に、生じる衝突を県・役職・年代とともに全件列挙した**。すべて
+同一人物であり、うち数件は疑いようがない:
+
+```
+髙橋交通部参事官 / 高橋交通部参事官   静岡 2019-2020   同一役職
+安川　德 / 安川　徳               兵庫 2013 / 2013  同一年
+國廣 / 国廣 / 国広　土木部次長      兵庫 1986-1989   同一役職・3表記
+尾﨑太郎 / 尾崎太郎               和歌山 2015-2025 / 2003-2014
+```
+
+同時期に在職する別人の組は1件も無かった。**もし有れば修正は誤りであり、コーパスには
+それを知らせるものが何も無い。**
+
+**原因は3つで、漢字の話は1つだけ。**最大は空白（546群）。議事録が氏名を段組みで整列する
+ためで、「渡部浩」3,031発言に対し「渡部　浩」4発言。空白は*除去*する — 詰めるだけでは
+空白の無い表記と統合できないため。次が符号位置。「吉井和視」は2022年まで視 U+FA61、以降
+U+8996 で、NFKC が解決する。同じ正規化が静岡委員会の「鈴木（澄）委員」と「鈴木(澄)委員」
+（874発言と26発言）も統合する。
+
+**外字は符号位置ではなく記録から同定した。**「奥之山\ue002」は cp932 の外字が私用領域に
+落ちたもの。1億2,657万文字中この1名にのみ出現し、役職は議長・2004-2005年。書庫の奥之山
+議長は「奥之山　隆」（666発言、1999-2010）ただ1人。同姓・同役職・同期間内・他候補なし。
+写像したうえで、**これは1コーパスに対する主張であって U+E002 に対する主張ではない**旨を
+コード内に明記した。
+
+**移行は再解析ではない。**変更は保存済みの氏名だけの関数なので、43,612文書を再解析せず
+コーパスを直接移行した。その等価性は仮定せず**検証した** — 標本12文書で、キャッシュからの
+新規解析と移行後レコードが完全一致。`.prenorm` を各コーパスの隣に残してある。
+
+**意図的に手を付けていないもの**
+
+- 「大﨏一也」（兵庫）— 﨏 U+FA0F に常用漢字の対応字が無い。
+- 「奥之山」（姓のみ、議長、2005年、1発言）— 同一人物だが、統合には姓から氏名を補完する
+  規則が要り、その規則は他人を巻き込む。
+- 対応形が無い氏名も変換する（「齋藤元彦」→「斎藤元彦」）。目的は「文書ごとに1表記」では
+  なく「1人1表記」。`_JOYO` から該当文字を外して移行し直せば戻せる（数分・リクエスト0）。
+
+既存テスト15件の期待値を更新した。**変更したのは期待値のみ**で、入力側の原表記
+（濱・齋・﨑）はすべて残してある。残さなければテストが何も検証しなくなる。
+
 ## 2026-09-09 — 静岡 collected whole, and five rules that were losing it quietly (`fix/shizuoka-uncircled-marker`)
 
 *English and Japanese. / 英語と日本語で併記する。*

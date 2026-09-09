@@ -448,11 +448,11 @@ def test_bare_member_names_are_split_alongside_parenthesised_offices(fake_client
 
     assert [(s.role, s.speaker) for s in meeting.speeches] == [
         ("議長", "鈴木太雄"),
-        (None, "濱口太史"),
+        (None, "浜口太史"),
         ("知事", "岸本周平"),
         # 〇 (U+3007) also marks speeches — 令和6年6月第1号 uses it throughout —
         # while 「二〇〇三年度」 in the body must not become a fourth speaker.
-        ("教育長", "宮﨑　泉"),
+        ("教育長", "宮崎泉"),
     ]
     assert meeting.date == date(2026, 2, 10)  # 令和八年二月十日, in 漢数字
     assert meeting.title == "令和8年2月　和歌山県議会定例会会議録　第1号（全文）"
@@ -516,7 +516,7 @@ def test_speaker_is_matched_lazily_not_greedily() -> None:
     """Greedy matching ran past the real name to a 「君」 inside the speech:
     「○林　隆一君　知事、大変失礼いたしました。林君」 became one 21-char speaker."""
     got = _split("○林　隆一君　知事、大変失礼いたしました。林君は続けます。\n")
-    assert got == [(None, "林　隆一")]
+    assert got == [(None, "林隆一")]
 
 
 def test_a_numeral_circle_is_not_a_speech_marker() -> None:
@@ -525,21 +525,21 @@ def test_a_numeral_circle_is_not_a_speech_marker() -> None:
     assert _split("例えば二〇年後、三〇年後、君が四〇歳を過ぎたとき。\n") == []
     assert _split("子供一一〇番の家であるきしゅう君の家を設置し、\n") == []
     # …while the numeral rule must not reject 〇 used as a real marker.
-    assert _split("〇議長（濱口太史君）　御異議なしと認めます。\n") == [("議長", "濱口太史")]
+    assert _split("〇議長（濱口太史君）　御異議なしと認めます。\n") == [("議長", "浜口太史")]
 
 
 def test_a_speech_may_begin_mid_line() -> None:
     """Anchoring the marker to a line start would have killed the false positives
     above, but it loses 7 real speeches like this one."""
     text = "〔「異議なし」と呼ぶ者あり〕 ○議長（濱口太史君）　御異議なしと認めます。\n"
-    assert _split(text) == [("議長", "濱口太史")]
+    assert _split(text) == [("議長", "浜口太史")]
 
 
 def test_a_marker_need_not_be_followed_by_a_space() -> None:
     """Requiring whitespace after the marker loses 15 real speeches: the 「（続）」
     continuation form, and older sittings that run straight on."""
-    assert _split("○浜本　収君（続）　わかっております。\n") == [(None, "浜本　収")]
-    assert _split("○議長（橋本　進君）保健環境部長鈴木英明君。\n") == [("議長", "橋本　進")]
+    assert _split("○浜本　収君（続）　わかっております。\n") == [(None, "浜本収")]
+    assert _split("○議長（橋本　進君）保健環境部長鈴木英明君。\n") == [("議長", "橋本進")]
 
 
 def test_both_honorifics_are_stripped_from_a_speaker() -> None:
@@ -552,7 +552,7 @@ def test_both_honorifics_are_stripped_from_a_speaker() -> None:
     """
     from prefectural_transcripts.scrapers.generic import _clean_speaker
 
-    assert _clean_speaker("濱口太史君") == "濱口太史"
+    assert _clean_speaker("濱口太史君") == "浜口太史"
     assert _clean_speaker("太田栄子さん") == "太田栄子"
     assert _clean_speaker("太田栄子") == "太田栄子"
     # 兵庫 hears outside witnesses as 「酒井隆明氏」 and members of the same name
@@ -599,10 +599,10 @@ def test_the_committee_record_has_three_marker_forms() -> None:
     assert _committee_split(text) == [
         (None, "玄素委員長"),
         (None, ""),  # the record names no one on this line
-        (None, "北廣知事室長"),  # 説明 comes off: 「Ａ　北廣知事室長」 is the same person
+        (None, "北広知事室長"),  # 説明 comes off: 「Ａ　北廣知事室長」 is the same person
         ("Ｑ", "谷口委員"),
         ("Ａ", "平田人事委員会委員長"),
-        (None, "濱口委員長"),
+        (None, "浜口委員長"),
         (None, "山家委員"),
     ]
 
@@ -627,8 +627,8 @@ def test_a_role_note_is_not_part_of_a_committee_name() -> None:
     assert _committee_split(text) == [
         (None, "山田委員"),
         ("Ｑ", "奥村議員"),
-        ("Ａ", "末松県立医科大学事務局次長（病院担当）"),
-        (None, "鈴木(德)委員"),
+        ("Ａ", "末松県立医科大学事務局次長(病院担当)"),
+        (None, "鈴木(徳)委員"),
     ]
 
 
@@ -778,7 +778,7 @@ def test_clean_speaker_strips_a_doubled_honorific_but_not_a_name_ending_in_one()
     """
     from prefectural_transcripts.scrapers.generic import _clean_speaker
 
-    assert _clean_speaker("勝俣　昇君君") == "勝俣　昇"
+    assert _clean_speaker("勝俣　昇君君") == "勝俣昇"
     assert _clean_speaker("城島清氏君") == "城島清氏"
     assert _clean_speaker("鈴木康友君") == "鈴木康友"
     assert _clean_speaker("太田栄子さん") == "太田栄子"
@@ -828,8 +828,10 @@ def test_shizuoka_committee_cap_and_tab() -> None:
         "○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事（災害医療担当）"
     )
     assert len(long_office) - 1 == 41
+    from prefectural_transcripts.scrapers.generic import normalize_speaker
+
     assert [s.speaker for s in split_speeches(f"{long_office}\n答弁します。", pattern)] == [
-        long_office[1:]
+        normalize_speaker(long_office[1:])
     ]
 
     assert [s.speaker for s in split_speeches("○\t田中医療政策課長\n答弁します。", pattern)] == [
@@ -863,11 +865,11 @@ def test_shizuoka_marker_split_across_lines_and_its_other_shapes() -> None:
 
     # 氏 and さん, for the outside petitioners this assembly hears.
     petitioner = split_speeches("○条例制定請求代表者（鈴木　望氏）　磐田市の鈴木望です。", pattern)
-    assert [s.speaker for s in petitioner] == ["鈴木　望"]
+    assert [s.speaker for s in petitioner] == ["鈴木望"]
 
     # 「登壇」 printed inside the brackets, after the honorific.
     entering = split_speeches("○静岡県理事（池谷　廣君登壇）　お答えいたします。", pattern)
-    assert [s.speaker for s in entering] == ["池谷　廣"]
+    assert [s.speaker for s in entering] == ["池谷広"]
 
     # A bare name with no brackets — 和歌山's shape, which 静岡 uses for greetings.
     bare = split_speeches("○増井浩二君　一言御挨拶を申し上げます。", pattern)
@@ -877,3 +879,50 @@ def test_shizuoka_marker_split_across_lines_and_its_other_shapes() -> None:
     # as the numeral zero is not a speaker.
     assert split_speeches("○出　席　議　員（六十七名）\n一番　山田太郎", pattern) == []
     assert split_speeches("〇七年版ですが、 政府が発行している白書を読みました。", pattern) == []
+
+
+def test_normalize_speaker_gives_one_spelling_per_person() -> None:
+    """Three things split one speaker into several, and none of them warns.
+
+    Whitespace: 「渡部浩」 has 3,031 speeches and 「渡部　浩」 has 4 — 546 groups of
+    names differ by nothing else. Codepoint: 「吉井和視」 uses 視 U+FA61 until 2022
+    and U+8996 after. Kanji form: 「髙橋交通部参事官」 and 「高橋交通部参事官」 are one
+    office in one year, and 「安川　德」/「安川　徳」 are one person in 2013.
+    """
+    from prefectural_transcripts.scrapers.generic import normalize_speaker
+
+    assert normalize_speaker("渡部　浩") == normalize_speaker("渡部浩") == "渡部浩"
+    assert normalize_speaker("吉井和視視"[:3] + "視") == "吉井和視"
+    assert normalize_speaker("奥之山　隆") == "奥之山隆"
+    assert normalize_speaker("髙橋交通部参事官") == "高橋交通部参事官"
+    assert normalize_speaker("安川　德") == normalize_speaker("安川　徳") == "安川徳"
+    assert normalize_speaker("尾﨑太郎") == normalize_speaker("尾崎太郎") == "尾崎太郎"
+    assert normalize_speaker("國廣　土木部次長") == "国広土木部次長"
+
+    # 静岡's committees tell two 鈴木 apart with brackets; the widths must agree.
+    assert normalize_speaker("鈴木（澄）委員") == normalize_speaker("鈴木(澄)委員")
+
+    # A name with no counterpart form is still converted: one spelling per person,
+    # not one spelling per document.
+    assert normalize_speaker("齋藤元彦") == "斎藤元彦"
+
+    # The honorific strip still runs first, and its result is normalized too.
+    from prefectural_transcripts.scrapers.generic import _clean_speaker
+
+    assert _clean_speaker("濱口太史君") == "浜口太史"
+    assert _clean_speaker("勝俣　昇君君") == "勝俣昇"
+
+
+def test_the_one_gaiji_that_could_be_identified() -> None:
+    """静岡 holds one speaker whose name contains a cp932 外字.
+
+    It decoded to U+E002, a private-use codepoint, and appears in exactly one
+    name in 126 million characters: 「奥之山」, 議長, 2004-2005. The archive
+    holds one 奥之山 議長 — 「奥之山　隆」, 666 speeches over 1999-2010 — so the
+    character stands where 隆 stands. Identified from role, era and uniqueness,
+    not from the codepoint, which says nothing.
+    """
+    from prefectural_transcripts.scrapers.generic import normalize_speaker
+
+    assert normalize_speaker("奥之山") == "奥之山隆"
+    assert normalize_speaker("奥之山　隆") == "奥之山隆"
