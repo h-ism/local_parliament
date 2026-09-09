@@ -2,6 +2,186 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-09 — 静岡 collected whole, and five rules that were losing it quietly (`fix/shizuoka-uncircled-marker`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**静岡 is collected.** Both archives, end to end, reconciled item by item.
+
+| | documents | speeches | characters | range | undated |
+| --- | --- | --- | --- | --- | --- |
+| 本会議 | 14,030 | 62,780 | 46,372,977 | 1999-05-19 .. 2026-06-17 | 0 |
+| 委員会 | 18,245 | 156,645 | 80,196,927 | 2007-05-18 .. 2026-03-06 | 0 |
+| **total** | **32,275** | **219,425** | **126,569,904** | | **0** |
+
+`audit.py` reports **0 listed but not collected** on both sites. The committee
+side came in at 18,245 documents against the 10,762 the survey estimated.
+
+**Every fix below cost zero requests.** Each was found in the corpus or the cache
+and applied by re-parsing, which is what the cache is for. The crawl itself ran
+once, 2s per request, ~18 hours.
+
+**Five rules, and four of them failed silently.**
+
+1. **The marker sometimes has no circle.** 「健康福祉部長（八木敏裕君）　…」 is the
+   whole of a 答弁文書; that one warned, because the document parsed to zero.
+   「議長（中沢公彦君）　…」 sits inside a sitting that parsed three other speeches
+   perfectly well, and **nothing warned at all**. A second, line-anchored branch
+   takes them; without the circle there is no other anchor, and question text says
+   「知事（鈴木康友君）に伺います」 mid-sentence.
+
+2. **The circle is not always ○.** 静岡 writes 〇 (U+3007) for a whole class of
+   答弁文書 and for committee speeches in the same sitting as the other form. This
+   is the 和歌山 lesson arriving unchanged — and on the committee side a missed
+   marker does not empty a document, it hands the speech to whoever spoke before.
+
+3. **The committee cap was two offices short.** 156,651 「○」 lines over 18,245
+   documents; 34 did not match. 「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）
+   兼危機管理部理事（災害医療担当）」 is 41 characters against a cap of 30, and eight
+   markers put a **tab** after the circle. 30 speeches, all silent. Cap is now 60
+   against a longest-observed 41, and both numbers are in the config so the next
+   run re-measures rather than trusts.
+
+4. **The marker is not always on one line.** Before about 2004 the Domino markup
+   puts each piece in its own cell: 「○議長」 「(」 「水口俊太郎君」 「)」. 97 markers
+   arrive that way. Whitespace is now allowed around both brackets and nowhere
+   else. Older years also use 「氏」 and 「さん」 (the outside 条例制定請求代表者),
+   「登壇」 inside the brackets, and bare 「○増井浩二君　…」 with no brackets at all.
+
+5. **A fifth date label, and this one is empty.** Four 委員会補足文書 print
+   「発言日：」 with nothing after it and date themselves in the body instead:
+   「１　日時　令和３年８月10日（火）」, 和暦 where everything else is Domino's
+   month-first form.
+
+Totals recovered by re-parsing from cache: **+781, then +28, then +124.** No
+record lost a speech at any step; that was checked per document each time.
+
+**The technique worth keeping: a swallowed marker is still in the corpus.** When a
+marker fails to match, the speech is not dropped — it is appended to the previous
+speaker's text, marker and all. So `grep`ping speech text for a line beginning
+with a circle finds every miss, with no cache reads and no requests. That is how
+findings 3 and 4 were located, and it is faster than the cache scan that found 3.
+
+**Guards that had to survive, and did.** 「○出　席　議　員（六十七名）」 is a roster
+with a marker's exact shape, and 「〇七年版ですが、…」 opens a line with 〇 as the
+*numeral zero* — eight such lines in this archive. The honorific requirement
+rejects both, which is why loosening it was done branch by branch with the roster
+and the numeral in the test.
+
+**`reparse.py` would have destroyed the corpus, and the instruction to run it was
+in this file.** The previous entry told this run to type
+`reparse.py shizuoka data/静岡県.jsonl`. That script parsed every record with the
+one named site — true when a corpus was one site, false now: 18,245 of these
+records are committee documents, and the 本会議 rule requires a 「君」 no committee
+marker carries. It would not have failed. It would have rewritten 18,245 documents
+to zero speeches, printed the loss as an ordinary diff, and left the `.bak` as the
+only copy. Records are now routed by URL, and an unclaimed record stops the run
+before the backup is taken.
+
+**Known and left alone, deliberately**
+
+- **11 markers whose *name* is split across lines** — 「(望月\n暹\n君)」. Matching
+  them would put a newline inside a speaker and invent a second 望月　暹.
+- **~8 markers with no honorific at all** — 「○総務部長 (石川総務部長)」,
+  「○議長 (水口俊太郎)」 on one line. The honorific is what separates a marker from
+  the roster; dropping it for a single-line shape is not worth 8 speeches.
+- **20 names that differ only by whitespace, covering 6,887 speeches** —
+  「伴　卓」「伴　　卓」「伴卓」, 「植田　徹」「植田 徹」, 「森　竹治郎」「森竹治郎」「森  竹治郎」.
+  One of them, 「奥之山　\ue002」 (4 speeches), carries a **private-use character**:
+  cp932 外字 that decoded to U+E002 rather than to a name. This is the split
+  already fixed for 「さん」 and 「氏」, arriving through whitespace and 外字 instead —
+  but the repair lives in `_clean_speaker`, which every prefecture shares, so it
+  would rewrite names across all 662,190 speeches (「河原﨑　全」 → 「河原﨑全」).
+  **That is a decision about the corpus, not a bug fix, and it is the researcher's
+  to make.** Not touched.
+
+**My own failure, again, and it is the one this file already warned about.** The
+committee length-check was queued behind
+`while pgrep -f "check_cap.py"; do sleep; done`, and **that command's own line
+contained `check_cap.py`**, so the wait matched itself. The analysis had finished;
+I reported it as still running until the user asked. Same trap as the previous
+entry, read and repeated. A wait must never be written so that its own command
+line can satisfy it — match on a pid, as the later steps here do
+(`until ! kill -0 <pid>`).
+
+### 日本語
+
+**静岡は取り切った。** 両書庫とも端から端まで、一覧と1件ずつ突合済み。
+
+| | 文書 | 発言 | 文字 | 期間 | 日付なし |
+| --- | --- | --- | --- | --- | --- |
+| 本会議 | 14,030 | 62,780 | 46,372,977 | 1999-05-19 .. 2026-06-17 | 0 |
+| 委員会 | 18,245 | 156,645 | 80,196,927 | 2007-05-18 .. 2026-03-06 | 0 |
+| **計** | **32,275** | **219,425** | **126,569,904** | | **0** |
+
+`audit.py` は両設定とも「一覧にあって未収集」**0件**。委員会は下見の見積り10,762に対し
+18,245文書だった。
+
+**以下の修正はすべてリクエスト0件。** コーパスかキャッシュから見つけ、再解析で適用した。
+クロール自体は1回、2秒間隔で約18時間。
+
+**規則が5つ壊れており、うち4つは無言で壊れていた。**
+
+1. **「○」が無い marker がある。** 「健康福祉部長（八木敏裕君）　…」は答弁文書の全体で、
+   これは発言0件として警告が出た。「議長（中沢公彦君）　…」は他に3発言が正常に取れている
+   議事の中にあり、**何の警告も出なかった**。行頭固定の第2分岐で拾う。○が無いと他に手掛
+   かりが無く、質問文には「知事（鈴木康友君）に伺います」が文中に出るためである。
+2. **「○」は ○ とは限らない。** 静岡は答弁文書の一群と、委員会発言の一部を 〇 (U+3007) で
+   書く（同じ議事の中に両方ある）。和歌山の教訓がそのまま再来した。しかも委員会側では、
+   取りこぼしても文書は空にならず、**直前の発言者に吸収される**。
+3. **委員会の文字数上限が役職2つ分足りなかった。** 18,245文書に「○」行が156,651行、
+   うち34行が不一致。「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事
+   （災害医療担当）」は41文字（上限30）。さらに8件は ○ の直後がタブ。計30発言、すべて無言。
+   上限は実測最長41に対し60とし、**両方の数字を設定ファイルに書いた**。次回は信じずに測り直す。
+4. **marker が1行に収まらない。** 2004年頃までの markup は各部品を別セルに置くため、
+   「○議長」「(」「水口俊太郎君」「)」の4行になる。97件。括弧の両側にのみ空白を許可した。
+   古い年代は他に「氏」「さん」（外部の条例制定請求代表者）、括弧内の「登壇」、括弧なしの
+   「○増井浩二君　…」も使う。
+5. **5つ目の日付ラベルは空。** 委員会補足文書4件が「発言日：」の後に何も書かず、本文に
+   「１　日時　令和３年８月10日（火）」と和暦で書いていた。他はすべて Domino の月先頭形式。
+
+キャッシュからの再解析で回収した合計は **+781 → +28 → +124**。**どの段階でも発言を失った
+文書は0件**で、毎回文書ごとに確認した。
+
+**残す技法: 吸収された marker はコーパスの中にまだ居る。** 一致しなかった marker は捨て
+られず、marker ごと直前の発言テキストに連結される。したがって**発言テキストから行頭が
+○ の行を grep すれば取りこぼしが全部出る** — キャッシュを読まず、リクエストも0。所見3と4は
+これで見つけた。キャッシュ全走査より速い。
+
+**守るべき防御は守られている。** 「○出　席　議　員（六十七名）」は marker と同形の名簿、
+「〇七年版ですが、…」は行頭の 〇 が**数字のゼロ**（この書庫に8行ある）。敬称必須の条件が
+両方を弾くので、緩めるときは分岐ごとに、名簿と数字をテストに入れて行った。
+
+**`reparse.py` はコーパスを破壊するところだった。しかもその実行を指示していたのはこの
+ファイルである。** 前回の記録は今回の実行に `reparse.py shizuoka data/静岡県.jsonl` と
+打てと書いていた。あの版は全レコードを単一の設定で解析する。1コーパス＝1サイトなら正しい
+が、今は違う。**18,245件は委員会文書で、本会議の規則は委員会 marker に無い「君」を要求する。**
+失敗はしない。18,245文書を発言0件に書き換え、その損失を普通の差分として印字し、`.bak` だけを
+唯一の控えとして残す。URL でサイトに振り分け、どのサイトにも属さないレコードがあれば
+**バックアップを取る前に**停止するようにした。
+
+**承知の上で手を付けていないもの**
+
+- **氏名自体が改行で割れた marker 11件** — 「(望月\n暹\n君)」。拾うと話者名に改行が入り、
+  「望月　暹」がもう1人生まれる。
+- **敬称が全く無い marker 約8件** — 1行の「○総務部長 (石川総務部長)」「○議長 (水口俊太郎)」。
+  敬称こそが名簿と marker を分ける条件で、8発言のために単行形で外す価値は無い。
+- **空白だけが違う氏名20名・6,887発言** — 「伴　卓」「伴　　卓」「伴卓」、「植田　徹」「植田 徹」、
+  「森　竹治郎」「森竹治郎」「森  竹治郎」。うち「奥之山　\ue002」（4発言）は **私用領域文字**で、
+  cp932 の外字が氏名に復号されず U+E002 のまま残ったもの。「さん」「氏」で一度直したのと
+  **同じ分裂**が、空白と外字で起きている。ただし修正箇所は全県が共有する `_clean_speaker` で、
+  662,190発言すべての氏名表記を変える（「河原﨑　全」→「河原﨑全」）。**これはバグ修正では
+  なくコーパスの仕様判断であり、研究者が決めること。**未着手。
+
+**自分の失敗。しかもこのファイルが既に警告していたもの。** 委員会の文字数チェックを
+`while pgrep -f "check_cap.py"; do sleep; done` の後ろに置いたが、**そのコマンド自身の行に
+`check_cap.py` が入っており**、待ちが自分自身に一致し続けた。解析は終わっていたのに、
+利用者に問われるまで「実行中」と報告していた。前回の記録と同じ罠を、読んだ上で繰り返した。
+**待ち合わせは、自分のコマンド行で条件が満たされ得る書き方をしてはならない。**以降の工程で
+使った `until ! kill -0 <pid>` のように pid で待つこと。
+
 ## 2026-09-08 — 静岡 opened, and a wait loop that waited on itself (`feat/committees`)
 
 *English and Japanese. / 英語と日本語で併記する。*

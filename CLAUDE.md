@@ -88,14 +88,14 @@ Modules under `src/prefectural_transcripts/`:
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
 
-## Where this stands (updated 2026-08-28)
+## Where this stands (updated 2026-09-09)
 
 Read `docs/collection-targets.md` first — it is the ranked answer to "where can we
 collect", with the cost of each target. `docs/prefecture-survey.md` still maps all
 47 assemblies but two of its verdicts are now superseded. Per-site detail is in
 `docs/<prefecture>.md`; drafted letters are in `docs/inquiries/`.
 
-**Collectable today** (figures 2026-09-04; `committee` separates the two in each file)
+**Collectable today** (figures 2026-09-09; `committee` separates the two in each file)
 
 | | 本会議 | 委員会 | Range |
 | --- | --- | --- | --- |
@@ -103,18 +103,22 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 | **三重** | 1,059 / 62,940 | 426 / 39,530 | 本会議 1989-02-28〜, 委員会 2023-01-18〜 |
 | **愛媛** | 909 / 53,631 | 2,214 / 154,702 | 本会議 1991-06-27〜, 委員会 2007-05-11〜 |
 | **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
-| **静岡** | 113 / 1,395 | — | 2025 only |
+| **静岡** | **14,030 / 62,780** | **18,245 / 156,645** | 本会議 1999-05-19〜, 委員会 2007-05-18〜 |
 
-**11,450 sittings, 662,190 speeches, 298,365,885 characters.** Sittings/speeches
-per cell. Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka}.toml`.
+**43,612 documents, 880,220 speeches, 425,269,704 characters.** Documents/speeches
+per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,
+so its per-document counts are not comparable with the other four.
+Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka,shizuoka_committee}.toml`.
 
 - The **corpus window (2011-04 .. 2019-03) is collected on all four**, 本会議 and
   委員会 alike — 三重・愛媛・兵庫 on 2026-09-04 and 和歌山's 252 本会議 documents on
   2026-09-07. Whether the 地方議会会議録コーパス includes committee minutes is
   unverified and its letter is still unsent, so routing around the window would
   have assumed an answer nobody has. **There is no window hole left anywhere.**
-- 静岡's full archive and its 委員会 (`comgiji.nsf`, surveyed 2026-09-04, paginated
-  30 rows at a time) both wait on the `meta robots` question; see `docs/shizuoka.md`.
+- **静岡 is complete** (2026-09-09): both archives end to end, `audit.py` reporting
+  0 listed-but-not-collected on each, and 0 undated in 32,275 documents. The
+  `meta robots` question was decided on 2026-09-07 — see `docs/shizuoka.md`.
+  Its committee side is 18,245 documents, not the 10,762 the survey estimated.
 - Each tenant's listing reconciles item by item against its corpus. 和歌山 carries
   one undated sitting because the site prints 「平成八年七年十日（水曜日）」.
 
@@ -327,6 +331,54 @@ quirks.
   兵庫 puts name and office in one pair of brackets and offices are numbered:
   「○（陰山　地域整備第１局長）」. The guard that works is narrower: a speaker may not
   be *only* digits, and may not *begin* with one.
+
+- **A swallowed marker is still in the corpus — grep for it.** When a speech
+  marker fails to match, the speech is not dropped: it is appended to the previous
+  speaker's text, marker and all. So `grep`ping speech text for a line beginning
+  with 「○」 or 「〇」 finds *every* miss, with no cache reads and no requests. On 静岡
+  this found 30 committee speeches lost to a length cap and 124 本会議 speeches lost
+  to markers split across lines — both of them invisible to every other check,
+  because the document still parses and the count still looks plausible. **Run this
+  after every collection.** It is faster and more complete than scanning the cache.
+- **A missed marker warns on 本会議 and is silent on 委員会.** Where one document is
+  one speech (静岡's 答弁文書) a missed marker empties it, and zero speeches warns.
+  Where a document holds many, the speech is handed to whoever spoke before and
+  nothing anywhere says so. **The quieter side is the one to check deliberately.**
+- **The same site writes the same marker more than one way, and the old years are
+  the worst.** 静岡 needed five shapes in one rule: 「○知事（鈴木康友君）」, the same
+  with 〇 (U+3007), the same with no circle at all, 「○増井浩二君　…」 with no
+  brackets, and — before about 2004, where the Domino markup puts every cell on its
+  own line — 「○議長」「(」「水口俊太郎君」「)」 as four separate lines. A rule verified
+  against recent documents says nothing about 1999.
+- **Honorifics are the guard; loosen them one branch at a time.** The 「君」
+  requirement is what separates a marker from the roster 「○出　席　議　員（六十七名）」
+  *and* from 「〇七年版ですが、…」, where 〇 opens a line as the numeral zero. 静岡 also
+  writes 「氏」 and 「さん」 for outside petitioners, so the requirement had to widen —
+  but each widening kept the roster and the numeral in its test.
+- **A doubled honorific may be a typo or may be the name.** 静岡 types
+  「○十六番（勝俣　昇君君）」 once and 三重 writes 「○書記（城島清氏君）」 for all 20 of
+  that clerk's speeches. Stripping whatever repeats fixes the first and invents a
+  person for the second — 「城島清」 appears nowhere in 三重's 62,940 speeches, so the
+  「氏」 there ends the given name 清氏. Strip a repeat only of the *same* honorific.
+- **Names split on whitespace and on 外字, and nothing warns.** 静岡 holds 「伴　卓」,
+  「伴　　卓」 and 「伴卓」 as three speakers, 「植田　徹」 and 「植田 徹」 as two — 20 names
+  over 6,887 speeches — and one speaker is 「奥之山　\ue002」, a cp932 外字 that
+  decoded to a **private-use character** instead of a name. Check for it the way you
+  check honorifics: group speakers by their name with all whitespace removed, and
+  scan for codepoints in U+E000..U+F8FF. Repairing it means changing every name in
+  every corpus, so it is a decision to put to the researcher, not a fix to apply.
+- **One corpus file is more than one site, and the tools must know it.**
+  `data/静岡県.jsonl` is 14,030 `ggiji.nsf` documents and 18,245 `comgiji.nsf` ones.
+  Re-parsing all of them under one config does not fail — the 本会議 rule wants a
+  「君」 no committee marker carries, so it would rewrite 18,245 documents to zero
+  speeches and print the loss as an ordinary diff. `reparse.py` now takes
+  `<site>,<site>` and routes by URL. **Anything that rewrites a corpus in place must
+  say which site each record belongs to.**
+- **Never write a wait whose own command line can satisfy it.**
+  `while pgrep -f "check_cap.py"` matches the shell running it. This has now cost
+  this project twice — 27 hours on one branch, and a completed analysis reported as
+  still running on the next. Wait on a pid (`until ! kill -0 <pid>`) or on a
+  sentinel the job itself writes.
 
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing. But it decides it only for
