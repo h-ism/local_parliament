@@ -111,7 +111,23 @@ container = "div#notes"
 # sitting as the other form. The 本会議 side does this too. A missed marker here is
 # not an empty document but a *silent* one: the speech is swallowed into whoever
 # spoke before it. 6 speeches in the first 66 documents, 0 lost, checked from cache.
-speech_split = '(?m)^[○〇](?P<speaker>[^\s][^\n]{0,29})$'
+#
+# **The 30-character cap was two offices short, and a tab broke another eight.**
+# Counted over all 18,245 documents: 156,651 「○」 lines, of which 34 did not match.
+# 「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事（災害医療担当）」
+# is 41 characters and a real speaker; 「○\t田中医療政策課長」 puts a tab after the
+# circle. Both were swallowed into whoever spoke before them — 30 speeches, and on
+# this side nothing warns, because the document still parses.
+#
+# The cap is 60 against a longest-observed 41. It stays finite because an
+# unbounded rule would take a whole line of prose if one ever began with a circle,
+# and it is written down here so the next run can re-measure it rather than trust
+# it. The horizontal whitespace allowed after the circle is tab and ASCII space
+# only: 「○　第１日目（３月５日）」 separates a 【委員会概要】 day heading from a marker
+# with a **full-width** space, and that guard has to survive.
+#
+# The three bare 「○」 lines in the archive are not speakers and still match nothing.
+speech_split = '(?m)^[○〇][\t ]*(?P<speaker>[^\s][^\n]{0,59})$'
 
 [detail.patterns]
 # Domino writes dates month-first; `dates.py` handles that form explicitly.

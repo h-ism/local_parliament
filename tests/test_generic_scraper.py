@@ -807,3 +807,38 @@ def test_shizuoka_committee_takes_both_circles() -> None:
     # 【委員会概要】's day headings are excluded at the listing, not guarded here —
     # 「○　第１日目（３月５日）」 has a space after the circle, so it cannot match.
     assert split_speeches("○　第１日目（３月５日）\n本文", pattern) == []
+
+
+def test_shizuoka_committee_cap_and_tab() -> None:
+    """A bound in a rule is a claim about the data, and this one was wrong.
+
+    Over all 18,245 committee documents there are 156,651 「○」 lines; 34 did not
+    match a rule capped at 30 characters with no whitespace allowed after the
+    circle. 「○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事
+    （災害医療担当）」 is 41 characters and a real speaker, and eight more markers
+    put a tab after the circle. Each was handed to the previous speaker silently.
+    """
+    from prefectural_transcripts.scrapers import SITES_DIR
+    from prefectural_transcripts.scrapers.generic import SiteConfig, split_speeches
+
+    pattern = SiteConfig.from_toml(SITES_DIR / "shizuoka_committee.toml").detail.speech_split
+    assert pattern is not None
+
+    long_office = (
+        "○勝岡健康福祉部理事（医療介護連携・感染症対策担当）兼危機管理部理事（災害医療担当）"
+    )
+    assert len(long_office) - 1 == 41
+    assert [s.speaker for s in split_speeches(f"{long_office}\n答弁します。", pattern)] == [
+        long_office[1:]
+    ]
+
+    assert [s.speaker for s in split_speeches("○\t田中医療政策課長\n答弁します。", pattern)] == [
+        "田中医療政策課長"
+    ]
+
+    # A bare circle is not a speaker; three of them sit in the archive.
+    assert split_speeches("○\n本文", pattern) == []
+
+    # The day heading keeps its guard, which is why the full-width space is not
+    # allowed after the circle even though tab and ASCII space are.
+    assert split_speeches("○　第１日目（３月５日）\n本文", pattern) == []
