@@ -29,6 +29,10 @@ uv run pt export data/<pref>.jsonl   # JSONL corpus -> CSV (one row per speech)
 # so both cost zero requests and can be run as often as you like.
 uv run python scripts/reparse.py <site> data/<pref>.jsonl   # re-parse in place, and diff
 uv run python scripts/audit.py <site> data/<pref>.jsonl     # listing vs corpus, per item
+
+# 山梨 only: transcripts downloaded by hand, because the assembly asked. No network.
+uv run pt import manual/<pref> --prefecture <pref> [--dry-run]
+uv run python scripts/audit_manual.py manual/<pref> data/<pref>.jsonl  # 目次 vs corpus
 ```
 
 ## Architecture
@@ -153,6 +157,25 @@ through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it �
 that is the researcher's call, not ours, and it contradicts the politeness
 convention above.
 
+**山梨 is the first to answer, and the answer made a third category (2026-09-17)**
+
+山梨県議会事務局 telephoned: the 会議録検索システム is built for one-at-a-time
+searching, so don't fetch it automatically — use the page's 「ダウンロード」 button
+and work from what it saves. That is not the "no" the `robots.txt` looked like. It
+is two statements, and only the first is a refusal: the *system* is not to be
+crawled, the *transcripts* are ours to use by a route they named. So there is now
+**collected by hand, parsed offline** — `importers/dbsearch.py`, `pt import`, no
+`PoliteClient` anywhere in it. See `docs/yamanashi.md`.
+
+Two things generalise to the other 23. **An operator's answer can change the
+category, not just the verdict** — reading a blanket `Disallow` as "this assembly
+refuses" turned out to be reading a vendor's boilerplate as an intention.
+And **an interface the operator provides is not the route they declined**: if a
+bulk export or an API exists, asking to use it is a different request from the one
+they turned down. The rewritten `docs/inquiries/yamanashi.md` asks exactly that.
+What is *not* allowed is finding an undocumented endpoint and calling it an API —
+that is SSP's `/dnp/search/` again, scraping with extra steps.
+
 **SSP — 18 prefectures, blocked (corrected 2026-08-27)**
 
 This was recorded for two days as "allowed, blocked only by architecture". It is
@@ -260,6 +283,24 @@ quirks.
   第6号 with a truncated label and an href pointing into the previous year, so a
   real sitting is unreachable from the site's own navigation. `list.extra_meeting_urls`
   exists for this; verify the URL against the live page before adding it.
+- **The 「○」 is not always the same character — and there are at least three.**
+  山梨 marks every speech with ◯ **U+25EF (LARGE CIRCLE)**, which is neither
+  和歌山's ○ (U+25CB) nor 静岡's 〇 (U+3007) — and the same 43KB file uses U+3007
+  seven times as the numeral zero. A rule lifted from either prefecture matches
+  **zero** speeches. Three prefectures, three codepoints: check the circle before
+  copying any marker rule, and write it as `\u25ef` rather than pasting a glyph
+  no one can tell apart in a monospace font.
+- **Where the vendor numbers the speeches, take the numbering.** 山梨's downloads
+  carry `1:` … `39:`, and using them instead of the marker moves the failure: a
+  marker that cannot be read costs a *name*, not the words, and an unnamed speaker
+  is countable where a swallowed one is not. Prefer any boundary the source gives
+  over one a regex infers — it is the difference between a number and a surprise.
+- **A hand-collected corpus still needs a listing to be counted against.** 山梨's
+  DB-Search publishes a 目次 beside every 本文 naming each member who spoke, which
+  is the listing side for free and offline (`scripts/audit_manual.py`). It catches
+  what nothing else can on a manual collection: **a file nobody downloaded**, which
+  leaves no trace at all. And confirm such a check fires before believing it — one
+  that matches nothing prints the same "0" as a clean run.
 - **The 「○」 is not always the same character.** 和歌山 marks most sittings with
   ○ (U+25CB) but one with 〇 (U+3007, IDEOGRAPHIC NUMBER ZERO), and 〇 is *also* the
   numeral in 「二〇〇三年度」. Match both circles and require the 「君」 suffix; the

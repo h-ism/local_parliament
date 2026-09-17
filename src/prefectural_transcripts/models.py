@@ -44,11 +44,35 @@ class MeetingRef(BaseModel):
         return str(self.url)
 
 
+def record_key(url: str | None, source_file: str | None) -> str:
+    """The identity of one record, however it was obtained.
+
+    Crawled records are identified by their URL. A record imported from a file
+    the researcher downloaded by hand has no URL we have ever fetched, and
+    composing a plausible-looking one would be inventing it — so the file name
+    is the identity instead, under a `file:` scheme that cannot collide with a
+    real URL. `TranscriptStore.seen_keys` reads records back through this, so
+    resume works the same way for both.
+    """
+    if url:
+        return url
+    if source_file:
+        return f"file:{source_file}"
+    raise ValueError("a record needs either a url or a source_file")
+
+
 class Meeting(BaseModel):
     """A fully fetched sitting with its transcript."""
 
     prefecture: str = Field(description="e.g. '東京都', '大阪府', '北海道'")
-    url: HttpUrl
+    url: HttpUrl | None = Field(
+        default=None,
+        description="Where the sitting was fetched from; None for a manual import",
+    )
+    source_file: str | None = Field(
+        default=None,
+        description="File name a manually downloaded record was imported from",
+    )
     date: dt.date | None = None
     session: str | None = Field(default=None, description="e.g. '令和7年第2回定例会'")
     committee: str | None = Field(
@@ -63,7 +87,7 @@ class Meeting(BaseModel):
 
     @property
     def key(self) -> str:
-        return str(self.url)
+        return record_key(str(self.url) if self.url else None, self.source_file)
 
     def full_text(self) -> str:
         return "\n\n".join(s.text for s in self.speeches)

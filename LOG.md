@@ -2,6 +2,165 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-17 — 山梨, collected by hand because the assembly asked (`feat/yamanashi-manual-import`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**山梨県議会事務局 telephoned on 2026-09-17.** The 会議録検索システム is built for
+one-at-a-time searching, so please do not fetch it automatically — use the page's
+「ダウンロード」 button and work from what it saves.
+
+That is the first answer any assembly has given this project, and it is not the
+"no" the `robots.txt` looked like. It is two statements: the *system* is not to be
+crawled, and the *transcripts* are ours to use by a route they named themselves.
+So 山梨 moves out of the 24 blocked assemblies and into a third category the
+codebase did not have — **collected by hand, parsed offline**.
+
+**New: `importers/`.** An importer takes files a person downloaded and produces
+the same `Meeting` records a scraper would have. Nothing in it touches
+`PoliteClient`. `DbSearchImporter` is written against the vendor's format, not
+山梨's — DB-Search (大和速記情報センター) serves 150-odd assemblies, 青森・島根・福岡
+among them — so the prefecture is an argument.
+
+`pt import manual/山梨県 --prefecture 山梨県`, and `--dry-run` to parse and report
+without writing.
+
+**The format disarms this project's oldest bug.** One file is one 号, and the
+vendor numbers the speeches: `1:` … `39:`, contiguous. Every other site here finds
+its boundaries by matching a marker, which is why a marker that stops matching
+hands one member's words to whoever spoke before them with nothing to show for it.
+Here the split is given and the marker is asked only *who is speaking*, so a
+marker the parser cannot read **costs a name and not the words** — and
+`ImportOutcome.unattributed` counts them. A silent loss became a number.
+
+**Three shapes had to be got right, and two of them are the documented traps.**
+
+- **The circle is ◯ U+25EF** — not 和歌山's ○ (U+25CB), not 静岡's 〇 (U+3007). The
+  same 43KB file uses U+3007 seven times as the numeral zero. A rule lifted from
+  either prefecture matches **zero** speeches here. Third distinct circle, third
+  prefecture.
+- **Two marker forms in one sitting**, as 和歌山 warned: 33 bracketed
+  「◯議長（渡辺淳也君）」, 6 bare 「◯水岸富美男君　…」. One bare name is 「◯飯島　修君」,
+  split by an ideographic space, which `normalize_speaker` closes.
+- **A 罫線 (─ U+2500) ends the speech.** After it the clerk appends the document
+  belonging to that agenda item — 説明員 lists, 付託表, 委員会日程表, 報告書, a
+  box-drawn 議事予定表. 13 of 39 blocks carry one. Attaching it would be the
+  swallowed-content failure wearing a new hat, so blocks are cut there and the
+  cuts are counted.
+
+The role class excludes only （）, the marker's own brackets — 兵庫 taught that one
+from the other side, where also excluding half-width ( ) cut an office at 「参事」
+and built a speaker out of the remainder.
+
+**`Meeting.url` is now optional, with `source_file` beside it.** A hand-downloaded
+record has no URL this project has ever fetched, and composing a plausible one
+would be inventing a URL — which the conventions forbid, and which would be a lie
+in the field every other record uses for identity. `models.record_key` gives the
+one answer both kinds need: the URL, or `file:<name>`. `TranscriptStore.seen_keys`
+reads records back through it, so resume works the same for both, and the CSV
+carries a `source_file` column.
+
+**`scripts/audit_manual.py` — the 目次 is the listing side.** `CLAUDE.md` requires
+counting the listing against the corpus per item after every run, and a manual
+collection has no index to re-walk. But DB-Search publishes a 目次 beside every
+本文 and it names every member who spoke 「水岸富美男議員質疑　……九」. The script
+reads those names and checks each against the corpus record for that date; it also
+reports a 目次 with no 本文, which is how **a file nobody downloaded** surfaces —
+the likeliest loss on a manual collection and invisible to everything else.
+
+It was confirmed to fire before it was believed: 6 names matched from the
+2026-02-03 目次, 0 missing; with 菅野幹子 deleted from the corpus on purpose, the
+check names her. A check that matches nothing prints the same "0" as a clean run.
+
+**Verified.** 2026-02-03 臨時会 第１号: 39 speeches, 17,189 characters, 10 distinct
+speakers, longest 5 characters. 0 speech lines beginning with a circle (the
+swallowed-marker grep), 0 speakers colliding on whitespace/NFKC, 0 private-use
+codepoints, 0 box-drawing or 罫線 characters in any speech text, 目次 correctly
+skipped as a non-transcript. 123 tests pass, ruff and mypy clean.
+
+**What this does not establish.** One sitting. No committee document has been
+downloaded, so the importer's `committee` handling is untested against real
+markup — and `CLAUDE.md` is explicit that 委員会 are not 本会議 in a different room.
+山梨's registered range is unchecked, and it decides whether the remainder is
+hundreds of downloads or a thousand.
+
+**The real next step is not code.** 地方議会会議録コーパス already holds 2011-04 ..
+2019-03 for all 47 assemblies — eight years 山梨 would otherwise be downloaded one
+号 at a time — and its letter is drafted and unsent. `docs/inquiries/yamanashi.md`
+is rewritten: the old draft asked whether automated collection was permitted, which
+is now an answered question, and asking it again would signal we had not listened.
+It now puts the telephone answer in writing, asks whether a bulk export or
+programmatic interface exists (a route they provide is not the route they
+declined), and asks for the registered range. **The officer's name and section were
+not recorded on the call** and the written follow-up should establish both.
+
+### 日本語
+
+**2026-09-17、山梨県議会事務局より電話。** 会議検索システムは個別での検索を想定して
+いるため自動取得は控えてほしい、ページの「ダウンロード」ボタンで保存したものを
+利用してほしい、との回答。
+
+本プロジェクトが議会から得た**最初の回答**であり、`robots.txt` の見かけどおりの
+「不可」ではない。**システムは自動で叩くな**、**会議録は先方の示した経路で使ってよい**、
+という二つの内容である。よって山梨は「robots で閉じた24議会」から外れ、
+コードベースになかった第三の類型 —— **手作業で取得し、オフラインで解析する** —— に移る。
+
+**新設 `importers/`。** 人が手で落としたファイルから、スクレイパと同じ `Meeting` を
+作る。`PoliteClient` には一切触れない。`DbSearchImporter` は山梨ではなく**ベンダ
+フォーマット**に対して書いてある（DB-Search＝大和速記情報センター、青森・島根・福岡
+ほか150自治体以上）ので、県名は引数。
+
+**この形式は、本プロジェクト最古のバグを無力化する。** 1ファイル＝1号で、発言に
+ベンダが番号を振っている（`1:`〜`39:`、欠番なし）。他のサイトはマーカー照合で発言の
+境界を決めるため、マーカーが外れると発言が前の話者に連結され、何も警告しない。
+ここでは**境界が与えられ**、マーカーは「誰が話しているか」だけを問われる。読めなかった
+マーカーは**名前を失うだけで、言葉は失わない**。しかも件数が数えられる。
+
+**押さえた三点。うち二つは既知の罠。**
+
+- **丸は ◯ U+25EF。** 和歌山の ○（U+25CB）でも静岡の 〇（U+3007）でもない。同じ
+  ファイル内で U+3007 が7回、数字のゼロとして出る。どちらの規則を写しても
+  **1発言も**取れない。三県目にして三種類目の丸。
+- **1回の議会に2形式**（和歌山と同型）：括弧つき33、裸の氏名6。裸の一つは
+  「◯飯島　修君」で全角スペース入り。`normalize_speaker` が吸収。
+- **罫線（─ U+2500）が発言の終わり。** その後ろには説明員名簿・付託表・委員会日程表・
+  報告書・罫線表が続く。39ブロック中13。連結すれば「飲み込み」の再発なので、
+  そこで切り、切った回数を数える。
+
+**`Meeting.url` を optional にし、`source_file` を追加。** 手動取得のレコードには
+本プロジェクトが取得した URL が存在せず、それらしい URL を組み立てるのは規約が禁じる
+「URL の捏造」であり、同一性を担う欄に嘘を書くことになる。`models.record_key` が
+両者に一つの答えを与える（URL、なければ `file:<名>`）。`seen_keys` もこれを通すので、
+再開処理は両方式で同じに動く。
+
+**`scripts/audit_manual.py` —— 目次が「一覧」の側。** `CLAUDE.md` は毎回の
+一覧対コーパスの項目単位照合を要求するが、手動収集には歩き直す索引がない。しかし
+DB-Search は本文の隣に目次を出し、発言した議員を名指ししている。目次の議員名を
+コーパスと突き合わせ、**本文のない目次**（＝誰も落としていないファイル。手動収集で
+最も起きやすく、他のどの検査にも映らない損失）も報告する。
+
+**空振りでないことを先に確認した**：目次から6名を照合し欠落0。コーパスから菅野幹子を
+故意に削ると、検査はその名を挙げる。何も照合しない検査は、健全な実行と同じ「0」を出す。
+
+**検証結果。** 2026-02-03 臨時会第1号：39発言、17,189字、話者10名（最長5字）。
+丸で始まる発言行0（飲み込みマーカー検査）、空白・NFKC 衝突0、外字0、
+発言本文への罫線・罫線表の混入0、目次は非本文として正しく除外。
+テスト123件通過、ruff・mypy クリーン。
+
+**これが示していないこと。** 1会議分にすぎない。委員会文書は未入手なので、
+importer の `committee` 処理は**実物未検証**（`CLAUDE.md` は「委員会は本会議の別室版
+ではない」と明記している）。収録範囲も未確認で、残作業が数百件か千件超かはそこで決まる。
+
+**次の一手はコードではない。** 地方議会会議録コーパスは47議会の 2011-04〜2019-03 を
+すでに持っている（山梨を1号ずつ落とすなら8年分）。依頼状は下書きのまま未送付。
+`docs/inquiries/yamanashi.md` は書き換えた —— 旧稿は「自動取得の可否」を尋ねる内容で、
+答えの出た問いを繰り返すのは回答を読んでいない合図にしかならない。新稿は
+口頭回答の書面化、一括出力・API 等の**提供手段の有無**（先方が用意した経路は、
+先方が断った経路ではない）、収録範囲の照会の三点。**電話の担当課・担当者名は未記録**で、
+書面はそこも確定させる。
+
 ## 2026-09-09 — 静岡's 決算特別委員会, and a metadata field that lied (`fix/shizuoka-committee-metadata`)
 
 *English and Japanese. / 英語と日本語で併記する。*

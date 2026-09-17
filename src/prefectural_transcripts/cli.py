@@ -12,6 +12,7 @@ import typer
 
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
+from prefectural_transcripts.importers.dbsearch import DbSearchImporter, find_downloads
 from prefectural_transcripts.scrapers import (
     GenericScraper,
     available_sites,
@@ -163,6 +164,46 @@ def inspect(
     typer.echo(f"{len(matches)} match(es) for {selector!r}")
     for i, node in enumerate(matches[:20]):
         typer.echo(f"--- [{i}] {node.get_text(' ', strip=True)[:300]}")
+
+
+@app.command("import")
+def import_downloads(
+    source: Annotated[Path, typer.Argument(help="Directory of downloads, or one .txt file.")],
+    prefecture: Annotated[str, typer.Option(help="e.g. 山梨県 — names the output file.")],
+    data_dir: Annotated[Path, typer.Option(help="Where the corpus lives.")] = Path("data"),
+    csv: Annotated[bool, typer.Option(help="Write a CSV alongside the JSONL.")] = False,
+    dry_run: Annotated[bool, typer.Option(help="Parse and report, write nothing.")] = False,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v")] = False,
+) -> None:
+    """Import transcripts downloaded by hand from a DB-Search system.
+
+    For assemblies that have asked us not to fetch their search system
+    automatically — 山梨 did, by telephone on 2026-09-17 — and pointed at the
+    page's ダウンロード button instead. This makes no requests.
+    """
+    _configure_logging(verbose)
+    paths = find_downloads(source)
+    if not paths:
+        typer.echo(f"No .txt files under {source}")
+        raise typer.Exit(1)
+
+    store = TranscriptStore(data_dir, prefecture)
+    importer = DbSearchImporter(prefecture)
+    outcome = importer.import_paths(paths, skip=store.seen_keys())
+
+    if not dry_run:
+        with ExitStack() as stack:
+            stack.enter_context(store)
+            csv_writer = stack.enter_context(SpeechCsvWriter(data_dir, prefecture)) if csv else None
+            for meeting in outcome.meetings:
+                store.write(meeting)
+                if csv_writer:
+                    csv_writer.write(meeting)
+
+    typer.echo(f"read     : {len(paths)} files from {source}")
+    for line in outcome.summary():
+        typer.echo(line)
+    typer.echo(f"{'would write' if dry_run else 'wrote'}   : {store.path}")
 
 
 @app.command()
