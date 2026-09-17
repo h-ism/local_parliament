@@ -112,6 +112,24 @@ proof that the route works and nothing more. The work now is not scraping:
    **山梨's registered range has not been checked**, and it decides whether the
    remainder is hundreds of downloads or a thousand.
 
+## An inquiry is in flight (as of 2026-09-17)
+
+The researcher is asking the secretariat directly, and **the questions include
+whether automating the download itself would be permitted**. That matters to
+anyone reading this file later, because it is the one thing that would change the
+collection route rather than the paperwork:
+
+* **If they say yes**, the button becomes a fetch path and the work is a scraper
+  again — `PoliteClient`, their conditions, and this importer kept as the parser,
+  which is the half that would not change.
+* **If they say no, or say nothing**, nothing changes: hand-downloaded files in,
+  `pt import` over them. That is the current state and it works.
+
+**Until an answer arrives in writing, do not automate the download.** The standing
+instruction from the telephone call is to use the button by hand, and asking a
+question does not license acting on the answer you expect. The same rule that
+keeps `PT_RESPECT_ROBOTS=0` out of this repository applies here.
+
 ## Open questions
 
 * **Who called.** Date and substance are recorded; the officer's name and section
