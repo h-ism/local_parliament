@@ -18,7 +18,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import TextIO
 
-from prefectural_transcripts.models import Meeting
+from prefectural_transcripts.models import Meeting, record_key
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +50,11 @@ class TranscriptStore:
             self._fh = None
 
     def seen_keys(self) -> set[str]:
-        """URLs already written, so a re-run can skip them."""
+        """Records already written, so a re-run can skip them.
+
+        Read through `record_key` rather than off the `url` field: a manually
+        imported record has no URL and is identified by its source file.
+        """
         if not self.path.exists():
             return set()
         keys: set[str] = set()
@@ -60,8 +64,9 @@ class TranscriptStore:
                 if not line:
                     continue
                 try:
-                    keys.add(json.loads(line)["url"])
-                except (json.JSONDecodeError, KeyError):
+                    record = json.loads(line)
+                    keys.add(record_key(record.get("url"), record.get("source_file")))
+                except (json.JSONDecodeError, ValueError):
                     log.warning("skipping malformed line %d in %s", line_no, self.path)
         return keys
 
@@ -89,6 +94,7 @@ SPEECH_COLUMNS = (
     "committee",
     "title",
     "url",
+    "source_file",
     "speech_order",
     "speaker",
     "role",
@@ -111,7 +117,8 @@ def _speech_rows(meeting: Meeting) -> list[dict[str, str]]:
         "session": meeting.session or "",
         "committee": meeting.committee or "",
         "title": meeting.title or "",
-        "url": str(meeting.url),
+        "url": str(meeting.url) if meeting.url else "",
+        "source_file": meeting.source_file or "",
         "retrieved_at": meeting.retrieved_at.isoformat(),
         "source_html_sha256": meeting.source_html_sha256 or "",
     }

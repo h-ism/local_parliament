@@ -10,6 +10,10 @@ __pycache__/
 data/
 cache/
 
+# Transcripts downloaded by hand, where the assembly asked us not to crawl
+# (山梨, 2026-09-17). Same rule as data/: it is the corpus, not the code.
+manual/
+
 # Personal working diary — notes, not source
 JOURNAL.md
 
