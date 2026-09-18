@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep the SSP collection going across logouts and reboots
+
+[Timer]
+# A watchdog, not a schedule: the script holds a lock, skips finished tenants and
+# exits at once when the set is done, so a fire that is not needed costs nothing.
+OnBootSec=3min
+OnUnitInactiveSec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Reconnaissance on the VOICES installs that answered (滋賀・石川)
+Documentation=file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/shiga.md file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/ishikawa.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hideo-ishima/research_project/prefectual_transcripts
+TimeoutStartSec=2h
+Environment=PATH=/home/hideo-ishima/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/bin/bash -c '/home/hideo-ishima/.local/bin/uv run python scripts/recon_voices.py >> data/logs/voices-recon.log 2>&1'

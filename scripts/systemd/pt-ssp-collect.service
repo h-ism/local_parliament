@@ -1,0 +1,11 @@
+[Unit]
+Description=Collect the SSP tenants (small set) — resumable, single-instance
+Documentation=file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/ssp.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hideo-ishima/research_project/prefectual_transcripts
+# The run is hours long and must not be killed by a start timeout.
+TimeoutStartSec=infinity
+Environment=PATH=/home/hideo-ishima/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/bin/bash /home/hideo-ishima/research_project/prefectual_transcripts/scripts/collect_ssp.sh small

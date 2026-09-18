@@ -71,7 +71,21 @@ case "${1:-all}" in
 esac
 
 DONE_MARK="$LOGS/DONE-${1:-all}"
-rm -f "$DONE_MARK"
+
+# One collector at a time, whatever starts it. The rate limit is per process, so
+# two copies would quietly halve the 5 s interval this collection was permitted
+# at — and the likeliest way to get two is a watchdog timer starting one while
+# yesterday's is still going.
+exec 9>"$LOGS/collect.lock"
+if ! flock -n 9; then
+  echo "$(date -Is) another collector holds the lock; nothing to do" >> "$LOGS/run.log"
+  exit 0
+fi
+
+# Nothing left in this set: exit before the loop so a watchdog costs nothing.
+if [ -f "$DONE_MARK" ]; then
+  exit 0
+fi
 echo "$(date -Is) starting ${#SITES[@]} tenants (${1:-all}) at ${DELAY}s/request, pid $$" | tee -a "$LOGS/run.log"
 
 for site in "${SITES[@]}"; do
