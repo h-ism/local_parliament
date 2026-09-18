@@ -20,15 +20,17 @@ import re
 import threading
 import time
 import urllib.robotparser
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from charset_normalizer import from_bytes
 
-from prefectural_transcripts.config import Settings
+from prefectural_transcripts.config import RobotsExemption, Settings
 
 log = logging.getLogger(__name__)
 
@@ -121,25 +123,39 @@ def _is_usable(body: bytes, enc: str) -> bool:
     return True
 
 
+def _canonical_request(payload: Mapping[str, Any]) -> str:
+    """A stable text form of a request body, for the cache key and the log.
+
+    Sorted keys so that two identical requests written in a different order are
+    one cache entry rather than two requests to someone else's server.
+    """
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
 class ResponseCache:
-    """Content-addressed cache of raw response bodies under `cache_dir`."""
+    """Content-addressed cache of raw response bodies under `cache_dir`.
+
+    The key is the URL for a GET. A POST needs the request body in the key too —
+    every SSP API call goes to one of six URLs and differs only in what is sent —
+    so `key` is separable from the URL the page came from.
+    """
 
     def __init__(self, cache_dir: Path) -> None:
         self.dir = cache_dir
 
-    def _paths(self, url: str) -> tuple[Path, Path]:
-        digest = hashlib.sha256(url.encode()).hexdigest()
+    def _paths(self, key: str) -> tuple[Path, Path]:
+        digest = hashlib.sha256(key.encode()).hexdigest()
         sub = self.dir / digest[:2]
         return sub / f"{digest}.body", sub / f"{digest}.json"
 
-    def get(self, url: str) -> Page | None:
-        body_path, meta_path = self._paths(url)
+    def get(self, key: str, *, url: str | None = None) -> Page | None:
+        body_path, meta_path = self._paths(key)
         if not (body_path.exists() and meta_path.exists()):
             return None
         meta = json.loads(meta_path.read_text())
         body = body_path.read_bytes()
         return Page(
-            url=url,
+            url=url or meta.get("url") or key,
             status=meta["status"],
             body=body,
             # The bytes are the truth; the encoding is a conclusion drawn from
@@ -153,8 +169,8 @@ class ResponseCache:
             from_cache=True,
         )
 
-    def put(self, page: Page) -> None:
-        body_path, meta_path = self._paths(page.url)
+    def put(self, page: Page, *, key: str | None = None, request: str | None = None) -> None:
+        body_path, meta_path = self._paths(key or page.url)
         body_path.parent.mkdir(parents=True, exist_ok=True)
         body_path.write_bytes(page.body)
         meta_path.write_text(
@@ -165,6 +181,9 @@ class ResponseCache:
                     "encoding": page.encoding,
                     "header_charset": page.header_charset,
                     "fetched_at": page.fetched_at.isoformat(),
+                    # What was asked, for a POST — otherwise the cache holds an
+                    # answer to a question nobody can read back.
+                    **({"request": request} if request is not None else {}),
                 },
                 ensure_ascii=False,
             )
@@ -186,10 +205,16 @@ class PoliteClient:
     """
 
     def __init__(
-        self, settings: Settings | None = None, client: httpx.Client | None = None
+        self,
+        settings: Settings | None = None,
+        client: httpx.Client | None = None,
+        robots_exempt: RobotsExemption | None = None,
     ) -> None:
         self.settings = settings or Settings()
         self.cache = ResponseCache(self.settings.cache_dir)
+        self.robots_exempt = robots_exempt
+        """Scoped exception to robots.txt, from the site config. See `RobotsExemption`."""
+        self._exemptions_logged: set[str] = set()
         self._hosts: dict[str, _HostState] = {}
         self._lock = threading.Lock()
         self._owns_client = client is None
@@ -239,10 +264,31 @@ class PoliteClient:
     def _check_robots(self, url: str) -> None:
         if not self.settings.respect_robots:
             return
+        if self.robots_exempt and self.robots_exempt.covers(url):
+            self._announce_exemption(url)
+            return
         self._load_robots(url)
         state = self._state(urlparse(url).netloc)
         if state.robots and not state.robots.can_fetch(self.settings.user_agent, url):
             raise RobotsDisallowed(f"robots.txt disallows {url}")
+
+    def _announce_exemption(self, url: str) -> None:
+        """Say once, per prefix and per run, that robots.txt was set aside here.
+
+        At WARNING deliberately. Every run log that fetched an exempted URL then
+        carries the reason and the date the researcher decided it, so the record
+        does not live only in a config file nobody re-reads.
+        """
+        for prefix in self.robots_exempt.prefixes if self.robots_exempt else ():
+            if url.startswith(prefix) and prefix not in self._exemptions_logged:
+                self._exemptions_logged.add(prefix)
+                assert self.robots_exempt is not None
+                log.warning(
+                    "robots.txt set aside for %s by decision of %s: %s",
+                    prefix,
+                    self.robots_exempt.decided_on,
+                    self.robots_exempt.reason,
+                )
 
     def _throttle(self, host: str) -> None:
         state = self._state(host)
@@ -262,7 +308,7 @@ class PoliteClient:
             return cached
 
         self._check_robots(url)
-        page = self._get_with_retries(url)
+        page = self._send_with_retries("GET", url)
         # Written even when the cache is switched off for reading: `use_cache=False`
         # means "don't hand me a stale copy", not "throw away what you just paid a
         # request for". Discarding it makes the next run re-fetch a page we already
@@ -270,13 +316,51 @@ class PoliteClient:
         self.cache.put(page)
         return page
 
-    def _get_with_retries(self, url: str) -> Page:
+    def post(
+        self,
+        url: str,
+        *,
+        json: Mapping[str, Any] | None = None,
+        data: Mapping[str, str] | None = None,
+        force: bool = False,
+    ) -> Page:
+        """POST `url` and cache the response under URL + request body.
+
+        Needed for one product so far: SSP (Discuss Net Premium) has no
+        server-rendered route at all — every listing and every transcript comes
+        back from a POST to `/dnp/search/…`, and the URL alone does not say what
+        was asked. Everything else — rate limiting, retries, the cache, the
+        robots check — is the same path a GET takes.
+        """
+        if json is not None and data is not None:
+            raise ValueError("post() takes json= or data=, not both")
+        body = _canonical_request(json if json is not None else data or {})
+        kind = "json" if json is not None else "form"
+        key = f"{url}#{kind}:{hashlib.sha256(body.encode()).hexdigest()}"
+
+        if self.settings.use_cache and not force and (cached := self.cache.get(key, url=url)):
+            log.debug("cache hit %s %s", url, body)
+            return cached
+
+        self._check_robots(url)
+        page = self._send_with_retries("POST", url, json=json, data=data)
+        self.cache.put(page, key=key, request=body)
+        return page
+
+    def _send_with_retries(
+        self,
+        method: str,
+        url: str,
+        *,
+        json: Mapping[str, Any] | None = None,
+        data: Mapping[str, str] | None = None,
+    ) -> Page:
         host = urlparse(url).netloc
         last: Exception | None = None
         for attempt in range(1, self.settings.max_retries + 1):
             self._throttle(host)
             try:
-                resp = self._client.get(url)
+                resp = self._client.request(method, url, json=json, data=data)
             except httpx.HTTPError as exc:
                 last = exc
                 log.warning(

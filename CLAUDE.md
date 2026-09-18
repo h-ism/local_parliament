@@ -24,6 +24,7 @@ uv run ruff check . && uv run ruff format .
 uv run mypy                   # strict; must stay clean
 uv run pt --help              # the CLI
 uv run pt export data/<pref>.jsonl   # JSONL corpus -> CSV (one row per speech)
+uv run pt inspect <url> --as-site <name>  # fetch through that site's robots exemption
 
 # The two checks the conventions below keep asking for. Both read only the cache,
 # so both cost zero requests and can be run as often as you like.
@@ -47,9 +48,11 @@ new `BaseScraper` subclass only when a site genuinely cannot be expressed as sel
 Flow: `sites/*.toml` → `SiteConfig` → `GenericScraper` → `PoliteClient` (fetch) →
 `Meeting` models → `TranscriptStore` (JSONL).
 
-A config may name `scraper = "..."` to select something other than `GenericScraper`;
-`kensakusystem` is the one case so far, and `docs/kensakusystem.md` records the
-three independent reasons it earned the exception.
+A config may name `scraper = "..."` to select something other than `GenericScraper`.
+There are two: `kensakusystem` (`docs/kensakusystem.md` records the three
+independent reasons it earned the exception) and `ssp`, which has no selectors to
+write at all — SSP serves no rendered page, only a JSON API, and returns one block
+per speech (`docs/ssp.md`).
 
 Modules under `src/prefectural_transcripts/`:
 
@@ -74,6 +77,14 @@ Modules under `src/prefectural_transcripts/`:
 - `models.py` — `Speech` / `MeetingRef` / `Meeting`. Note `datetime` is imported as
   `dt` because both models have a field named `date`, which would otherwise shadow
   the type inside the class body and break pydantic's annotation evaluation.
+- `scrapers/ssp.py` — the 17 SSP tenants. Three POSTs, one block per speech, and
+  a speaker split that reads the sitting's own 名簿 rather than a list of offices
+  kept in the code. `BaseScraper.report()` is how a run prints what it had to
+  decide (titles it could not split, dates that disagreed with the listing).
+- `config.py` — `Settings`, and `RobotsExemption`: a scoped, dated, reasoned
+  exception to robots.txt, read from a site config's `[robots]` table. It cannot
+  be constructed without a reason and an ISO date, and it covers only the URL
+  prefixes it names.
 - `storage.py` — JSONL writer, one file per prefecture; `seen_keys()` drives resume.
   `SpeechCsvWriter` / `write_csv` render the same records as a flat CSV (one row
   per speech) for analysis; JSONL stays canonical.
@@ -82,7 +93,9 @@ Modules under `src/prefectural_transcripts/`:
 
 - **Crawl politely.** Defaults (2s per host, robots respected, everything cached)
   are a deliberate choice about small public-sector servers, not a placeholder.
-  Don't lower them to make a run faster.
+  Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
+  decision recorded in its configs — don't lower that either, and don't run two
+  SSP tenants at once: all 17 share one host and the limiter is per-process.
 - **Don't invent selectors or URLs.** A config goes into `sites/` only once its
   selectors have been checked against the real markup. Work them out with
   `uv run pt inspect <url> --selector <css>`, then confirm with
@@ -126,6 +139,13 @@ Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka,shizuoka_c
   Its committee side is 18,245 documents, not the 10,762 the survey estimated.
 - Each tenant's listing reconciles item by item against its corpus. 和歌山 carries
   one undated sitting because the site prints 「平成八年七年十日（水曜日）」.
+
+**Collecting now: SSP, 17 tenants (started 2026-09-18)**
+
+Not in the table above because nothing is finished. 14,910 会議 are listed and
+verified; ≈48,000 requests at 5s, one process, resumable from cache. Counts go in
+the table as each tenant completes. `docs/ssp.md` §7 lists what to check before
+believing any of it.
 
 **"The same product" is not the same site**
 
@@ -176,25 +196,46 @@ they turned down. The rewritten `docs/inquiries/yamanashi.md` asks exactly that.
 What is *not* allowed is finding an undocumented endpoint and calling it an API —
 that is SSP's `/dnp/search/` again, scraping with extra steps.
 
-**SSP — 18 prefectures, blocked (corrected 2026-08-27)**
+**SSP — 17 prefectures, being collected (2026-09-18); 大阪 pending**
 
-This was recorded for two days as "allowed, blocked only by architecture". It is
-not. `config.js` declares `API_ROOT: "/dnp/search/"`, and `/dnp/search/` is outside
-the one `Allow: /tenant/` rule, so `Disallow: /` covers it — DENY under
-`urllib.robotparser` and under longest-match too. **The shell pages are crawlable;
-the data is not.** SSP belongs with the 24 blocked assemblies: it needs a letter,
-not a scraper.
+For three weeks this was "blocked: it needs a letter, not a scraper". The operator
+was asked and **did not refuse**. That is not a permission, and the distinction is
+the whole point: **明示的な拒否がないだけ** — there is no yes, there is the absence
+of a no. Collecting on it is the researcher's call, made 2026-09-18, at **5 s per
+request** rather than the default 2.
 
-The lesson generalises: **a robots.txt verdict is not final until you know the URL
-that actually carries the data.** A client-side app can be allowed everywhere you
-can see and disallowed everywhere it matters.
+- **大阪 is not configured.** Still being confirmed, so it has no `sites/` entry —
+  `pt sites` must not list something we have decided not to run. Its reuse
+  condition (「このデータの権利は、大阪府議会に帰属します」) is open regardless.
+- **The exemption is a list of URL prefixes with a reason and a date**, in each
+  `sites/ssp_*.toml`. `RobotsExemption` refuses to load without both, the client
+  logs it at WARNING the first time it fires, and it is scoped: `/dnp/search/`
+  (the disallowed API, which is what the decision covers) and
+  `/tenant/<tenant>/` (which the operator's own `Allow:` permits — it is listed
+  only because `urllib.robotparser` ignores `Allow` precedence). The operator's
+  *narrow* refusals — `/tenant/js/`, `/css/`, `/help/`, `/stats/` — are
+  deliberately not exempted, so the client still refuses them.
+  **Never use `PT_RESPECT_ROBOTS=0` for this.** It is undated, unattributed and
+  applies to every site in the run; that is what the exemption exists to avoid.
+- **The API is three POSTs**, no login: `councils/index` (the whole listing in one
+  request), `minutes/get_schedule_all` (one 会議's sittings), `minutes/get_minute`
+  (one sitting, **one block per speech**). `PoliteClient.post` caches on URL *plus*
+  request body, because all three go to the same three URLs.
+- **14,910 会議 across the 17**, 3,103 本会議 and 11,807 委員会, verified from each
+  tenant's own listing on 2026-09-18 — counts, not estimates. 宮城 and 新潟 reach
+  **1947 (昭和22年)**, which is 39 years deeper than 兵庫. ≈48,000 requests, ≈66
+  hours at 5 s. **One host, so one process at a time.**
 
 Vendor: **NTT Advanced Technology** (copyright header). "DNP" is the product,
-Discuss Net Premium — not 大日本印刷; an earlier note misread the logo. Tenant ids
-and browse endpoints are in `docs/collection-targets.md`. 大阪 gets the first
-letter: it is the only one of the 18 naming a destination on its own page, and its
-reuse condition (data rights belong to the assembly) survives any robots answer.
-See `docs/inquiries/ssp-assembly.md`.
+Discuss Net Premium — not 大日本印刷; an earlier note misread the logo.
+Everything about the protocol, the per-tenant speaker shapes and the checks to run
+afterwards is in `docs/ssp.md`. The letters are still on file
+(`docs/inquiries/ssp-assembly.md`, `ssp-vendor.md`) and 大阪 is the one that
+matters now.
+
+The lesson that generalises: **a robots.txt verdict is not final until you know
+the URL that actually carries the data** — and once you do, it is still only a
+machine-readable statement, not the only one the operator can make.
 
 **Before any large crawl**
 
@@ -217,8 +258,40 @@ collection continues past 2019-04 — but nothing waits on it now.
 
 ## Things that will bite again
 
-Learned from 静岡; expect them on other sites rather than treating them as local
-quirks.
+Learned from 静岡 and, from 2026-09-18, from SSP; expect them on other sites
+rather than treating them as local quirks.
+
+- **A listing can have a whole branch that is not proceedings.** SSP's tree has two
+  roots, 「全会議」 and 「資料」, and 2,399 of 17,309 会議 are under the second: bill
+  lists, 請願一覧表, 意見書. They parse, they yield no speech and no date, and they
+  would have been 728 of 熊本's records and 336 of 福島's. **Read what the top of a
+  listing is dividing before treating every node under it as a sitting.**
+- **A label that ends the same way is not the same kind of thing.** A sitting is
+  「06月17日－01号」; 山形's bill lists are 「発議第12号」. Filtering on 号 collects
+  both. A sitting label has to *begin* with a date as well — and requiring only the
+  date collects the 目次.
+- **The first date in a document may not be the document's date.** 徳島 prints the
+  告示 that convened the session — 「令和八年六月八日」 — above the sitting's own
+  「期日　令和八年六月十五日」, so "the first date in the front matter" is a week
+  early. On SSP the vendor's index label is the authority and the printed date is
+  the *check*, which is the reverse of everywhere else here. Decide which is which
+  per site, with a sample from each.
+- **A printed year can be impossible, and it will not look wrong.** 熊本 names one
+  会議 「平成５７年　６月　定例会」. 平成 ended at 31; the sitting is 昭和57年, and the
+  listing files it under 1982. Read literally it lands in **2045**. Cross-check a
+  printed era-year against anything else that dates the record, and distrust it
+  when the two disagree by more than a year — one year apart is normal, because
+  assemblies file a December session under the following year.
+- **An office vocabulary cuts names in the wrong place.** 大分 writes
+  「渡邊直二公安委員長」, and a list of offices containing 委員長 makes the speaker
+  「渡邊直二公安」 — a speaker made of an office, the 兵庫 failure verbatim. The rule
+  that works uses the sitting's *own* 名簿 for both halves: a name from it, or an
+  office from it corroborated by a name from it. Where neither matches, keep the
+  title whole and **count it** — 埼玉's roster is a scanned image, so 100% of its
+  committee speakers are unsplit, and a number is the only honest way to say so.
+- **A POST API needs the request body in the cache key.** SSP's three endpoints are
+  three URLs and everything else is in the body; keying the cache on the URL would
+  serve one sitting's transcript for the whole archive.
 
 - **Encoding lies, and fails silently.** Those pages declare `charset=utf-8` in a
   meta tag, send `Shift_JIS` in the header, and contain cp932. Base Shift_JIS

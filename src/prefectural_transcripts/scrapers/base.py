@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from datetime import date
 
+from prefectural_transcripts.config import RobotsExemption
 from prefectural_transcripts.http import FetchError, Page, PoliteClient
 from prefectural_transcripts.models import Meeting, MeetingRef
 
@@ -27,6 +28,13 @@ class BaseScraper(ABC):
 
     prefecture: str
 
+    robots_exempt: RobotsExemption | None = None
+    """A scoped, dated exception to robots.txt for this site, read from its config.
+
+    None everywhere except SSP. The client is handed it per run, so an exemption
+    written for one site cannot reach another.
+    """
+
     @abstractmethod
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:
         """Yield references to every meeting reachable from the site's index."""
@@ -34,6 +42,16 @@ class BaseScraper(ABC):
     @abstractmethod
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         """Turn a fetched detail page into a Meeting."""
+
+    def report(self) -> list[str]:
+        """Lines a run should print when it finishes, beyond the record count.
+
+        Empty for a scraper with nothing to admit. SSP uses it for the things it
+        had to decide — titles it could not split, dates that disagreed with the
+        listing — because a number printed at the end of a run is the difference
+        between a known limitation and a silent one.
+        """
+        return []
 
     def fetch_meeting(self, ref: MeetingRef, client: PoliteClient) -> Page:
         """Fetch the page `parse_meeting` will be given.

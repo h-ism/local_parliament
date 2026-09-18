@@ -34,6 +34,49 @@ class FakeClient:
         return make_page(url, self.pages[url], self.encoding)
 
 
+class FakeApiClient:
+    """Stands in for PoliteClient on a POST-only JSON API, with no network.
+
+    SSP has no pages to can: every listing and every transcript is a POST to one
+    of three URLs, told apart only by the body. So responses are keyed by the
+    endpoint's last path segment and the payload fields that select the document.
+    """
+
+    def __init__(self, responses: dict[tuple[str, ...], str]) -> None:
+        self.responses = responses
+        self.requested: list[tuple[str, ...]] = []
+
+    @staticmethod
+    def key(url: str, payload: dict[str, object]) -> tuple[str, ...]:
+        endpoint = url.rstrip("/").rsplit("/", 1)[-1]
+        ids = tuple(
+            str(payload[field]) for field in ("council_id", "schedule_id") if field in payload
+        )
+        return (endpoint, *ids)
+
+    def post(
+        self,
+        url: str,
+        *,
+        json: dict[str, object] | None = None,
+        data: dict[str, str] | None = None,
+        force: bool = False,
+    ) -> Page:
+        key = self.key(url, json or {})
+        self.requested.append(key)
+        if key not in self.responses:
+            raise AssertionError(f"unexpected request {key}; have {sorted(self.responses)}")
+        return make_page(url, self.responses[key])
+
+    def get(self, url: str, *, force: bool = False) -> Page:
+        raise AssertionError(f"this API is POST-only; something asked to GET {url}")
+
+
 @pytest.fixture
 def fake_client() -> type[FakeClient]:
     return FakeClient
+
+
+@pytest.fixture
+def fake_api_client() -> type[FakeApiClient]:
+    return FakeApiClient

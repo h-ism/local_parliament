@@ -1,0 +1,59 @@
+# 宮城県議会 — 本会議・委員会（SSP / Discuss Net Premium）
+#
+# The first of the 18 SSP tenants, and the one the API was read against. See
+# `docs/ssp.md` for the protocol and `scrapers/ssp.py` for why this product needs
+# a scraper rather than selectors: there is no server-rendered page at all.
+#
+# **Archive depth: 1947 (昭和22年) — 4,234 会議** (400 本会議 / 3,834 委員会), plus
+# 23 under the listing's 「資料」 root, which are not proceedings and are skipped.
+# Deeper than anything else in this project, 兵庫's 1986 included.
+# `councils/index` returns the whole listing in one request, so those are counts
+# and not estimates.
+#
+# One caution the listing forces, recorded here because it will mislead the next
+# person: a node's `view_year` is *not* the year printed on the 会議 inside it —
+# 「平成　１年　１２月　決算特別委員会」 is filed under 1990. `years` scopes a run;
+# it does not select a date range.
+
+prefecture = "宮城県"
+name = "ssp_miyagi"
+scraper = "ssp"
+
+[ssp]
+tenant = "prefmiyagi"
+# From https://ssp.kaigiroku.net/tenant/prefmiyagi/js/tenant.js, which publishes
+# exactly one line: `dnp.params.tenant_id = 354`. Verified 2026-09-18.
+tenant_id = 354
+committees = true
+years = []
+
+# robots.txt sets `Disallow: /` with `Allow: /tenant/`, and the data is at
+# `/dnp/search/` — outside the Allow. So this tenant cannot be collected without
+# saying, in writing, on whose word and when.
+#
+# **What the answer was, exactly: no refusal.** Not a permission. The operator
+# (NTT アドバンステクノロジ, and the assemblies through them) did not refuse when
+# asked; 大阪 is still being confirmed and has **no config in this directory** as a
+# result. Collecting on that basis is the researcher's decision of 2026-09-18, and
+# the slow rate below is part of it.
+#
+# The two prefixes are not exempted for the same reason, and the difference
+# matters if this is ever revisited:
+#
+# * `/dnp/search/` — genuinely disallowed. This is the part the decision covers.
+# * `/tenant/prefmiyagi/` — the operator's own `Allow: /tenant/` permits it. It is
+#   listed only because `urllib.robotparser` returns the first matching rule in
+#   file order, so `Disallow: /` above the `Allow:` denies it; RFC 9309 and Google
+#   resolve by longest match and would allow it. See CLAUDE.md.
+#
+# Deliberately *not* exempted: `/tenant/js/`, `/tenant/css/`, `/tenant/help/` and
+# `/tenant/stats/`, which the operator disallows specifically rather than by
+# vendor boilerplate. The client refuses those on its own, which is the point of
+# scoping an exemption by prefix instead of switching robots off.
+[robots]
+exempt = [
+  "https://ssp.kaigiroku.net/dnp/search/",
+  "https://ssp.kaigiroku.net/tenant/prefmiyagi/",
+]
+reason = "Operator did not refuse when asked; no explicit permission either. Researcher's decision to collect slowly (5s+ per request). 大阪 excluded, still being confirmed. docs/ssp.md"
+decided_on = "2026-09-18"

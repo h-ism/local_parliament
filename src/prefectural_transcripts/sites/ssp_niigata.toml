@@ -1,0 +1,43 @@
+# 新潟県議会 — 本会議・委員会（SSP / Discuss Net Premium）
+#
+# One of the 18 SSP tenants. The protocol, and why this product needs a scraper
+# rather than selectors, are in `docs/ssp.md` and `scrapers/ssp.py`; the robots
+# decision below is the same one for every tenant here.
+#
+# Verified 2026-09-18 from `councils/index`, which returns the whole listing in
+# one request: **1,440 会議** (405 本会議 / 1,035 委員会), and 220 会議
+# under the listing's 「資料」 root, which are not proceedings and are skipped.
+# Printed years **1947-2026**. Counts, not estimates.
+#
+# Back to 昭和22年, the same depth as 宮城.
+
+prefecture = "新潟県"
+name = "ssp_niigata"
+scraper = "ssp"
+
+[ssp]
+tenant = "prefniigata"
+# `https://ssp.kaigiroku.net/tenant/prefniigata/js/tenant.js` publishes exactly one
+# line: `dnp.params.tenant_id = 333`. Verified 2026-09-18.
+tenant_id = 333
+committees = true
+years = []
+
+# **No refusal is not permission, and this is the former.** The operator did not
+# refuse when asked; 大阪 alone is still being confirmed and has no config here.
+# Collecting on that basis is the researcher's decision of 2026-09-18, together
+# with the slow rate it was made with. Full reasoning: `docs/ssp.md`.
+#
+# `/dnp/search/` is the disallowed part and the part that carries the data.
+# `/tenant/prefniigata/` the operator's own `Allow: /tenant/` permits — it is listed
+# only because `urllib.robotparser` reads the first matching rule in file order,
+# so the blanket `Disallow: /` above that `Allow:` denies it. The shared
+# `/tenant/js/`, `/tenant/css/`, `/tenant/help/` and `/tenant/stats/`, which the
+# operator disallows *specifically*, are deliberately not exempted.
+[robots]
+exempt = [
+  "https://ssp.kaigiroku.net/dnp/search/",
+  "https://ssp.kaigiroku.net/tenant/prefniigata/",
+]
+reason = "Operator did not refuse when asked; no explicit permission either. Researcher's decision to collect slowly (5s+ per request). 大阪 excluded, still being confirmed. docs/ssp.md"
+decided_on = "2026-09-18"

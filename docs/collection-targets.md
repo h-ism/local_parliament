@@ -67,9 +67,15 @@ does not, so their `role` fields are populated.
 
 ---
 
-## Tier 2 — SSP, 18 prefectures — **blocked; corrected 2026-08-27**
+## Tier 2 — SSP, 17 prefectures — **being collected since 2026-09-18** (大阪 pending)
 
-The missing fact arrived and reversed the verdict. `config.js` declares
+This section has been right twice and wrong twice. The current state, and the only
+one that matters: **the operator was asked and did not refuse**, so 17 of the 18
+tenants are configured and collecting. 大阪 is still being confirmed and has no
+config. Full account — the protocol, the robots scoping, the per-tenant speaker
+shapes, the cost — in **`docs/ssp.md`**.
+
+What was true before and remains true: `config.js` declares
 
 ```js
 dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
@@ -78,10 +84,13 @@ dnp.config.SERVER = { API_ROOT: "/dnp/search/", PROTOCOL: "http://" }
 and `/dnp/search/` is not under `/tenant/`, so `Disallow: /` covers it with no
 `Allow:` in reach — DENY under `urllib.robotparser`, and under RFC 9309's
 longest-match reading too. **The shell pages are crawlable; the data is not.**
+Collecting it anyway rests on the operator's answer and on a dated, reasoned
+`[robots]` exemption in each config — not on a reading of that file.
 
-That puts these 18 with the blocked assemblies below: the way through is a letter,
-not a scraper. Everything in the rest of this section still holds and is what makes
-the letter concrete — keep it.
+**Verified 2026-09-18, from each tenant's own `councils/index`:** 14,910 会議 across
+the 17 — 3,103 本会議 and 11,807 委員会 — plus 2,399 under the listing's 「資料」 root
+which are not proceedings. 宮城 and 新潟 reach **1947**, deeper than 兵庫's 1986.
+Everything below is the survey that made this possible; keep it.
 
 **Done:** every tenant's numeric id, read from `/tenant/<tenant>/js/<…>.js`, which is
 **not** under any `Disallow` rule (`Disallow: /tenant/js/` matches only the shared
@@ -101,10 +110,10 @@ pure client-side shell — `<span id="council-title">` is empty in the served HT
 So there is no server-rendered route; the API is genuinely required.
 
 **The endpoint** is `/dnp/search/`, read from `/tenant/js/release/config.js` — a
-disallowed path, opened by the researcher in a browser rather than by the crawler.
-Browse endpoints, for whenever permission exists: `councils/index`,
-`councils/get_view_years`, `councils/view`, `minutes/get_schedule`,
-`minutes/get_minute`, `minute_searches/search`.
+disallowed path, opened by the researcher in a browser rather than by the crawler,
+and still not fetched by anything here. The three the scraper uses are
+`councils/index`, `minutes/get_schedule_all` and `minutes/get_minute`; it needs no
+login, and `councils/index` returns a tenant's whole listing in one request.
 
 **The vendor is NTT Advanced Technology Co., Ltd.**, from the copyright header of
 `config.js`. The earlier note that the page carries "a DNP logo" was a misreading:
@@ -183,9 +192,10 @@ our side can establish.
    昭和61年, 愛媛 2,214 back to 平成19年, 三重 426 back to 令和5年. `sessions = '.'`
    opens them, and it also recovered a 本会議 sitting that a truncated tree label
    had been hiding since the archive was collected.
-5. Send the SSP letters. Now a permission request, not a how-to: the API is
-   disallowed. Address the vendor as NTT Advanced Technology, and put 大阪 first —
-   it is the only one of the 18 that names a destination on its own page.
+5. ~~Send the SSP letters.~~ — asked, and **not refused**; 17 tenants are
+   collecting as of 2026-09-18 (`docs/ssp.md`). **大阪 is the one still open**, and
+   it is the only one of the 18 naming a destination on its own page, so its
+   reuse condition needs an answer whatever happens with access.
 6. ~~Set `PT_CONTACT`.~~ — set 2026-08-28 to a 京都大学 address, as an `export` in
    the researcher's `~/.bashrc`. There is no `.env` support: `Settings.contact`
    reads the environment at import, so it has to be exported before `uv run`.

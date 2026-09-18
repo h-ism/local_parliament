@@ -121,7 +121,7 @@ def scrape(
                 typer.echo(
                     "Note: --csv only appends the new meetings; `pt export` rebuilds it all."
                 )
-        client = stack.enter_context(PoliteClient(settings))
+        client = stack.enter_context(PoliteClient(settings, robots_exempt=scraper.robots_exempt))
         for meeting in scraper.scrape(
             client,
             since=_parse_date(since),
@@ -135,6 +135,8 @@ def scrape(
             written += 1
             typer.echo(f"[{written}] {meeting.date} {meeting.title or meeting.url}")
     typer.echo(f"Wrote {written} meetings to {store.path}")
+    for line in scraper.report():
+        typer.echo(line)
     if csv_out:
         typer.echo(f"CSV written to {settings.data_dir / (store.path.stem + '.csv')}")
 
@@ -146,11 +148,23 @@ def inspect(
         str | None, typer.Option(help="CSS selector to test against the page.")
     ] = None,
     chars: Annotated[int, typer.Option(help="How much of the page to print.")] = 3000,
+    as_site: Annotated[
+        str | None,
+        typer.Option(
+            "--as-site",
+            help="Borrow this site's robots.txt exemption, if it has one.",
+        ),
+    ] = None,
     verbose: Annotated[bool, typer.Option("-v", "--verbose")] = False,
 ) -> None:
     """Fetch one page (through the cache) to help work out selectors."""
     _configure_logging(verbose)
-    with PoliteClient(Settings()) as client:
+    # Working selectors out with `inspect` is the documented first step, so it
+    # has to be able to reach the same URLs a run does — including the ones a
+    # site config has an exemption for. Naming the site is how the exemption is
+    # borrowed; there is deliberately no flag that switches robots off here.
+    exemption = load_scraper(as_site).robots_exempt if as_site else None
+    with PoliteClient(Settings(), robots_exempt=exemption) as client:
         page = client.get(url)
 
     typer.echo(f"status={page.status} encoding={page.encoding} cached={page.from_cache}")

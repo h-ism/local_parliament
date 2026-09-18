@@ -2,6 +2,129 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-18 — SSP, 17 tenants, on an answer that was not a refusal (`feat/ssp-collection`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**The operator was asked about the SSP tenants and did not refuse.** 大阪 alone is
+still being confirmed. That is not a permission, and this branch is careful to say
+so in every place it is recorded: **明示的な拒否がないだけ** — there is no yes, there
+is the absence of a no. Acting on it is the researcher's decision, taken today, at
+**5 seconds per request** rather than the project's default 2.
+
+**So this branch had to build a way to write that down.** `RobotsExemption` is a
+scoped, dated, reasoned exception to robots.txt, read from a site config's
+`[robots]` table. It cannot be constructed without a reason and an ISO date, it
+covers only the URL prefixes it names, and `PoliteClient` logs it at WARNING the
+first time it fires — so every run log carries the reason and the date. The
+alternative already existed and was refused on purpose: `PT_RESPECT_ROBOTS=0` is
+undated, unattributed, and applies to every site in the run.
+
+The scoping does real work. The operator's file allows `/tenant/` and then
+disallows `/tenant/js/`, `/css/`, `/help/`, `/stats/` **specifically**. Only
+`/dnp/search/` (the disallowed API, which is what the decision covers) and
+`/tenant/<tenant>/` (which the `Allow:` permits, and which is listed only because
+`urllib.robotparser` ignores `Allow` precedence — CLAUDE.md flagged that before it
+mattered) are exempted. The narrow refusals are left in force, so the client
+refuses them rather than the author having to remember to.
+
+**`scrapers/ssp.py`, and the first source in this project that splits the speeches
+for us.** SSP serves no rendered page at all: `MinuteView.html` is an empty shell
+and everything comes from three POSTs — `councils/index` (a tenant's whole listing
+in one request), `minutes/get_schedule_all`, `minutes/get_minute`. No login. The
+transcript arrives as `tenant_minutes`, **one block per utterance**, each with a
+`minute_type_code` from the vendor's own config and a `title` that *is* the speaker
+line. Nothing infers a boundary from a 「○」 — the failure that cost 静岡 124
+speeches and 兵庫 55 cannot happen here, because there is no marker to miss.
+`PoliteClient.post` had to be written for it, with the request body in the cache
+key: all three endpoints are three URLs and everything else is in the body.
+
+**14,910 会議 across the 17 tenants**, verified from each tenant's own listing —
+3,103 本会議 and 11,807 委員会 — plus 2,399 skipped. Every `tenant_id` was checked
+against the tenant's own `tenant.js`. 宮城 and 新潟 reach **1947 (昭和22年)**, which
+is 39 years deeper than 兵庫, previously the oldest material here. ≈48,000 requests,
+≈66 hours at 5s, one process because all 17 share a host.
+
+**Five things the trial runs found, each of which would have been silent.**
+
+- **A listing branch that is not proceedings.** The tree has two roots, 「全会議」 and
+  「資料」, and 2,399 会議 hang under the second: bill lists, 請願一覧表, 意見書. They
+  parse to a record with no date and no speaker. 熊本 would have contributed 728 of
+  them and 福島 336 — and both would have looked like assemblies that publish
+  committee minutes, when neither does.
+- **A bill number ends in 号 too.** 山形's 「発議第12号」 passed a filter that asked
+  only for 号. A sitting label has to begin with a date as well.
+- **The first date in a document may be the 告示日.** 徳島 prints the notice that
+  convened the session above the sitting's own 期日, a week apart. On this product
+  the vendor's index label is the authority and the printed date is the check —
+  the reverse of every other site here.
+- **A printed year can be impossible.** 熊本 names one 会議 「平成５７年　６月　定例会」.
+  平成 ends at 31; the listing files it under 1982, which is 昭和57年. Read literally
+  that sitting lands in **2045**. The name is now checked against its node, which
+  disagree by one year legitimately (a December session is filed under the next
+  year) and by more than that only when the name is wrong.
+- **An office vocabulary cuts names in the wrong place.** 大分 writes
+  「渡邊直二公安委員長」, and a list of offices containing 委員長 makes the speaker
+  「渡邊直二公安」 — a speaker made of an office, which is the 兵庫 failure verbatim.
+  A vocabulary was written, measured and **removed**.
+
+**What replaced it reads the sitting's own 名簿**: a name from it, or an office from
+it corroborated by a name from it, or — where neither matches — the title kept whole
+and **counted**. `BaseScraper.report()` exists for that count, and the numbers are
+in `docs/ssp.md` §4: zero unsplit on seven tenants, and 100% on 埼玉, whose 委員出欠表
+is a **scanned image**. That is an open limitation, stated with a number, and the
+way to close it is a pass over the finished corpus — where a prefecture's own
+bracketed 本会議 titles are a verified vocabulary for it — not a rule in the scraper.
+
+Suite 150 tests, offline; `FakeApiClient` cans the JSON the way `FakeClient` cans
+HTML. Nothing is collected yet: this branch is the mechanism, the configs and the
+verification.
+
+### 日本語
+
+**SSP（NTT アドバンステクノロジの会議録検索システム）について、事業者に照会して
+「拒否はされなかった」。** 大阪のみ確認中。これは許諾ではない。**明示的な拒否がない
+だけ**であり、その上で取得に進むのは研究者の判断（2026-09-18）であって、**1リクエスト
+5秒**という条件もその判断の一部である。だから記録の言葉を分けた——「許可された」とは
+どこにも書いていない。
+
+そのために `RobotsExemption` を作った。robots.txt の例外を「対象URLの前置詞・理由・
+決定日」の三点セットでしか書けないようにし、理由か日付が欠ければ読み込み時に失敗する。
+発火時にはクライアントが WARNING で理由と日付を出すので、実行ログにも必ず残る。
+`PT_RESPECT_ROBOTS=0` は使わない——無日付・無署名で、しかも実行中の全サイトに効く。
+
+例外の範囲は意図的に狭い。事業者の robots.txt は `/tenant/` を Allow しつつ
+`/tenant/js/`・`/css/`・`/help/`・`/stats/` を**個別に** Disallow している。例外に
+入れたのは `/dnp/search/`（本当に禁止されており、今回の判断の対象）と
+`/tenant/<tenant>/`（事業者自身が Allow。標準ライブラリが Allow の優先順位を無視する
+ため、やむなく列挙）のみ。個別の Disallow はそのまま有効で、クライアントが拒否する。
+
+**このプロダクトは発言の分割をベンダー側がやってくれる**——本プロジェクト初。画面は
+空のシェルで、データは3つの POST（`councils/index` は1リクエストで全listing、
+`get_schedule_all`、`get_minute`）。1発言=1ブロックで、`title` がそのまま発言者行。
+「○」を正規表現で探す必要がないので、静岡で124発言・兵庫で55発言を失ったあの失敗が
+原理的に起こらない。POST 対応では**リクエスト本文をキャッシュキーに含める**ことが必須
+だった（3エンドポイント=3URLで、違いは本文だけ）。
+
+**17テナントで会議 14,910件**（本会議 3,103 / 委員会 11,807）、各テナントの
+`tenant.js` で `tenant_id` を照合済み。**宮城と新潟は1947年（昭和22年）まで**遡り、
+これまで最古だった兵庫（1986年）より39年深い。約48,000リクエスト・5秒で約66時間、
+同一ホストなので1プロセスで直列。
+
+試験取得で見つかった、いずれも黙って通る5件は英語側に列挙した。特に
+「渡邊直二公安委員長」→発言者「渡邊直二公安」は、役職名の辞書で切ると必ず起こる種類の
+事故なので、**辞書を作って計測して捨てた**。代わりに会議録自身の名簿から
+「名前」または「名簿に載る役職＋名簿の名前で裏が取れる場合」だけを切り、どちらでも
+ないものは**丸ごと保存して件数を数える**。埼玉は委員出欠表が**画像**なので100%が
+未分割——これは既知の制約として数字で書いた。解決するなら、収集後のコーパス全体に
+対する後処理（その県の本会議の括弧付きtitleが検証済みの役職辞書になる）であって、
+スクレイパ内の規則ではない。
+
+テスト150件・全てオフライン。まだ1件も収集していない。このブランチは仕組み・設定・
+検証まで。
+
 ## 2026-09-17 — 山梨, collected by hand because the assembly asked (`feat/yamanashi-manual-import`)
 
 *English and Japanese. / 英語と日本語で併記する。*

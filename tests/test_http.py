@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from prefectural_transcripts.http import Page, ResponseCache, sniff_encoding
 
 
@@ -157,3 +159,90 @@ def test_no_cache_still_stores_what_it_fetched(tmp_path: Path) -> None:
     assert stored is not None
     assert stored.encoding == "cp932"
     assert (stored.header_charset or "").lower() == "shift_jis"
+
+
+# --- POST, and the robots exemption it exists for --------------------------
+
+
+def test_post_caches_per_request_body(tmp_path: Path) -> None:
+    # Every SSP API call goes to one of three URLs and differs only in the body,
+    # so a URL-keyed cache would serve one 会議's transcript for all of them.
+    import httpx
+
+    from prefectural_transcripts.config import Settings
+    from prefectural_transcripts.http import PoliteClient
+
+    settings = Settings()
+    settings.cache_dir = tmp_path
+    settings.min_interval = 0.0
+    settings.respect_robots = False
+
+    seen: list[bytes] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.content)
+        return httpx.Response(200, json={"echo": request.content.decode()})
+
+    with PoliteClient(settings, client=httpx.Client(transport=httpx.MockTransport(handler))) as c:
+        first = c.post("https://example.invalid/api", json={"council_id": 1})
+        second = c.post("https://example.invalid/api", json={"council_id": 2})
+        again = c.post("https://example.invalid/api", json={"council_id": 1})
+
+    assert len(seen) == 2, "the repeat should have come from the cache"
+    assert first.body != second.body
+    assert again.from_cache and again.body == first.body
+
+
+def test_a_robots_exemption_must_say_why_and_when() -> None:
+    from prefectural_transcripts.config import RobotsExemption
+
+    with pytest.raises(ValueError, match="record why"):
+        RobotsExemption(prefixes=("https://x.invalid/a",), reason="  ", decided_on="2026-09-18")
+    with pytest.raises(ValueError, match="decided_on"):
+        RobotsExemption(
+            prefixes=("https://x.invalid/a",), reason="asked, not refused", decided_on="soon"
+        )
+    with pytest.raises(ValueError, match="at least one"):
+        RobotsExemption(prefixes=(), reason="asked, not refused", decided_on="2026-09-18")
+    with pytest.raises(ValueError, match="absolute"):
+        RobotsExemption(prefixes=("/dnp/search/",), reason="asked", decided_on="2026-09-18")
+
+
+def test_an_exemption_covers_its_prefixes_and_nothing_else(tmp_path: Path) -> None:
+    # The scoping is the point: SSP's operator disallows /tenant/js/ specifically,
+    # and that narrow refusal has to survive an exemption written for the API.
+    import httpx
+
+    from prefectural_transcripts.config import RobotsExemption, Settings
+    from prefectural_transcripts.http import PoliteClient, RobotsDisallowed
+
+    robots = "User-agent: *\nDisallow: /\nAllow: /tenant/\nDisallow: /tenant/js/\n"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text=robots)
+        return httpx.Response(200, text="ok")
+
+    settings = Settings()
+    settings.cache_dir = tmp_path
+    settings.min_interval = 0.0
+
+    exemption = RobotsExemption(
+        prefixes=("https://ssp.invalid/dnp/search/",),
+        reason="operator did not refuse when asked",
+        decided_on="2026-09-18",
+    )
+    transport = httpx.MockTransport(handler)
+
+    with (
+        PoliteClient(settings, client=httpx.Client(transport=transport)) as plain,
+        pytest.raises(RobotsDisallowed),
+    ):
+        plain.get("https://ssp.invalid/dnp/search/councils/index")
+
+    with PoliteClient(
+        settings, client=httpx.Client(transport=transport), robots_exempt=exemption
+    ) as client:
+        assert client.get("https://ssp.invalid/dnp/search/councils/index").status == 200
+        with pytest.raises(RobotsDisallowed):
+            client.get("https://ssp.invalid/tenant/js/release/config.js")
