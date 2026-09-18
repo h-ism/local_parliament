@@ -2,7 +2,8 @@
 
 System: gijiroku VOICES, <https://www.shigaken-gikai.jp/voices/>
 Status as of 2026-09-18: **permitted, restricted to weekend evenings.** Nothing
-collected yet, and nothing fetched — including for selector work.
+collected yet and nothing fetched; reconnaissance is scheduled for the first
+window, Sat 2026-09-19 20:00 JST.
 
 ---
 
@@ -71,23 +72,50 @@ address 滋賀 has on file is the collaborator's. A site config can therefore ca
 
 ```toml
 [contact]
-address = "…"
-note = "照会は共同研究者が行い、2026-09-18に許可を得た"
+address = "(共同研究者Aの連絡先)"
+note = "照会は共同研究者Aが行い、2026-09-18 に許可を得た"
 ```
 
-which replaces `PT_CONTACT` in the User-Agent for that site alone, and prints
-itself at the start of the run. **It is empty for now**: the address has not been
-supplied, and inventing one would be worse than the default. Note that if one
-address covers every enquiry, the honest fix is the project-level `PT_CONTACT`
-instead — which is still marked 仮おき in `docs/collection-targets.md`, and is
-what the SSP crawl is currently broadcasting.
+which replaces `PT_CONTACT` in the User-Agent for that site alone and prints
+itself at the start of the run. **共同研究者A, given
+2026-09-18**, is the address 滋賀 has on file, and it is what
+`scripts/recon_shiga.py` already sends; it goes into `sites/shiga.toml` the
+moment that file exists.
+
+Note that the project-level `PT_CONTACT` (a 京都大学 address) is still marked
+仮おき in `docs/collection-targets.md`, and is what the SSP crawl is currently
+broadcasting. If one address covers every enquiry, that is the thing to fix.
+
+## The first window: reconnaissance, scheduled
+
+**Sat 2026-09-19 20:00 JST**, by a `systemd --user` timer created 2026-09-18:
+
+```
+systemctl --user list-timers pt-shiga-recon.timer     # NEXT / LEFT
+journalctl --user -u pt-shiga-recon.service           # what it did
+tail -f data/logs/shiga/recon.log                     # the same, as it runs
+systemctl --user stop pt-shiga-recon.timer            # call it off
+```
+
+It runs `scripts/recon_shiga.py`, and what it does is **look, not collect**:
+at most 40 pages under `/voices/`, depth 2, 2 seconds apart, all of it into the
+cache. It cannot run at the wrong time — `PoliteClient` carries the window, so a
+timer that fires on a Tuesday fetches nothing and says why.
+
+Collecting cannot be scheduled yet, and should not be: there is no
+`sites/shiga.toml`, because nobody has seen this site's markup. **Fetch inside
+the window; think outside it.** The selectors get worked out afterwards from the
+cache, at no cost to their server, and the first real run goes in a later window.
+
+Two caveats about the timer itself: it is transient, so it does not survive a
+reboot, and `Linger=no` for this user, so it needs a login session to be alive at
+20:00. `loginctl enable-linger` fixes the second if that is a problem.
 
 ## Still to do, in order
 
-1. Decide what goes in the User-Agent (above), and set it before fetching.
-2. First window: **2026-09-19 (Sat) 20:00 JST**. Inside it, work out the
-   selectors with `pt inspect` — VOICES is a CGI search system and nothing about
-   its markup has been checked yet.
+1. ~~Decide what goes in the User-Agent~~ — 共同研究者A.
+2. ~~First window~~ — scheduled; see above. Read the report and the cache
+   afterwards, offline.
 3. `robots.txt` still disallows the CGI directory. The answer above is the
    operator's own instruction and overrides that reading, but the exemption has
    to be written down the same way SSP's is: prefixes, reason, date, in the
