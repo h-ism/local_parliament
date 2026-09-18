@@ -30,7 +30,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from charset_normalizer import from_bytes
 
-from prefectural_transcripts.config import RobotsExemption, Settings
+from prefectural_transcripts.config import FetchWindow, RobotsExemption, Settings
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +45,22 @@ class FetchError(RuntimeError):
 
 class RobotsDisallowed(FetchError):
     """Raised when robots.txt forbids the URL for our user-agent."""
+
+
+class OutsideFetchWindow(RuntimeError):
+    """Raised when an operator's agreed hours do not cover now.
+
+    Deliberately **not** a `FetchError`. A fetch error is one document's problem
+    and `scrape()` carries on past it; being outside the hours an assembly asked
+    for is the whole run's problem, and carrying on would mean 4,000 refusals in
+    a row — each of them a promise broken once. `BaseScraper.scrape` lets this
+    one through.
+    """
+
+
+def current_time() -> datetime:
+    """Now, as an aware UTC datetime. A seam the tests replace."""
+    return datetime.now(UTC)
 
 
 @dataclass(slots=True)
@@ -209,10 +225,13 @@ class PoliteClient:
         settings: Settings | None = None,
         client: httpx.Client | None = None,
         robots_exempt: RobotsExemption | None = None,
+        fetch_window: FetchWindow | None = None,
     ) -> None:
         self.settings = settings or Settings()
         self.cache = ResponseCache(self.settings.cache_dir)
         self.robots_exempt = robots_exempt
+        self.fetch_window = fetch_window
+        """Hours an operator restricted fetching to, from the site config."""
         """Scoped exception to robots.txt, from the site config. See `RobotsExemption`."""
         self._exemptions_logged: set[str] = set()
         self._hosts: dict[str, _HostState] = {}
@@ -261,6 +280,22 @@ class PoliteClient:
             state.crawl_delay = float(delay)
             log.info("%s advertises Crawl-delay: %ss", parsed.netloc, delay)
 
+    def _check_window(self, url: str) -> None:
+        """Refuse outside the hours the operator asked for.
+
+        Checked after the cache, so a cached page is still served at any hour —
+        reading what we already hold is not fetching, and a re-parse or an audit
+        must not have to wait for Saturday night.
+        """
+        window = self.fetch_window
+        if window is None or window.allows(current_time()):
+            return
+        raise OutsideFetchWindow(
+            f"{url} is outside the agreed hours ({window.describe()}); "
+            f"next window opens {window.next_open(current_time()):%Y-%m-%d %H:%M %Z}. "
+            f"{window.reason}"
+        )
+
     def _check_robots(self, url: str) -> None:
         if not self.settings.respect_robots:
             return
@@ -307,6 +342,7 @@ class PoliteClient:
             log.debug("cache hit %s", url)
             return cached
 
+        self._check_window(url)
         self._check_robots(url)
         page = self._send_with_retries("GET", url)
         # Written even when the cache is switched off for reading: `use_cache=False`
@@ -342,6 +378,7 @@ class PoliteClient:
             log.debug("cache hit %s %s", url, body)
             return cached
 
+        self._check_window(url)
         self._check_robots(url)
         page = self._send_with_retries("POST", url, json=json, data=data)
         self.cache.put(page, key=key, request=body)

@@ -23,7 +23,7 @@ from urllib.parse import urldefrag, urljoin
 
 from bs4 import BeautifulSoup, Tag
 
-from prefectural_transcripts.config import RobotsExemption
+from prefectural_transcripts.config import FetchWindow, RobotsExemption
 from prefectural_transcripts.dates import parse_japanese_date
 from prefectural_transcripts.http import Page, PoliteClient
 from prefectural_transcripts.models import Meeting, MeetingRef, Speech
@@ -137,6 +137,7 @@ class SiteConfig:
     detail: DetailSelectors
     name: str = ""
     robots_exempt: RobotsExemption | None = None
+    fetch_window: FetchWindow | None = None
 
     @classmethod
     def from_toml(cls, path: Path) -> SiteConfig:
@@ -149,6 +150,7 @@ class SiteConfig:
                 detail=DetailSelectors(**raw.get("detail", {})),
                 name=raw.get("name", path.stem),
                 robots_exempt=RobotsExemption.from_toml(raw.get("robots", {})),
+                fetch_window=FetchWindow.from_toml(raw.get("fetch_window", {})),
             )
         except (KeyError, TypeError) as exc:
             raise ValueError(f"invalid site config {path}: {exc}") from exc
@@ -204,6 +206,7 @@ class GenericScraper(BaseScraper):
         self.config = config
         self.prefecture = config.prefecture
         self.robots_exempt = config.robots_exempt
+        self.fetch_window = config.fetch_window
 
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:
         sel = self.config.list

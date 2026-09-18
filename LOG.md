@@ -2,6 +2,96 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-18 — 滋賀, a permission with hours attached (`feat/fetch-window`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**滋賀県議会事務局 answered, and said yes — 「取得の時間帯を土日の夜間帯（20時以降）
+に限定するようお願い申し上げます」.** They quoted our own letter's five
+undertakings back at us and pinned down the fourth. That is the third kind of
+answer this project has had in a month: 山梨 said don't crawl the system, use the
+download button; SSP did not refuse; 滋賀 permits, inside hours.
+
+**A promise about *when* fails the way a promise about *how fast* would** —
+silently, and only in the logs of the person inconvenienced by it. So the hours
+are a `[fetch_window]` table in the site config, not a line in a runbook:
+
+```toml
+[fetch_window]
+days = ["sat", "sun"]
+start = "20:00"
+end = "24:00"
+reason = "滋賀県議会事務局の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降）に限定"
+decided_on = "2026-09-18"
+```
+
+Four decisions inside that, each of which could have gone wrong quietly:
+
+- **`OutsideFetchWindow` is not a `FetchError`.** `scrape()` swallows fetch errors
+  and moves to the next document, which is right for one bad page. Being outside
+  the agreed hours is the *run's* condition, not a document's: swallowing it would
+  break the same promise once per document, thousands of times, and the run would
+  finish looking normal. `BaseScraper.scrape` re-raises this one alone.
+- **A cached page is still served at any hour.** Reading what we already hold is
+  not fetching, and `reparse.py` and `audit.py` are the checks this project asks
+  for most often — making them wait for Saturday night would enforce a promise
+  about fetching against something that is not a fetch.
+- **The window is evaluated in `Asia/Tokyo`.** A machine on UTC would otherwise
+  fetch at 05:00 滋賀 time and be exactly wrong.
+- **「20時以降」 means until the day ends.** `end = "24:00"` reads as midnight-the-end,
+  not as a `[20:00, 00:00)` that is empty — which would have refused every request
+  and looked like a bug in the crawler rather than a misread instruction.
+
+`pt scrape` also says it in one line before fetching anything, with the next
+opening time, rather than letting the first request fail.
+
+**Nothing has been fetched from 滋賀 — not even a page to work out selectors.**
+Today is Friday; the first window is 2026-09-19 20:00 JST. And one thing has to be
+settled before it opens: **the reply is addressed to 共同研究者A 様**,
+not to this project's `PT_CONTACT` (a 京都大学 address, itself marked 仮おき). That
+decides what goes in the User-Agent, which is the third undertaking the
+secretariat named. Either the letter went out under a collaborator's name, or the
+permission is not ours to use. `docs/shiga.md` has the rest.
+
+The count of assemblies that "forbid crawling" has now been wrong twice in one
+month, in both directions, for the same reason: **robots.txt is one statement an
+operator makes, and not the last one.** 24 became 22.
+
+### 日本語
+
+**滋賀県議会事務局から回答。許可、ただし条件付き**——こちらの手紙に書いた
+【サーバへの負荷について】5項目を引用したうえで、4項目目を具体化して
+「**取得の時間帯を土日の夜間帯（20時以降）に限定**」するよう求められた。1か月で3種類目の
+答えである（山梨＝システムは自動取得せずダウンロードボタンで、SSP＝拒否はしない、
+滋賀＝時間帯を限れば可）。
+
+**「いつ」の約束は「どれくらい速く」の約束と同じ壊れ方をする**——黙って壊れ、
+気づくのは迷惑をかけた相手のログだけ。だから運用メモではなくサイト設定の
+`[fetch_window]` にした。判断は4つ：
+
+- **`OutsideFetchWindow` は `FetchError` にしない。** `scrape()` は FetchError を
+  握りつぶして次の文書へ進む。1ページの失敗ならそれでよいが、時間帯は**実行全体に
+  かかる条件**で、握りつぶせば同じ約束を文書ごとに何千回も破り、実行は正常に見えたまま
+  終わる。これだけは再送出する。
+- **キャッシュ済みページは何時でも返す。** 手元にあるものを読むのは取得ではない。
+  `reparse.py`・`audit.py` を土曜の夜まで待たせるのは、取得の約束を取得でないものに
+  適用することになる。
+- **判定は `Asia/Tokyo`。** UTC のマシンなら滋賀の朝5時に取りにいってしまう。
+- **「20時以降」は日が変わるまで。** `end = "24:00"` を `[20:00, 00:00)` と読むと
+  空集合になり、全リクエストが拒否されて「クローラのバグ」に見える。指示の読み違いが
+  バグの顔をして出てくるのが一番たちが悪い。
+
+**滋賀にはまだ1リクエストも投げていない**（選択子の下見も含む）。今日は金曜で、最初の
+窓は 2026-09-19 20:00 JST。それまでに決めるべきことが1つ：**メールの宛先が
+「共同研究者A 様」**で、本プロジェクトの `PT_CONTACT`（京都大学・
+仮おき）と一致しない。User-Agent に何を書くかが決まらない——これは先方が名指しした
+3項目目そのもの。共同研究者宛なのか別件なのかを確かめる。詳細は `docs/shiga.md`。
+
+「取得不可」と数えていた議会の数は、1か月で2度、しかも両方向に間違った。理由は同じで、
+**robots.txt は事業者の1つの意思表示であって最後のものではない**。24 → 22。
+
 ## 2026-09-18 — SSP, 17 tenants, on an answer that was not a refusal (`feat/ssp-collection`)
 
 *English and Japanese. / 英語と日本語で併記する。*

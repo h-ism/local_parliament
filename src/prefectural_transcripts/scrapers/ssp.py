@@ -46,7 +46,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from prefectural_transcripts.config import RobotsExemption
+from prefectural_transcripts.config import FetchWindow, RobotsExemption
 from prefectural_transcripts.dates import ERA_BASE, parse_japanese_date
 from prefectural_transcripts.http import FetchError, Page, PoliteClient
 from prefectural_transcripts.models import Meeting, MeetingRef, Speech
@@ -118,6 +118,7 @@ class SspConfig:
     name: str = ""
     base_url: str = "https://ssp.kaigiroku.net/"
     robots_exempt: RobotsExemption | None = None
+    fetch_window: FetchWindow | None = None
 
     years: list[int] = field(default_factory=list)
     """`view_year` nodes to list, e.g. `[2025, 2026]`. Empty means every year.
@@ -142,6 +143,7 @@ class SspConfig:
                 tenant=opts.pop("tenant"),
                 tenant_id=int(opts.pop("tenant_id")),
                 robots_exempt=RobotsExemption.from_toml(raw.get("robots", {})),
+                fetch_window=FetchWindow.from_toml(raw.get("fetch_window", {})),
                 **opts,
             )
         except (KeyError, TypeError) as exc:
@@ -418,6 +420,7 @@ class SspScraper(BaseScraper):
         self.config = config
         self.prefecture = config.prefecture
         self.robots_exempt = config.robots_exempt
+        self.fetch_window = config.fetch_window
         self.outcome = Outcome()
         self._sittings: dict[str, Sitting] = {}
         """Listing metadata by ref key. `MeetingRef` is deliberately cheap, and the

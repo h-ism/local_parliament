@@ -96,6 +96,11 @@ Modules under `src/prefectural_transcripts/`:
   Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
   decision recorded in its configs — don't lower that either, and don't run two
   SSP tenants at once: all 17 share one host and the limiter is per-process.
+- **An operator's condition goes in the config, not in a runbook.** Two exist:
+  `[robots]` (`RobotsExemption`) and `[fetch_window]` (`FetchWindow`). Both refuse
+  to load without a reason and a date, both are scoped to one site, and both
+  announce themselves. A condition someone has to remember is one that will be
+  broken on a Tuesday afternoon with nothing to show for it.
 - **Don't invent selectors or URLs.** A config goes into `sites/` only once its
   selectors have been checked against the real markup. Work them out with
   `uv run pt inspect <url> --selector <css>`, then confirm with
@@ -171,11 +176,25 @@ See `docs/kensakusystem.md`.
 
 **Blocked, and why it is not a scraping problem**
 
-24 assemblies forbid crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
-gijiroku VOICES' CGI directory). No amount of selector work changes that; the way
-through is `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it —
-that is the researcher's call, not ours, and it contradicts the politeness
-convention above.
+24 assemblies forbade crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
+gijiroku VOICES' CGI directory) — **22 now**: 山梨 moved to hand collection and
+滋賀 answered. No amount of selector work changes the rest; the way through is
+`docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it — that is the
+researcher's call, not ours, and when it is made it gets written down in a config
+(`RobotsExemption`), not switched off for every site in the run.
+
+**滋賀 — permitted, inside agreed hours (2026-09-18)**
+
+The third kind of answer, after 山梨's and SSP's: an unambiguous yes with a
+condition about *when*. 「取得の時間帯を土日の夜間帯（20時以降）に限定するよう
+お願い申し上げます」. So a site config can carry a `[fetch_window]` table (days,
+start, end, reason, decided_on) and `PoliteClient` refuses outside it with
+`OutsideFetchWindow` — not a `FetchError`, because `scrape()` carries on past
+those and carrying on here would break the same promise once per document. A
+cached page is still served at any hour: reading what we hold is not fetching.
+**Nothing is collected or even inspected yet**, and one thing must be settled
+first — the reply is addressed to 共同研究者A 様, not to this
+project's `PT_CONTACT`. See `docs/shiga.md`.
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 

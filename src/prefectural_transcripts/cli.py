@@ -11,7 +11,7 @@ from typing import Annotated
 import typer
 
 from prefectural_transcripts.config import Settings
-from prefectural_transcripts.http import PoliteClient
+from prefectural_transcripts.http import PoliteClient, current_time
 from prefectural_transcripts.importers.dbsearch import DbSearchImporter, find_downloads
 from prefectural_transcripts.scrapers import (
     GenericScraper,
@@ -93,6 +93,15 @@ def scrape(
         settings.use_cache = False
 
     scraper = load_scraper(name)
+    # Said before anything is fetched, rather than as the first request's
+    # refusal: a run started at the wrong hour should say so in one line.
+    if (window := scraper.fetch_window) and not window.allows(current_time()):
+        typer.echo(
+            f"{name} may only be fetched {window.describe()} — "
+            f"next window opens {window.next_open(current_time()):%Y-%m-%d %H:%M %Z}."
+        )
+        typer.echo(f"Reason ({window.decided_on}): {window.reason}")
+        raise typer.Exit(1)
     if start_url:
         # Narrowing the entry points is the only way to scope a crawl on a site
         # whose index carries no dates: --since/--until can only filter after a

@@ -16,8 +16,13 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from datetime import date
 
-from prefectural_transcripts.config import RobotsExemption
-from prefectural_transcripts.http import FetchError, Page, PoliteClient
+from prefectural_transcripts.config import FetchWindow, RobotsExemption
+from prefectural_transcripts.http import (
+    FetchError,
+    OutsideFetchWindow,
+    Page,
+    PoliteClient,
+)
 from prefectural_transcripts.models import Meeting, MeetingRef
 
 log = logging.getLogger(__name__)
@@ -34,6 +39,9 @@ class BaseScraper(ABC):
     None everywhere except SSP. The client is handed it per run, so an exemption
     written for one site cannot reach another.
     """
+
+    fetch_window: FetchWindow | None = None
+    """Hours this site's operator restricted fetching to, read from its config."""
 
     @abstractmethod
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:
@@ -92,6 +100,12 @@ class BaseScraper(ABC):
             try:
                 page = self.fetch_meeting(ref, client)
                 meeting = self.parse_meeting(ref, page)
+            except OutsideFetchWindow:
+                # Not caught with the rest: the hours are the operator's
+                # condition on the whole run, and continuing would break the
+                # same promise once per document, in a log nobody reads until
+                # afterwards. Stop, and let the caller say when to resume.
+                raise
             except FetchError as exc:
                 log.error("could not fetch %s: %s", ref.url, exc)
                 continue

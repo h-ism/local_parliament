@@ -9,9 +9,10 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 DEFAULT_CONTACT = "research-crawler@example.invalid"
 
@@ -108,4 +109,103 @@ class RobotsExemption:
         except KeyError as exc:
             raise ValueError(
                 f"a [robots] table needs exempt, reason and decided_on; missing {exc}"
+            ) from exc
+
+
+_WEEKDAYS = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
+
+
+@dataclass(frozen=True, slots=True)
+class FetchWindow:
+    """The days and hours an operator has restricted fetching to.
+
+    滋賀県議会事務局, answering on 2026-09-18, permitted collection and asked for
+    one thing in return: 「取得の時間帯を土日の夜間帯（20時以降）に限定するよう
+    お願い申し上げます」. That is a condition on a permission, not a refusal, and it
+    is the first of its kind this project has been given.
+
+    It lives here rather than in a runbook because a promise about *when* fails
+    the same way a promise about *how fast* would: silently, and only in the
+    logs of the person who was inconvenienced. A window in the site config is
+    checked before every request, says in the config whose instruction it is,
+    and refuses rather than drifting.
+    """
+
+    days: tuple[int, ...]
+    """Weekdays the window is open, Monday = 0, as `datetime.weekday()` numbers them."""
+
+    start: time
+    end: time
+    """Half-open [start, end) in `timezone`. `end` of 00:00 means midnight, the day's end."""
+
+    reason: str
+    """Whose instruction this is, in their words where possible."""
+
+    decided_on: str
+    timezone: str = "Asia/Tokyo"
+
+    def __post_init__(self) -> None:
+        if not self.days:
+            raise ValueError("a fetch window must name at least one day")
+        if not self.reason.strip():
+            raise ValueError("a fetch window must record whose instruction it is")
+        try:
+            date.fromisoformat(self.decided_on)
+        except ValueError as exc:
+            raise ValueError(
+                f"fetch window needs decided_on as YYYY-MM-DD, got {self.decided_on!r}"
+            ) from exc
+        ZoneInfo(self.timezone)
+
+    @property
+    def zone(self) -> ZoneInfo:
+        return ZoneInfo(self.timezone)
+
+    def allows(self, when: datetime) -> bool:
+        local = when.astimezone(self.zone)
+        if local.weekday() not in self.days:
+            return False
+        moment = local.time()
+        if self.end == time(0, 0):
+            return moment >= self.start
+        return self.start <= moment < self.end
+
+    def next_open(self, when: datetime) -> datetime:
+        """When the window next opens, for a message a person can act on."""
+        local = when.astimezone(self.zone)
+        for ahead in range(8):
+            day = (local + timedelta(days=ahead)).date()
+            if day.weekday() not in self.days:
+                continue
+            opens = datetime.combine(day, self.start, tzinfo=self.zone)
+            if opens >= local:
+                return opens
+            if ahead == 0 and self.allows(local):
+                return local
+        raise ValueError("a fetch window with no opening in the next week")
+
+    def describe(self) -> str:
+        names = [name for name, number in _WEEKDAYS.items() if number in self.days]
+        end = "24:00" if self.end == time(0, 0) else self.end.strftime("%H:%M")
+        return f"{'/'.join(names)} {self.start.strftime('%H:%M')}-{end} {self.timezone}"
+
+    @classmethod
+    def from_toml(cls, raw: Mapping[str, Any]) -> FetchWindow | None:
+        """Read a `[fetch_window]` table from a site config; None when there is none."""
+        if not raw:
+            return None
+        try:
+            days = tuple(sorted(_WEEKDAYS[str(d).lower()[:3]] for d in raw["days"]))
+            return cls(
+                days=days,
+                start=time.fromisoformat(str(raw["start"])),
+                end=time.fromisoformat("00:00" if str(raw["end"]) == "24:00" else str(raw["end"])),
+                reason=raw["reason"],
+                decided_on=raw["decided_on"],
+                timezone=raw.get("timezone", "Asia/Tokyo"),
+            )
+        except KeyError as exc:
+            raise ValueError(
+                "a [fetch_window] table needs days, start, end, reason and "
+                f"decided_on; missing {exc}"
             ) from exc
