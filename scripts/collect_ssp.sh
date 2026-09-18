@@ -20,7 +20,7 @@
 #   bash scripts/collect_ssp.sh                  # foreground
 #   nohup bash scripts/collect_ssp.sh &> /dev/null &   # and leave it
 #   tail -f data/logs/ssp/<site>.log
-#   until [ -f data/logs/ssp/DONE ]; do sleep 300; done   # wait, correctly
+#   until [ -f data/logs/ssp/DONE-small ]; do sleep 300; done   # wait, correctly
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -29,7 +29,19 @@ DELAY=${PT_SSP_DELAY:-5}
 LOGS=data/logs/ssp
 mkdir -p "$LOGS"
 
-SITES=(
+# Named sites run instead of all of them:
+#
+#   bash scripts/collect_ssp.sh                 # all 17, smallest first
+#   bash scripts/collect_ssp.sh small           # the 11 under 1,000 会議
+#   bash scripts/collect_ssp.sh large           # the 6 over 1,000
+#   bash scripts/collect_ssp.sh ssp_nara ssp_gifu
+#
+# The split is where the counts themselves split: 岐阜 has 633 会議 and 長崎 1,089,
+# and the six above that line are 11,429 of the 14,910 between them. Running the
+# small ones first is not only politeness to the queue — a prefecture that
+# *finishes* can be checked (docs/ssp.md §7), and a rule that turns out wrong is
+# then wrong in 500 documents rather than in 12,000.
+SMALL=(
   ssp_fukushima   # 124 会議
   ssp_oita        # 163
   ssp_okayama     # 184
@@ -41,6 +53,8 @@ SITES=(
   ssp_kanagawa    # 465
   ssp_okinawa     # 509
   ssp_gifu        # 633
+)
+LARGE=(
   ssp_nagasaki    # 1,089
   ssp_tokushima   # 1,308
   ssp_kochi       # 1,336
@@ -49,8 +63,16 @@ SITES=(
   ssp_miyagi      # 4,234
 )
 
-rm -f "$LOGS/DONE"
-echo "$(date -Is) starting ${#SITES[@]} tenants at ${DELAY}s/request, pid $$" | tee -a "$LOGS/run.log"
+case "${1:-all}" in
+  all)   SITES=("${SMALL[@]}" "${LARGE[@]}") ;;
+  small) SITES=("${SMALL[@]}") ;;
+  large) SITES=("${LARGE[@]}") ;;
+  *)     SITES=("$@") ;;
+esac
+
+DONE_MARK="$LOGS/DONE-${1:-all}"
+rm -f "$DONE_MARK"
+echo "$(date -Is) starting ${#SITES[@]} tenants (${1:-all}) at ${DELAY}s/request, pid $$" | tee -a "$LOGS/run.log"
 
 for site in "${SITES[@]}"; do
   if [ -f "$LOGS/$site.done" ]; then
@@ -72,5 +94,5 @@ for site in "${SITES[@]}"; do
   sleep "$DELAY"
 done
 
-date -Is > "$LOGS/DONE"
+date -Is > "$DONE_MARK"
 echo "$(date -Is) all tenants attempted" | tee -a "$LOGS/run.log"
