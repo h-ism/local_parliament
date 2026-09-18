@@ -2,7 +2,7 @@
 
 Newest first. One entry per branch of work.
 
-## 2026-09-18 — 滋賀, a permission with hours attached (`feat/fetch-window`)
+## 2026-09-18 — 滋賀 and 石川, permissions with hours attached (`feat/fetch-window`)
 
 *English and Japanese. / 英語と日本語で併記する。*
 
@@ -68,6 +68,21 @@ the SSP crawl is broadcasting right now. `docs/shiga.md` has the rest.
 The count of assemblies that "forbid crawling" has now been wrong twice in one
 month, in both directions, for the same reason: **robots.txt is one statement an
 operator makes, and not the last one.** 24 became 22.
+
+**石川も同じ日に、同じ条件で答えた。** 石川県議会事務局企画調査課:
+「取得の時間帯を土日の夜間帯（20時以降など）に限定いただいた上での自動取得は可能」。
+同じ製品 (gijiroku VOICES) の運営者が二人とも同じ時間帯を指定したということで、
+`[fetch_window]` は一つのサイトのために書いた翌時間には二つ目が必要になった。
+
+石川はもう一つ言っている。**定例会の会期中（9月30日まで）だから取得時間帯に
+くれぐれも留意せよ**、と。許可はその日付で切れないが、なぜ時間帯が問題なのかを
+これ以上なく明確に述べている——会期中にそのサーバを必要としているのは、
+そこを使っている人たちである。だから**下見は今週末、本収集は10月以降**にする。
+土曜の夜の40ページは負荷ではないが、会期中に全archiveを歩くのは別の話で、
+このコーパスにそれを9月中にやる理由は一つもない。規則ではなく強調に従う。
+
+`scripts/recon_voices.py` は両県を1プロセスで順に見に行く。タイマーは
+`pt-voices-recon.timer`、土 2026-09-19 20:00 JST。
 
 ### 日本語
 

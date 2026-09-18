@@ -79,7 +79,7 @@ note = "照会は共同研究者Aが行い、2026-09-18 に許可を得た"
 which replaces `PT_CONTACT` in the User-Agent for that site alone and prints
 itself at the start of the run. **共同研究者A, given
 2026-09-18**, is the address 滋賀 has on file, and it is what
-`scripts/recon_shiga.py` already sends; it goes into `sites/shiga.toml` the
+`scripts/recon_voices.py` already sends; it goes into `sites/shiga.toml` the
 moment that file exists.
 
 Note that the project-level `PT_CONTACT` (a 京都大学 address) is still marked
@@ -91,13 +91,15 @@ broadcasting. If one address covers every enquiry, that is the thing to fix.
 **Sat 2026-09-19 20:00 JST**, by a `systemd --user` timer created 2026-09-18:
 
 ```
-systemctl --user list-timers pt-shiga-recon.timer     # NEXT / LEFT
-journalctl --user -u pt-shiga-recon.service           # what it did
-tail -f data/logs/shiga/recon.log                     # the same, as it runs
-systemctl --user stop pt-shiga-recon.timer            # call it off
+systemctl --user list-timers pt-voices-recon.timer    # NEXT / LEFT
+journalctl --user -u pt-voices-recon.service          # what it did
+tail -f data/logs/voices-recon.log                    # the same, as it runs
+systemctl --user stop pt-voices-recon.timer           # call it off
 ```
 
-It runs `scripts/recon_shiga.py`, and what it does is **look, not collect**:
+It runs `scripts/recon_voices.py` — shared with 石川, which answered the same day
+on the same terms (`docs/ishikawa.md`) — and what it does is **look, not
+collect**:
 at most 40 pages under `/voices/`, depth 2, 2 seconds apart, all of it into the
 cache. It cannot run at the wrong time — `PoliteClient` carries the window, so a
 timer that fires on a Tuesday fetches nothing and says why.

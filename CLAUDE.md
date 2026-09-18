@@ -178,28 +178,31 @@ See `docs/kensakusystem.md`.
 **Blocked, and why it is not a scraping problem**
 
 24 assemblies forbade crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
-gijiroku VOICES' CGI directory) — **22 now**: 山梨 moved to hand collection and
-滋賀 answered. No amount of selector work changes the rest; the way through is
+gijiroku VOICES' CGI directory) — **21 now**: 山梨 moved to hand collection, and
+滋賀 and 石川 answered. No amount of selector work changes the rest; the way through is
 `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it — that is the
 researcher's call, not ours, and when it is made it gets written down in a config
 (`RobotsExemption`), not switched off for every site in the run.
 
-**滋賀 — permitted, inside agreed hours (2026-09-18)**
+**滋賀・石川 — permitted, inside agreed hours (2026-09-18)**
 
 The third kind of answer, after 山梨's and SSP's: an unambiguous yes with a
-condition about *when*. 「取得の時間帯を土日の夜間帯（20時以降）に限定するよう
+condition about *when*. Both said it on the same day, about the same product
+(gijiroku VOICES): 「取得の時間帯を土日の夜間帯（20時以降）に限定するよう
 お願い申し上げます」. So a site config can carry a `[fetch_window]` table (days,
 start, end, reason, decided_on) and `PoliteClient` refuses outside it with
 `OutsideFetchWindow` — not a `FetchError`, because `scrape()` carries on past
 those and carrying on here would break the same promise once per document. A
 cached page is still served at any hour: reading what we hold is not fetching.
-**Nothing is collected or even inspected yet**; the first window is 2026-09-19
-20:00 JST. The reply is addressed to 共同研究者A 様 because **every
+**Nothing is collected or even inspected yet**; reconnaissance for both is
+scheduled for the first window, 2026-09-19 20:00 JST
+(`scripts/recon_voices.py`, a `systemd --user` timer). **石川 is sitting until
+2026-09-30 and said so pointedly**, so its bulk collection waits for October —
+that is their emphasis, not their rule, and following it costs nothing. The reply is addressed to 共同研究者A 様 because **every
 letter in `docs/inquiries/` was sent by a collaborator** (confirmed 2026-09-18) —
 so the permission is ours, and what is open is only what goes in the User-Agent.
 A site config can name its own `[contact]` (`Contact`), which replaces
-`PT_CONTACT` for that site and prints at the start of the run; 滋賀's is empty
-until the address is supplied. See `docs/shiga.md`.
+`PT_CONTACT` for that site and prints at the start of the run — 共同研究者A for both. See `docs/shiga.md`, `docs/ishikawa.md`.
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 
