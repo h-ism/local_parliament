@@ -21,7 +21,7 @@ answer is "yes, on the terms you offered, and pin down the fourth one":
 | --- | --- |
 | 1リクエストにつき2秒以上、並列アクセスなし | unchanged; the project default is 2 s |
 | 取得済みは保存し再取得しない | unchanged; every response is cached |
-| User-Agent に研究用と連絡先 | **see the open question below** |
+| User-Agent に研究用と連絡先 | the address 滋賀 knows is the collaborator's — see below |
 | 業務時間帯を避ける、指示に従う | **土日の20時以降のみ** |
 | 支障が生じたら直ちに停止 | unchanged |
 
@@ -103,5 +103,5 @@ statement an operator makes, and not the last one.** 山梨 moved to hand
 collection, SSP to collection under a recorded decision, 滋賀 to collection
 inside agreed hours. Each letter that comes back can move an assembly between
 categories, and the code has had to grow a mechanism for each one. Expect the
-next answer to need a third mechanism, and write it down rather than
+next answer to need a mechanism of its own, and write it down rather than
 remembering it.
