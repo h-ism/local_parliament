@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from datetime import date
 
-from prefectural_transcripts.config import FetchWindow, RobotsExemption
+from prefectural_transcripts.config import Contact, FetchWindow, RobotsExemption
 from prefectural_transcripts.http import (
     FetchError,
     OutsideFetchWindow,
@@ -42,6 +42,9 @@ class BaseScraper(ABC):
 
     fetch_window: FetchWindow | None = None
     """Hours this site's operator restricted fetching to, read from its config."""
+
+    contact: Contact | None = None
+    """The address this site's operator knows, when it is not `PT_CONTACT`."""
 
     @abstractmethod
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:

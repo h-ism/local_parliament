@@ -162,3 +162,30 @@ def test_a_window_refusal_stops_a_run_rather_than_repeating_per_document(
     friday = datetime(2026, 9, 18, 16, 31, tzinfo=JST)
     with _client(tmp_path, friday, monkeypatch) as client, pytest.raises(OutsideFetchWindow):
         list(OneDocument().scrape(client))
+
+
+# --- who the operator can reach --------------------------------------------
+
+
+def test_a_site_can_name_the_address_its_operator_knows() -> None:
+    # 滋賀's permission answers an enquiry a collaborator made, so the address
+    # its secretariat has on file is not this project's PT_CONTACT.
+    from prefectural_transcripts.config import Contact
+
+    table = tomllib.loads(
+        "[contact]\n"
+        'address = "someone@example.ac.jp"\n'
+        'note = "照会は共同研究者が行い、2026-09-18に許可を得た"\n'
+    )["contact"]
+    contact = Contact.from_toml(table)
+
+    assert contact is not None
+    assert contact.address == "someone@example.ac.jp"
+    assert "共同研究者" in contact.note
+
+
+def test_a_contact_has_to_be_reachable() -> None:
+    from prefectural_transcripts.config import Contact
+
+    with pytest.raises(ValueError, match="an operator can use"):
+        Contact(address="共同研究者A")

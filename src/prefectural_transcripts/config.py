@@ -209,3 +209,43 @@ class FetchWindow:
                 "a [fetch_window] table needs days, start, end, reason and "
                 f"decided_on; missing {exc}"
             ) from exc
+
+
+@dataclass(frozen=True, slots=True)
+class Contact:
+    """Who one site's operator should be able to reach, when it is not the default.
+
+    `PT_CONTACT` is the project's address and goes in every User-Agent. 滋賀 is the
+    first site where that is the wrong one: the enquiry it answered on 2026-09-18
+    was made by a collaborator, so the address the
+    secretariat has on file — and would reply to if the crawl troubled them — is
+    theirs, not this project's.
+
+    Writing it into the site config rather than exporting a different `PT_CONTACT`
+    for that run is the same decision as `FetchWindow`: the third undertaking in
+    that letter was 「User-Agent に研究用である旨と当方の連絡先を明記します」, and an
+    undertaking someone has to remember to re-export is one that will be wrong on
+    a Tuesday afternoon with nothing to show for it.
+    """
+
+    address: str
+    """What goes in the User-Agent — an address the operator can actually reach."""
+
+    note: str = ""
+    """Why this site differs: whose enquiry it was, and when it was answered."""
+
+    def __post_init__(self) -> None:
+        if "@" not in self.address and not self.address.startswith("http"):
+            raise ValueError(
+                f"a site contact must be an address an operator can use, got {self.address!r}"
+            )
+
+    @classmethod
+    def from_toml(cls, raw: Mapping[str, Any]) -> Contact | None:
+        """Read a `[contact]` table from a site config; None when there is none."""
+        if not raw:
+            return None
+        try:
+            return cls(address=raw["address"], note=raw.get("note", ""))
+        except KeyError as exc:
+            raise ValueError(f"a [contact] table needs an address; missing {exc}") from exc

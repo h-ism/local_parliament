@@ -48,12 +48,22 @@ Four decisions inside that, each of which could have gone wrong quietly:
 opening time, rather than letting the first request fail.
 
 **Nothing has been fetched from 滋賀 — not even a page to work out selectors.**
-Today is Friday; the first window is 2026-09-19 20:00 JST. And one thing has to be
-settled before it opens: **the reply is addressed to 共同研究者A 様**,
-not to this project's `PT_CONTACT` (a 京都大学 address, itself marked 仮おき). That
-decides what goes in the User-Agent, which is the third undertaking the
-secretariat named. Either the letter went out under a collaborator's name, or the
-permission is not ours to use. `docs/shiga.md` has the rest.
+Today is Friday; the first window is 2026-09-19 20:00 JST.
+
+**The reply is addressed to 共同研究者A 様** rather than to this
+project's `PT_CONTACT`, which looked at first like a misdirected mail. It is not:
+**every letter in `docs/inquiries/` was sent by a collaborator**, confirmed by the
+researcher the same day. The permission is ours to use.
+
+What that leaves is attribution, not permission. The third undertaking in the
+letter is 「User-Agent に研究用である旨と当方の連絡先を明記します」, and the address
+滋賀 has on file is the collaborator's — so a site config can now carry a
+`[contact]` table (`Contact`) that replaces `PT_CONTACT` for that site alone and
+prints itself at the start of the run. **滋賀's is deliberately empty**: the
+address has not been given, and inventing one is worse than the default. If a
+single address covers every enquiry then the project-level `PT_CONTACT` is the
+right place instead — and it is still marked 仮おき from 2026-08-28, which is what
+the SSP crawl is broadcasting right now. `docs/shiga.md` has the rest.
 
 The count of assemblies that "forbid crawling" has now been wrong twice in one
 month, in both directions, for the same reason: **robots.txt is one statement an

@@ -96,8 +96,9 @@ Modules under `src/prefectural_transcripts/`:
   Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
   decision recorded in its configs — don't lower that either, and don't run two
   SSP tenants at once: all 17 share one host and the limiter is per-process.
-- **An operator's condition goes in the config, not in a runbook.** Two exist:
-  `[robots]` (`RobotsExemption`) and `[fetch_window]` (`FetchWindow`). Both refuse
+- **An operator's condition goes in the config, not in a runbook.** Three exist:
+  `[robots]` (`RobotsExemption`), `[fetch_window]` (`FetchWindow`) and `[contact]`
+  (`Contact`, the address that operator knows). The first two refuse
   to load without a reason and a date, both are scoped to one site, and both
   announce themselves. A condition someone has to remember is one that will be
   broken on a Tuesday afternoon with nothing to show for it.
@@ -192,9 +193,13 @@ start, end, reason, decided_on) and `PoliteClient` refuses outside it with
 `OutsideFetchWindow` — not a `FetchError`, because `scrape()` carries on past
 those and carrying on here would break the same promise once per document. A
 cached page is still served at any hour: reading what we hold is not fetching.
-**Nothing is collected or even inspected yet**, and one thing must be settled
-first — the reply is addressed to 共同研究者A 様, not to this
-project's `PT_CONTACT`. See `docs/shiga.md`.
+**Nothing is collected or even inspected yet**; the first window is 2026-09-19
+20:00 JST. The reply is addressed to 共同研究者A 様 because **every
+letter in `docs/inquiries/` was sent by a collaborator** (confirmed 2026-09-18) —
+so the permission is ours, and what is open is only what goes in the User-Agent.
+A site config can name its own `[contact]` (`Contact`), which replaces
+`PT_CONTACT` for that site and prints at the start of the run; 滋賀's is empty
+until the address is supplied. See `docs/shiga.md`.
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 

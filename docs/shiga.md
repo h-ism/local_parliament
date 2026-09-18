@@ -58,20 +58,33 @@ decided_on = "2026-09-18"
 * The window is evaluated in `Asia/Tokyo`, not the machine's clock — a server on
   UTC would otherwise fetch at 05:00 滋賀 time.
 
-## Open question, to settle before the first request
+## Who the enquiry came from (settled 2026-09-18)
 
-**The reply is addressed to 共同研究者A 様**, not to this
-project's contact (`PT_CONTACT`, a 京都大学 address, itself marked 仮おき).
+The reply is addressed to **共同研究者A 様**, not to this project's
+`PT_CONTACT`. That is because **the enquiry was made by a collaborator** — and, as
+the researcher confirmed the same day, *every* letter in `docs/inquiries/` went out
+that way. So the permission is ours to use.
 
-That has to be resolved before anything is fetched, because it decides what goes
-in the User-Agent — which is the third undertaking above, and the one the
-secretariat will see. Either the letter went out under a collaborator's name, in
-which case the User-Agent should say so, or this is a different enquiry and the
-permission is not ours to use. **Do not fetch 滋賀 until this is answered.**
+What it leaves open is not permission but attribution: the third undertaking in
+that letter is 「User-Agent に研究用である旨と当方の連絡先を明記します」, and the
+address 滋賀 has on file is the collaborator's. A site config can therefore carry
+
+```toml
+[contact]
+address = "…"
+note = "照会は共同研究者が行い、2026-09-18に許可を得た"
+```
+
+which replaces `PT_CONTACT` in the User-Agent for that site alone, and prints
+itself at the start of the run. **It is empty for now**: the address has not been
+supplied, and inventing one would be worse than the default. Note that if one
+address covers every enquiry, the honest fix is the project-level `PT_CONTACT`
+instead — which is still marked 仮おき in `docs/collection-targets.md`, and is
+what the SSP crawl is currently broadcasting.
 
 ## Still to do, in order
 
-1. Settle the addressee, and set the contact accordingly.
+1. Decide what goes in the User-Agent (above), and set it before fetching.
 2. First window: **2026-09-19 (Sat) 20:00 JST**. Inside it, work out the
    selectors with `pt inspect` — VOICES is a CGI search system and nothing about
    its markup has been checked yet.

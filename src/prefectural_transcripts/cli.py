@@ -102,6 +102,14 @@ def scrape(
         )
         typer.echo(f"Reason ({window.decided_on}): {window.reason}")
         raise typer.Exit(1)
+    # The operator sees the User-Agent and nothing else. Where a site's
+    # permission came through someone else's enquiry, the address they can reply
+    # to is that person's — see `Contact`.
+    if scraper.contact:
+        settings.contact = scraper.contact.address
+        typer.echo(f"Contact for {name}: {scraper.contact.address}")
+        if scraper.contact.note:
+            typer.echo(f"  {scraper.contact.note}")
     if start_url:
         # Narrowing the entry points is the only way to scope a crawl on a site
         # whose index carries no dates: --since/--until can only filter after a
