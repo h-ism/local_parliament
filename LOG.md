@@ -50,6 +50,22 @@ recorded here for the next time: **re-parse first, split titles second** — the
 re-parse rebuilds speakers from the cache and would otherwise silently undo the
 split.
 
+**Not merged, and deliberately.** The six large tenants are collecting under
+this code and 宮城 reaches 1947, which is the oldest markup this product has
+shown us; the 神奈川 block was found *after* eleven archives looked finished, so
+treating the rule as settled before the deepest one arrives would be the same
+mistake twice. The finishing sequence, in order, once the six are in:
+
+1. `reparse.py` over all seventeen, from cache;
+2. `split_titles.py`, which the re-parse would otherwise undo;
+3. `pt export` for the CSVs;
+4. then merge all four branches together — they are stacked and depend in order.
+
+One practical note for whoever does it: `git checkout main` empties `ssp.py` and
+`sites/ssp_*.toml` out of the working tree for a moment, and the collector
+starts a fresh `pt scrape` between tenants. Stop `pt-ssp-collect.timer` first,
+or merge when nothing is running.
+
 ### 日本語
 
 **見つけたのは CSV 出力だった。** `pt export` は発言1件につき1行、発言0件の文書も
