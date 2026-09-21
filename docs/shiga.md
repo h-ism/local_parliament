@@ -1,9 +1,8 @@
 # 滋賀県議会 — permitted, on a condition about *when*
 
 System: gijiroku VOICES, <https://www.shigaken-gikai.jp/voices/>
-Status as of 2026-09-18: **permitted, restricted to weekend evenings.** Nothing
-collected yet and nothing fetched; reconnaissance is scheduled for the first
-window, Sat 2026-09-19 20:00 JST.
+Status as of 2026-09-21: **permitted, restricted to weekend evenings — but the
+system is not where the letter said it was.** Nothing collected.
 
 ---
 
@@ -113,11 +112,54 @@ Two caveats about the timer itself: it is transient, so it does not survive a
 reboot, and `Linger=no` for this user, so it needs a login session to be alive at
 20:00. `loginctl enable-linger` fixes the second if that is a problem.
 
+## The install has moved (2026-09-19)
+
+The first window fetched exactly one page and stopped, which is the walk working
+as intended. `https://www.shigaken-gikai.jp/voices/` is 271 bytes:
+
+```html
+<meta Http-Equiv="Refresh" Content="3;url=../index.asp">
+<title>滋賀県議会公式サイト</title>
+3秒後に滋賀県議会ホームページに移動します。
+移動しないときは<a href="../index.asp">ここ</a>をクリックしてください。
+```
+
+A signpost, not a system. The URL in `docs/inquiries/shiga.md` was verified
+2026-08-26 and is stale: the 会議録検索システム has been moved or retired since.
+The exemption is scoped to `/voices/`, so the crawl stopped at the edge of what
+the operator answered about rather than wandering the site — which is the
+behaviour to keep.
+
+**What this does and does not change.** The permission is not in doubt: they
+answered a letter about collecting 滋賀県議会's 会議録, and that is still what we
+want. What is unknown is the URL, and with it two things that only a URL can
+settle — **whether the new location is a different product** (in which case its
+own robots.txt and its own shape apply) and whether it is even on this host.
+CLAUDE.md's rule covers exactly this: *a robots.txt verdict is not final until
+you know the URL that actually carries the data.*
+
+**Finding it, next window (Sat 2026-09-26 20:00).** `scripts/recon_voices.py`
+now walks a `discover` list when the start page turns out to be a signpost:
+`robots.txt`, `index.asp` and the host root, at most a dozen pages, following
+only links whose text or URL says 会議録・議事録・検索・voices・gijiroku, and
+writing what it finds to `data/logs/shiga/candidates.txt`. **robots is enforced
+normally outside `/voices/`** — the exemption covers the path the secretariat
+answered about, not the whole host — so if their file closes the rest of the
+site the walk stops and says so.
+
+`robots.txt` itself is named in a one-line exemption of its own: the rules file
+is always fetchable (RFC 9309 §2.3), and `urllib.robotparser` would otherwise
+apply a blanket `Disallow: /` to the very file that says it.
+
+**The 30-second alternative.** Opening the assembly's site in a browser answers
+this faster than any crawl, and it is how SSP's `config.js` was read. If the new
+URL is to hand, put it in `SITES["shiga"].start` and Saturday goes straight to
+the archive instead of hunting.
+
 ## Still to do, in order
 
 1. ~~Decide what goes in the User-Agent~~ — 共同研究者A.
-2. ~~First window~~ — scheduled; see above. Read the report and the cache
-   afterwards, offline.
+2. **Find where the system went** — next window, or a browser (above).
 3. `robots.txt` still disallows the CGI directory. The answer above is the
    operator's own instruction and overrides that reading, but the exemption has
    to be written down the same way SSP's is: prefixes, reason, date, in the

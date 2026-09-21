@@ -67,8 +67,30 @@ class Site:
     exemption: RobotsExemption
     note: str = ""
 
+    discover: tuple[str, ...] = ()
+    """Where to look when the install is not at `start` any more.
 
-def _voices(key: str, prefecture: str, host: str, who: str, reason: str, note: str = "") -> Site:
+    滋賀's `/voices/` turned out to be a 271-byte meta-refresh to the assembly's
+    top page: the system has moved or been retired since the letter was written
+    on 2026-08-26. These are walked with **robots enforced normally** — the
+    exemption covers the path the operator answered about, not the whole host —
+    so if their robots.txt closes the rest of the site, the walk stops there and
+    the answer is to look in a browser instead.
+    """
+
+    discover_hint: str = r"会議録|議事録|会議|録画|検索|voices|gijiroku|minutes"
+    """Only links whose text or URL says they might lead to the minutes."""
+
+
+def _voices(
+    key: str,
+    prefecture: str,
+    host: str,
+    who: str,
+    reason: str,
+    note: str = "",
+    discover: tuple[str, ...] = (),
+) -> Site:
     prefix = f"https://{host}/voices/"
     return Site(
         key=key,
@@ -85,12 +107,23 @@ def _voices(key: str, prefecture: str, host: str, who: str, reason: str, note: s
             decided_on="2026-09-18",
         ),
         note=note,
+        discover=discover,
     )
+
+
+# The rules file itself is always fetchable — RFC 9309 says so, and a parser
+# that refused to read it could never learn what it says. The stdlib parser
+# applies `Disallow: /` to `/robots.txt` like any other path, so it is named.
+ROBOTS_READABLE = RobotsExemption(
+    prefixes=("https://www.shigaken-gikai.jp/robots.txt",),
+    reason="robots.txt itself, to find where 滋賀's minutes moved to. RFC 9309 §2.3.",
+    decided_on="2026-09-21",
+)
 
 
 SITES: dict[str, Site] = {
     site.key: site
-    for site in (
+    for site in (  # noqa: E501
         _voices(
             "shiga",
             "滋賀県",
@@ -98,6 +131,16 @@ SITES: dict[str, Site] = {
             "滋賀県議会事務局",
             "滋賀県議会事務局の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降）に限定"
             "するようお願い申し上げます",
+            discover=(
+                "https://www.shigaken-gikai.jp/robots.txt",
+                "https://www.shigaken-gikai.jp/index.asp",
+                "https://www.shigaken-gikai.jp/",
+            ),
+            note=(
+                "/voices/ は3秒で ../index.asp に飛ばす移転案内だけになっている"
+                "（2026-09-19 確認）。会議録検索システムの現在地が不明なので、"
+                "まず探す。移った先の robots は別途確認すること。"
+            ),
         ),
         _voices(
             "ishikawa",
@@ -138,6 +181,41 @@ def title(page: Page) -> str:
 def shape(url: str) -> str:
     """A URL with its numbers blanked, so repeated shapes collapse into one row."""
     return re.sub(r"\d+", "N", urlparse(url).path)
+
+
+def discover(site: Site, client: PoliteClient) -> list[tuple[str, str]]:
+    """Follow the site's own signposts to wherever its minutes live now.
+
+    Bounded hard: a dozen pages, same host, and only links that say they lead to
+    a 会議録. What it prints is candidates for a human to choose between, not a
+    new start URL it has decided on by itself.
+    """
+    found: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    host = urlparse(site.start).netloc
+    queue = list(site.discover)
+    hint = re.compile(site.discover_hint)
+    while queue and len(seen) < 12:
+        url = queue.pop(0)
+        if url in seen or urlparse(url).netloc != host:
+            continue
+        seen.add(url)
+        try:
+            page = client.get(url)
+        except OutsideFetchWindow:
+            raise
+        except FetchError as exc:
+            log.warning("%s: %s — %s", site.key, url, exc)
+            continue
+        for text, target in links(page):
+            if hint.search(text) or hint.search(target):
+                found.append((text, target))
+                if target not in seen and len(queue) < 12:
+                    queue.append(target)
+    log.info("%s: %d pages walked, %d candidate links", site.key, len(seen), len(found))
+    for text, target in dict((t, u) for t, u in found).items():
+        log.info("%s:   %r -> %s", site.key, text, target)
+    return found
 
 
 def walk(site: Site, client: PoliteClient) -> list[tuple[str, Page]]:
@@ -223,10 +301,24 @@ def main() -> int:
 
         out_dir = Path(f"data/logs/{key}")
         out_dir.mkdir(parents=True, exist_ok=True)
-        with PoliteClient(
-            settings(), robots_exempt=site.exemption, fetch_window=site.window
-        ) as client:
+        exemption = site.exemption
+        if site.discover:
+            exemption = RobotsExemption(
+                prefixes=exemption.prefixes + ROBOTS_READABLE.prefixes,
+                reason=f"{exemption.reason} / {ROBOTS_READABLE.reason}",
+                decided_on=exemption.decided_on,
+            )
+        with PoliteClient(settings(), robots_exempt=exemption, fetch_window=site.window) as client:
             fetched = walk(site, client)
+            if site.discover and len(fetched) <= 1:
+                # One page and no further links means the install is not there
+                # any more. Go looking, with robots enforced outside the path the
+                # operator answered about.
+                log.info("%s: %s looks like a signpost, not a system — searching", key, site.start)
+                candidates = discover(site, client)
+                (out_dir / "candidates.txt").write_text(
+                    "\n".join(f"{t}\t{u}" for t, u in candidates), encoding="utf-8"
+                )
         log.info(
             "%s: %d pages, all cached; report %s", key, len(fetched), report(site, fetched, out_dir)
         )
