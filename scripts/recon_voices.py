@@ -63,6 +63,19 @@ class Site:
     key: str
     prefecture: str
     start: str
+    """The page to begin at — the search form, or the directory when that is all
+    we know."""
+
+    prefix: str
+    """The area the walk stays inside, and the area the operator answered about.
+
+    Kept apart from `start` because they are different things: 滋賀's entry is
+    `/voices/g07v_search.asp` while the permission and the exemption are about
+    `/voices/`. Filtering on the start URL instead — which this did until
+    2026-09-21 — means a walk that begins at a page follows nothing at all,
+    because no other URL begins with that page's name.
+    """
+
     window: FetchWindow
     exemption: RobotsExemption
     note: str = ""
@@ -81,6 +94,13 @@ class Site:
     discover_hint: str = r"会議録|議事録|会議|録画|検索|voices|gijiroku|minutes"
     """Only links whose text or URL says they might lead to the minutes."""
 
+    avoid: str = r"Video|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
+    """Links not worth a slot in the cap.
+
+    石川's first run spent 23 of its 40 pages on 録画中継 (video) listings and one
+    on a PDF. The cap exists to keep the visit small; it should be spent on the
+    minutes."""
+
 
 def _voices(
     key: str,
@@ -90,12 +110,14 @@ def _voices(
     reason: str,
     note: str = "",
     discover: tuple[str, ...] = (),
+    start: str = "",
 ) -> Site:
     prefix = f"https://{host}/voices/"
     return Site(
         key=key,
         prefecture=prefecture,
-        start=prefix,
+        start=start or prefix,
+        prefix=prefix,
         window=FetchWindow(reason=reason, **WEEKEND_EVENINGS),  # type: ignore[arg-type]
         exemption=RobotsExemption(
             prefixes=(prefix,),
@@ -131,6 +153,10 @@ SITES: dict[str, Site] = {
             "滋賀県議会事務局",
             "滋賀県議会事務局の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降）に限定"
             "するようお願い申し上げます",
+            # Given by the researcher 2026-09-21. `/voices/` itself is only a
+            # meta-refresh to the assembly's top page; the search form is here,
+            # and the vendor's naming matches 石川's (g07…, g08v…).
+            start="https://www.shigaken-gikai.jp/voices/g07v_search.asp",
             discover=(
                 "https://www.shigaken-gikai.jp/robots.txt",
                 "https://www.shigaken-gikai.jp/index.asp",
@@ -149,6 +175,10 @@ SITES: dict[str, Site] = {
             "石川県議会事務局企画調査課",
             "石川県議会事務局企画調査課の指示 (2026-09-18): 取得の時間帯を土日の夜間帯"
             "（20時以降など）に限定いただいた上での自動取得は可能",
+            # From the first window: the 本会議会議録 listing, rather than the
+            # directory, so the cap is spent inside the archive instead of
+            # rediscovering the way in.
+            start="https://pref-ishikawa.gijiroku.com/voices/g08v_viewh.asp?Sflg=10",
             note=(
                 "定例会の会期中（9月30日まで）につき、取得時間帯にくれぐれも留意するよう"
                 "念を押されている。会期中は下見にとどめ、本収集は10月以降に回すのが安全。"
@@ -222,9 +252,10 @@ def walk(site: Site, client: PoliteClient) -> list[tuple[str, Page]]:
     seen: set[str] = set()
     queue: list[tuple[str, int]] = [(site.start, 0)]
     fetched: list[tuple[str, Page]] = []
+    avoid = re.compile(site.avoid)
     while queue and len(fetched) < MAX_PAGES:
         url, depth = queue.pop(0)
-        if url in seen or not url.startswith(site.start):
+        if url in seen or not url.startswith(site.prefix) or avoid.search(url):
             continue
         seen.add(url)
         try:

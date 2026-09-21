@@ -151,10 +151,21 @@ site the walk stops and says so.
 is always fetchable (RFC 9309 §2.3), and `urllib.robotparser` would otherwise
 apply a blanket `Disallow: /` to the very file that says it.
 
-**The 30-second alternative.** Opening the assembly's site in a browser answers
-this faster than any crawl, and it is how SSP's `config.js` was read. If the new
-URL is to hand, put it in `SITES["shiga"].start` and Saturday goes straight to
-the archive instead of hunting.
+**Found, 2026-09-21, by the researcher in a browser** — faster than any crawl,
+and how SSP's `config.js` was read too:
+
+```
+https://www.shigaken-gikai.jp/voices/g07v_search.asp
+```
+
+Still under `/voices/`, so the existing exemption covers it and the vendor's
+naming matches 石川's (`g07…`, `g08v…`). Saturday now starts there.
+
+Fixing the start exposed a bug worth recording: `walk()` filtered on the *start*
+URL, which is the same string as the permitted area only when the start is a
+directory. Beginning at a page would have followed nothing at all and looked
+like a site with no links. `start` and `prefix` are now separate fields — the
+first is where to begin, the second is what the operator answered about.
 
 ## Still to do, in order
 

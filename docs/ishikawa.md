@@ -64,7 +64,10 @@ moves into `sites/ishikawa.toml` when that file exists.
 ## Still to do, in order
 
 1. **Sat 2026-09-19 20:00** — reconnaissance (scheduled).
-2. Read `data/logs/ishikawa/recon-*.txt` and the cache afterwards, offline, and
+2. The second window starts at `g08v_viewh.asp?Sflg=10` (本会議会議録の閲覧),
+   found in the first, so the 40-page cap is spent inside the archive; video
+   listings and PDFs are skipped, which is where 23 of the first 40 went.
+   Read `data/logs/ishikawa/recon-*.txt` and the cache afterwards, offline, and
    work out the selectors. VOICES markup has never been looked at here; 千葉 is
    the only other install this project has a reason to read, and it is a
    different question (`docs/inquiries/chiba.md`).
