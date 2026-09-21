@@ -27,29 +27,11 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
 from prefectural_transcripts.models import MeetingRef
 from prefectural_transcripts.scrapers import load_scraper
-from prefectural_transcripts.scrapers.base import BaseScraper
-
-
-def _prefixes(scraper: BaseScraper) -> list[str]:
-    """The URL prefixes a site's documents live under, from its own start_urls.
-
-    A Domino application is one `.nsf` and everything it serves hangs off it, so
-    the directory of a start URL separates 静岡's two sites cleanly. Taking the
-    directory rather than the whole URL matters because the listing carries a
-    query string and the documents do not.
-    """
-    out = []
-    for url in getattr(scraper.config, "start_urls", []) or []:
-        split = urlsplit(str(url))
-        directory = split.path.rsplit("/", 1)[0]
-        out.append(f"{split.scheme}://{split.netloc}{directory}/")
-    return sorted(set(out), key=len, reverse=True)
 
 
 def main(argv: list[str]) -> int:
@@ -60,7 +42,7 @@ def main(argv: list[str]) -> int:
     backup = Path(argv[2]) if len(argv) == 3 else corpus.with_suffix(corpus.suffix + ".bak")
 
     scrapers = {name: load_scraper(name) for name in names}
-    routes = [(prefix, name) for name in names for prefix in _prefixes(scrapers[name])]
+    routes = [(prefix, name) for name in names for prefix in scrapers[name].url_prefixes()]
     routes.sort(key=lambda pair: len(pair[0]), reverse=True)
 
     records = [json.loads(line) for line in corpus.open(encoding="utf-8") if line.strip()]
@@ -81,7 +63,18 @@ def main(argv: list[str]) -> int:
     out: list[str] = []
     before = after = changed = 0
     per_site: dict[str, int] = dict.fromkeys(names, 0)
-    with PoliteClient(Settings()) as client:
+    # Offline, like `audit.py`: a re-parse reads the cache the crawl filled, and
+    # a miss must be a finding rather than a request nobody's server expected —
+    # least of all one with agreed hours.
+    settings = Settings()
+    settings.offline = True
+    with PoliteClient(
+        settings,
+        robots_exempt=next(iter(scrapers.values())).robots_exempt,
+        fetch_window=next(iter(scrapers.values())).fetch_window,
+    ) as client:
+        for scraper in scrapers.values():
+            scraper.prepare(client)
         for record in records:
             name = route(record["url"])
             assert name is not None  # checked above, before the backup was taken

@@ -2,6 +2,85 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-21 — the 110 million characters a warning had been reporting all along (`feat/committee-records`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**The CSV export found it.** `pt export` writes one row per speech and one row
+for a sitting with none, so the row count not matching the speech count is a
+free census of empty documents. 神奈川 had **2,701 of 3,878**.
+
+They were not empty. **神奈川 does not split its committee sittings into blocks
+at all**: the whole proceedings arrive in one `minute_type_code: 3` block — a
+heading, as far as this scraper was concerned — up to 128,001 characters, median
+46,894. **2,177 sittings, 410,423 speeches, 110,002,781 characters**, discarded
+at parse time and reported every single time: `no speeches extracted (46894
+bytes)`. The warning has carried the size since 兵庫 taught us that 1,570 bytes
+is procedural and 60,000 is a rule that has stopped matching. 2,701 of them went
+into a log and nobody opened it.
+
+**The discriminator is the block's own title.** 《委員会記録-…》 is the
+proceedings; 《本会議録-…-出席議員等・議事日程》 is the attendance list and the
+order paper, which 神奈川's 本会議 carry *beside* proper speech blocks and which
+is not duplicated in them (checked first). So the record parser runs only where
+the ordinary blocks yielded nothing, and a sitting the vendor did split is never
+read twice.
+
+Inside, the layout is unchanged from 2004 to 2023 and has no marker at all: a
+speaker is **a line that is not indented and is followed by one that is**. That
+one condition carries the front matter and the order of business out of the way
+by itself, and a record with no indented lines yields nothing — which is correct
+for the 547 sittings that are 「１　開　　会」 and a close.
+
+**神奈川: 139,306 → 549,729 speeches, 57.7M → 167.7M characters.** Across the
+eleven finished tenants: **1,280,405 → 1,690,828 speeches, 565.7M → 675.7M
+characters**, and empty documents 2,725 → 547.
+
+Two hooks made the re-parse possible, and both are small: `url_prefixes()` moved
+out of `reparse.py` onto the scraper (SSP has no `start_urls` to take a
+directory from — it walks an API), and `prepare()` lets a scraper do what
+`parse_meeting` needs when it is called outside a crawl. SSP's walks its listing
+again, free over a filled cache, because a sitting's committee, session and date
+live in the listing and nowhere in the transcript.
+
+`reparse.py` also runs offline now, like `audit.py`. Order matters and is
+recorded here for the next time: **re-parse first, split titles second** — the
+re-parse rebuilds speakers from the cache and would otherwise silently undo the
+split.
+
+### 日本語
+
+**見つけたのは CSV 出力だった。** `pt export` は発言1件につき1行、発言0件の文書も
+1行書く。だから行数と発言数のずれが、そのまま空文書の件数になる。神奈川は
+**3,878文書中2,701件**だった。
+
+空ではなかった。**神奈川は委員会をブロックに分割していない**。全文が
+`minute_type_code: 3` のブロック1つに入っている——このスクレイパにとっては見出し
+——最大128,001字、中央値46,894字。**2,177文書・410,423発言・110,002,781字**を
+解析時に捨てており、しかも毎回
+`no speeches extracted (46894 bytes)` と報告していた。警告にサイズを載せたのは
+「1,570バイトは手続き的、60,000バイトは規則が壊れた印」を兵庫で学んだからで、
+その警告が2,701件ログに出ていて、誰も開かなかった。
+
+**判別はブロック自身のタイトルでできる。** 《委員会記録-…》が議事、
+《本会議録-…-出席議員等・議事日程》は出席簿と議事日程で、後者は神奈川の本会議が
+通常の発言ブロックと**並べて**持っており、内容は重複していない（先に照合した）。
+だから記録パーサは通常ブロックが0件のときだけ動き、ベンダーが分割済みの文書を
+二重に読むことはない。
+
+中身は2004年から2023年まで同じ形で、マーカーが無い。**字下げのない行で、次の行が
+字下げされていれば発言者**——この1条件だけで、前書き（委員会名・開催日・出席者氏名）
+と式次第（「５　同上質疑」）は自然に外れる。字下げ行が無い記録は0件を返す。
+「１　開　　会」と閉会だけの547件には、それが正しい。
+
+**神奈川 139,306 → 549,729発言、57.7M → 167.7M字。** 完了11県の合計は
+**1,280,405 → 1,690,828発言、565.7M → 675.7M字**、空文書 2,725 → 547。
+
+順序をここに残す：**再パースが先、話者分割が後**。再パースはキャッシュから話者を
+作り直すので、逆にすると分割結果を黙って消す。
+
 ## 2026-09-21 — the speaker split the scraper refused to guess (`feat/split-titles`)
 
 *English and Japanese. / 英語と日本語で併記する。*

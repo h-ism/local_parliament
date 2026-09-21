@@ -164,6 +164,51 @@ nothing to show for it — 静岡 lost 124 speeches that way, 兵庫 55. **Here 
 no marker to miss.** The body repeats it, and it is removed only when it matches
 the title exactly.
 
+### …except where it does not split them at all
+
+**神奈川 puts a whole committee sitting in one 議題 block.** No per-speech blocks,
+no 「○」, up to 128,001 characters in a single `minute_type_code: 3` — which this
+scraper read as a heading and discarded. **2,177 sittings, 410,423 speeches,
+110,002,781 characters**, every one of them warning
+`no speeches extracted (46894 bytes)` into a log nobody read. Found on
+2026-09-21 by exporting CSV: the row count did not match the speech count,
+because a sitting with no speeches still gets a row.
+
+The block's own title says which kind it is, and that is the discriminator:
+
+| title | what it holds | what to do |
+| --- | --- | --- |
+| `《委員会記録-令和５年第１回定-…》` | the whole proceedings | parse it |
+| `《本会議録-…-出席議員等・議事日程》` | attendance and the order paper | leave it |
+
+The second is not duplicated in the speech blocks beside it — checked before the
+parser was written — so `_from_committee_record` is consulted **only when the
+ordinary blocks yielded nothing**, and a sitting the vendor did split is never
+read twice.
+
+Inside, the layout is the same from 2004 to 2023 and needs no marker:
+
+```
+５　同上質疑（両局所管事項も併せて）
+
+永田(て)委員
+　自民党の永田てるじです。企業庁関係で幾つか質問をいたします。
+経営課長
+　ただいま策定をしようとしております長期構想でございますが、
+```
+
+A speaker is a line that is **not** indented and **is** followed by one that is.
+That single condition carries the front matter (委員会名, 開催日, 出席者氏名 — runs
+of unindented lines) and the order of business (「５　同上質疑」 — begins with a
+digit) out of the way on its own. A record with no indented lines yields nothing,
+which is right: 547 of 神奈川's sittings are 「１　開　　会」 and a closing, and
+zero speeches is what they are.
+
+**Look for this on the remaining tenants.** The census in the table above counted
+blocks, not their length; what matters is a code-3 block with a transcript in it.
+山口 has 61 large ones and 奈良 3, and both are 《本会議録》 order papers in
+documents that already have speeches — nothing lost there.
+
 ---
 
 ## 4. What is still hard: the speaker

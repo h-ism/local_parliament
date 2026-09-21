@@ -16,9 +16,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from reparse import _prefixes  # noqa: E402
-
 from prefectural_transcripts.scrapers import load_scraper  # noqa: E402
+
+
+def _prefixes(scraper: object) -> list[str]:
+    """What `reparse.py` routes by. It lives on the scraper since 2026-09-21:
+    SSP has no `start_urls` to read, because it walks an API rather than pages."""
+    return scraper.url_prefixes()  # type: ignore[attr-defined]
 
 
 def test_the_two_shizuoka_sites_do_not_claim_each_others_documents() -> None:
@@ -44,3 +48,15 @@ def test_a_prefix_is_a_directory_not_a_listing_url() -> None:
     for prefix in _prefixes(load_scraper("shizuoka")):
         assert prefix.endswith("/")
         assert "?" not in prefix
+
+
+def test_a_scraper_with_no_start_urls_still_claims_its_documents() -> None:
+    # SSP walks a JSON API, so there is nothing to take a directory from. It
+    # says which URLs are its own, and a re-parse of 神奈川 must not be handed
+    # 沖縄's records.
+    kanagawa = _prefixes(load_scraper("ssp_kanagawa"))
+    okinawa = _prefixes(load_scraper("ssp_okinawa"))
+
+    assert kanagawa == ["https://ssp.kaigiroku.net/tenant/prefkanagawa/"]
+    doc = "https://ssp.kaigiroku.net/tenant/prefkanagawa/MinuteView.html?council_id=1&schedule_id=2"
+    assert doc.startswith(kanagawa[0]) and not doc.startswith(okinawa[0])

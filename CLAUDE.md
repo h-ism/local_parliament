@@ -135,6 +135,12 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 | **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
 | **静岡** | **14,030 / 62,780** | **18,245 / 156,645** | 本会議 1999-05-19〜, 委員会 2007-05-18〜 |
 
+**SSP, 11 of 17 tenants finished (2026-09-21): 16,636 documents, 1,690,828
+speeches, 675,740,324 characters**, 1979–2026, reconciled item by item against
+every listing (0 missing). The remaining six are collecting. Counts after the
+one-block committee records were recovered and the speaker split re-run; see
+`docs/ssp.md`.
+
 **43,612 documents, 880,220 speeches, 424,049,474 characters.** Documents/speeches
 per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,
 so its per-document counts are not comparable with the other four.
@@ -295,6 +301,19 @@ collection continues past 2019-04 — but nothing waits on it now.
 Learned from 静岡 and, from 2026-09-18, from SSP; expect them on other sites
 rather than treating them as local quirks.
 
+- **A vendor that splits the speeches for you may stop doing it, in one tenant,
+  for one kind of sitting.** SSP hands over one block per utterance — and 神奈川
+  hands over one block for the *whole committee sitting*, up to 128,001
+  characters, typed as 議題 (a heading) and therefore thrown away: **2,177
+  sittings, 410,423 speeches, 110 million characters**, with a
+  `no speeches extracted (46894 bytes)` warning on every one of them. The
+  warning carries the size for exactly this reason and nobody read 2,701 of
+  them. **Read the warnings, or count them at least**; and when a source is
+  "already structured", check that it is structured everywhere.
+- **Exporting the CSV is a check.** It writes one row per speech *and one for a
+  sitting with none*, so the row count differing from the speech count is a
+  census of empty documents, free and in a column. That is how the 110 million
+  characters above were found, three days after they were collected.
 - **A listing can have a whole branch that is not proceedings.** SSP's tree has two
   roots, 「全会議」 and 「資料」, and 2,399 of 17,309 会議 are under the second: bill
   lists, 請願一覧表, 意見書. They parse, they yield no speech and no date, and they

@@ -54,6 +54,35 @@ class BaseScraper(ABC):
     def parse_meeting(self, ref: MeetingRef, page: Page) -> Meeting:
         """Turn a fetched detail page into a Meeting."""
 
+    def url_prefixes(self) -> list[str]:
+        """URL prefixes the records of this site live under.
+
+        `reparse.py` routes a corpus by them, because one prefecture's file can
+        hold more than one site and the wrong rule means zero speeches. The
+        default reads the config's `start_urls`: a Domino application is one
+        `.nsf` and everything hangs off it, so the directory separates 静岡's two
+        sites cleanly. A scraper with no start URLs — SSP has none, it walks an
+        API — says so itself.
+        """
+        from urllib.parse import urlsplit
+
+        out = []
+        for url in getattr(getattr(self, "config", None), "start_urls", []) or []:
+            split = urlsplit(str(url))
+            out.append(f"{split.scheme}://{split.netloc}{split.path.rsplit('/', 1)[0]}/")
+        return sorted(set(out), key=len, reverse=True)
+
+    def prepare(self, client: PoliteClient) -> None:
+        """Do whatever `parse_meeting` needs before it is called out of order.
+
+        `scrape()` lists and then parses, so anything the listing learned is to
+        hand. A re-parse starts from the corpus instead and never lists, which
+        for most scrapers is fine and for SSP is not: the committee, the session
+        and the date of a sitting exist only in the listing. Walking it again
+        costs nothing over a filled cache.
+        """
+        return  # most scrapers have nothing to do here
+
     def report(self) -> list[str]:
         """Lines a run should print when it finishes, beyond the record count.
 

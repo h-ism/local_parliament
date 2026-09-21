@@ -20,6 +20,7 @@ from prefectural_transcripts.scrapers.ssp import (
     Sitting,
     SspConfig,
     SspScraper,
+    parse_committee_record,
     read_roster,
     split_title,
     squash,
@@ -675,3 +676,59 @@ def test_the_listings_date_wins_over_the_notice_the_document_opens_with(
 
     assert meeting.date == date(2026, 6, 15)
     assert scraper.outcome.date_disagreements == 1
+
+
+# --- the transcript some tenants put in one block ---------------------------
+
+KANAGAWA_RECORD = """△《委員会記録-令和５年第１回定-20230310-000005-建設・企業常任委員会》　
+
+委員会名
+建設・企業常任委員会
+
+開催日
+令和５年３月10日
+
+出席者氏名（委員定数　13人のうち　13人出席）
+永田(て)委員長、脇礼子副委員長、
+
+５　同上質疑（両局所管事項も併せて）
+
+永田(て)委員
+　自民党の永田てるじです。企業庁関係で幾つか質問をいたします。
+　まず、神奈川県営水道長期構想についてでありますけれども、
+経営課長
+　ただいま策定をしようとしております長期構想でございますが、
+永田(て)委員
+　策定の趣旨については承知をいたしました。
+
+６　日程第１及び第２を採決
+"""
+
+
+def test_a_whole_transcript_in_one_agenda_block_is_read() -> None:
+    # 神奈川 does not split its committee proceedings at all: 2,052 sittings
+    # arrive as one 議題 block of up to 128,001 characters, which this file used
+    # to throw away as a heading — 110 million characters of it.
+    pairs = parse_committee_record(KANAGAWA_RECORD)
+
+    assert [name for name, _ in pairs] == ["永田(て)委員", "経営課長", "永田(て)委員"]
+    assert pairs[0][1].startswith("自民党の永田てるじです。")
+    assert "まず、神奈川県営水道長期構想" in pairs[0][1]  # the speech runs over lines
+    assert pairs[2][1] == "策定の趣旨については承知をいたしました。"
+
+
+def test_the_front_matter_and_the_order_of_business_are_not_speakers() -> None:
+    # 「委員会名」「開催日」「出席者氏名（…）」 are unindented lines in a run of
+    # unindented lines, and 「５　同上質疑」 begins with a digit. Neither is
+    # followed by an indented line, which is the whole test.
+    names = [name for name, _ in parse_committee_record(KANAGAWA_RECORD)]
+    assert "委員会名" not in names
+    assert "開催日" not in names
+    assert not any(n.startswith("５") or n.startswith("6") for n in names)
+
+
+def test_a_record_of_a_sitting_where_nobody_spoke_yields_nothing() -> None:
+    # 神奈川 has hundreds of these, and zero speeches is the right answer: a
+    # 「１　開　　会」 and nothing else is a real record of a procedural sitting.
+    procedural = "△《委員会記録-…-社会問題対策特別委員会》　\n\n１　開　　会\n\n２　閉　　会\n"
+    assert parse_committee_record(procedural) == []

@@ -68,6 +68,23 @@ FRONT_MATTER_CODES = frozenset({1, 2})
 
 KNOWN_CODES = frozenset(range(1, 10))
 
+AGENDA_CODE = 3
+RECORD_TITLE = "委員会記録"
+"""A 議題 block whose title reads 《委員会記録-…》 may be a whole transcript.
+
+神奈川 does not split its committee proceedings into blocks at all: 2,052 of its
+sittings arrive as *one* 議題 block of up to 128,001 characters, and the rest of
+this file, which treats code 3 as a heading, threw all of it away — 124,610,373
+characters, with a `no speeches extracted (46894 bytes)` warning for each and
+nobody reading them. The block's own title is what tells the two apart:
+《委員会記録-…》 is the proceedings, while 《本会議録-…-出席議員等・議事日程》 is the
+attendance list and the order paper, which is not speech and is *not* duplicated
+in the blocks beside it (checked before this was written).
+"""
+
+_RECORD_SPEECH = "　"
+"""Every line of a speech in those records is indented with one U+3000."""
+
 PROCEEDINGS_ROOT = "全会議"
 """The listing's own top-level split. The other root is 「資料」.
 
@@ -390,6 +407,8 @@ class Outcome:
     dates_missing: int = 0
     date_disagreements: int = 0
     impossible_years: int = 0
+    record_documents: int = 0
+    """Sittings read out of a single 議題 block. See `RECORD_TITLE`."""
     skipped_materials: int = 0
     """会議 under the listing's 「資料」 root. See `PROCEEDINGS_ROOT`."""
     """会議 whose printed year cannot be true — see `_council_year`."""
@@ -406,6 +425,7 @@ class Outcome:
             f"dates missing    : {self.dates_missing}",
             f"date disagreed   : {self.date_disagreements}",
             f"impossible years : {self.impossible_years}",
+            f"one-block records: {self.record_documents}",
             f"資料 skipped      : {self.skipped_materials}",
         ]
         if self.unknown_block_codes:
@@ -432,6 +452,19 @@ class SspScraper(BaseScraper):
 
     def report(self) -> list[str]:
         return self.outcome.summary()
+
+    def url_prefixes(self) -> list[str]:
+        return [f"{self.config.base_url}tenant/{self.config.tenant}/"]
+
+    def prepare(self, client: PoliteClient) -> None:
+        """Walk the listing so `parse_meeting` has each sitting's metadata.
+
+        Free over a filled cache, and required: a record's committee, session and
+        date come from the listing and from nowhere in the transcript response.
+        """
+        if not self._sittings:
+            for _ in self.list_meetings(client):
+                pass
 
     # -- API -------------------------------------------------------------------
 
@@ -625,6 +658,9 @@ class SspScraper(BaseScraper):
                 continue
             speeches.append(Speech(order=len(speeches), speaker=speaker, role=role, text=text))
 
+        if not speeches:
+            speeches = self._from_committee_record(blocks)
+
         self.outcome.documents += 1
         self.outcome.speeches += len(speeches)
         return Meeting(
@@ -638,6 +674,29 @@ class SspScraper(BaseScraper):
             retrieved_at=datetime.now(UTC),
             source_html_sha256=page.sha256,
         )
+
+    def _from_committee_record(self, blocks: list[dict[str, Any]]) -> list[Speech]:
+        """The transcript some tenants put in one 議題 block. See `RECORD_TITLE`.
+
+        Only consulted when the ordinary blocks yielded nothing, so a document
+        the vendor did split is never read twice — 神奈川's 本会議 carry both a
+        大きな 議題 block and proper speech blocks, and that block is the order
+        paper.
+        """
+        for block in blocks:
+            if int(block.get("minute_type_code") or 0) != AGENDA_CODE:
+                continue
+            if RECORD_TITLE not in (block.get("title") or ""):
+                continue
+            pairs = parse_committee_record(_strip_pre(block.get("body") or ""))
+            if not pairs:
+                continue
+            self.outcome.record_documents += 1
+            return [
+                Speech(order=i, speaker=_clean_speaker(name), role=None, text=words)
+                for i, (name, words) in enumerate(pairs)
+            ]
+        return []
 
     def _date(self, sitting: Sitting, front_matter: str, ref: MeetingRef) -> date | None:
         """The listing's date, cross-checked against the one the document prints.
@@ -679,6 +738,58 @@ class SspScraper(BaseScraper):
         self.outcome.dates_missing += 1
         log.warning("%s: no date in the listing or the document", ref.key)
         return None
+
+
+def parse_committee_record(text: str) -> list[tuple[str, str]]:
+    """Read 神奈川's one-block committee records into (speaker, words) pairs.
+
+    The layout is the same from 2004 to 2023 and has no 「○」 anywhere:
+
+        ５　同上質疑（両局所管事項も併せて）
+
+        永田(て)委員
+        自民党の永田てるじです。企業庁関係で幾つか質問をいたします。…
+        経営課長
+        ただいま策定をしようとしております長期構想でございますが、…
+
+    So a speaker is a line that is **not** indented and **is** followed by a line
+    that is. That one condition does the work: the front matter (委員会名, 開催日,
+    出席者氏名, 当局出席者) is a run of unindented lines and never qualifies, and
+    the order of business (「５　同上質疑」) begins with a digit.
+
+    A record with no indented lines at all — 「１　開　　会」 and nothing else, of
+    which 神奈川 has hundreds — yields nothing, which is the right answer for a
+    sitting where nobody is recorded as speaking.
+    """
+    speeches: list[tuple[str, str]] = []
+    lines = text.split("\n")
+    speaker: str | None = None
+    words: list[str] = []
+
+    def flush() -> None:
+        if speaker and words:
+            speeches.append((speaker, "\n".join(words).strip()))
+
+    for index, raw in enumerate(lines):
+        line = raw.rstrip()
+        if line.startswith(_RECORD_SPEECH) or line.startswith(" "):
+            if speaker:
+                words.append(line.strip())
+            continue
+        if not line:
+            continue
+        following = lines[index + 1] if index + 1 < len(lines) else ""
+        if (
+            following.startswith(_RECORD_SPEECH)
+            and not line[0].isdigit()
+            and not unicodedata.normalize("NFKC", line[0]).isdigit()
+            and len(line) <= 40
+            and "。" not in line
+        ):
+            flush()
+            speaker, words = squash(line), []
+    flush()
+    return speeches
 
 
 def _decode(page: Page) -> Any:
