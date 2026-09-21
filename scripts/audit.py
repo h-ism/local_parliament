@@ -31,8 +31,19 @@ def main(argv: list[str]) -> int:
     scraper = load_scraper(site)
     have = {json.loads(line)["url"] for line in corpus.open(encoding="utf-8") if line.strip()}
 
+    # Offline by construction: an audit reads the cache the crawl filled, and a
+    # miss is a finding rather than a reason to ask someone's server again —
+    # which on 滋賀 or 石川 would also mean asking outside the hours they agreed
+    # to. The scraper's own exemption and window come along in case that is ever
+    # relaxed.
+    settings = Settings()
+    settings.offline = True
     listed: dict[str, str] = {}
-    with PoliteClient(Settings()) as client:
+    with PoliteClient(
+        settings,
+        robots_exempt=scraper.robots_exempt,
+        fetch_window=scraper.fetch_window,
+    ) as client:
         for ref in scraper.list_meetings(client):
             listed[str(ref.url)] = f"{ref.date} {ref.title or ''}"
 

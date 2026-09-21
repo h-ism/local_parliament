@@ -280,6 +280,13 @@ class PoliteClient:
             state.crawl_delay = float(delay)
             log.info("%s advertises Crawl-delay: %ss", parsed.netloc, delay)
 
+    def _refuse_if_offline(self, what: str) -> None:
+        if self.settings.offline:
+            raise FetchError(
+                f"not cached, and this run is offline: {what}. "
+                "A check reads what we already have; collect first."
+            )
+
     def _check_window(self, url: str) -> None:
         """Refuse outside the hours the operator asked for.
 
@@ -342,6 +349,7 @@ class PoliteClient:
             log.debug("cache hit %s", url)
             return cached
 
+        self._refuse_if_offline(url)
         self._check_window(url)
         self._check_robots(url)
         page = self._send_with_retries("GET", url)
@@ -378,6 +386,7 @@ class PoliteClient:
             log.debug("cache hit %s %s", url, body)
             return cached
 
+        self._refuse_if_offline(f"{url} {body}")
         self._check_window(url)
         self._check_robots(url)
         page = self._send_with_retries("POST", url, json=json, data=data)

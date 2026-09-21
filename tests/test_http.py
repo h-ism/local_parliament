@@ -246,3 +246,34 @@ def test_an_exemption_covers_its_prefixes_and_nothing_else(tmp_path: Path) -> No
         assert client.get("https://ssp.invalid/dnp/search/councils/index").status == 200
         with pytest.raises(RobotsDisallowed):
             client.get("https://ssp.invalid/tenant/js/release/config.js")
+
+
+def test_offline_refuses_a_miss_instead_of_fetching(tmp_path: Path) -> None:
+    # The standing checks are described as costing nothing because everything is
+    # cached. That was true by luck until this: a listing page that happened to
+    # be missing would have been fetched — and on 滋賀 or 石川 that means a
+    # request outside the hours they agreed to, from a script whose whole job is
+    # to read what we already hold.
+    import httpx
+
+    from prefectural_transcripts.config import Settings
+    from prefectural_transcripts.http import FetchError, PoliteClient
+
+    settings = Settings()
+    settings.cache_dir = tmp_path
+    settings.min_interval = 0.0
+    settings.respect_robots = False
+    settings.offline = True
+
+    asked: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(str(request.url))
+        return httpx.Response(200, text="should never be reached")
+
+    with (
+        PoliteClient(settings, client=httpx.Client(transport=httpx.MockTransport(handler))) as c,
+        pytest.raises(FetchError, match="not cached"),
+    ):
+        c.get("https://example.invalid/never-fetched")
+    assert asked == []

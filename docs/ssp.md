@@ -147,7 +147,14 @@ per utterance:
 | 7, 8, 9 | 一覧, 文書, 資料 | documents |
 
 (From `dnp.config.MINUTE_TYPE_CODE`, so these are read and not guessed.) 4, 5 and
-6 are speeches; the rest are structure. Each block's `title` **is** the speaker
+6 are speeches; the rest are structure.
+
+**Counted over all eleven finished tenants (2026-09-21): codes 7, 8 and 9 do not
+occur at all.** 1,387,619 blocks, and every one of them is 名簿 (16,636), △議題
+(90,567), ○議長 (517,021), ◆質問 (358,966) or ◎答弁 (404,429). That closes a
+question this file left open — whether treating only 4/5/6 as speech silently
+drops a 文書 block carrying text, the way 静岡's 答弁文書 would have. It does not,
+on these tenants. Re-run the census on the remaining six. Each block's `title` **is** the speaker
 line — 「知事（村井嘉浩君）」 — and its `body` is the words, inside a single `<pre>`.
 
 This removes the failure mode that has cost this project more than any other.
@@ -283,9 +290,28 @@ So a date is the 会議's year plus the label's month and day, with two guards:
   against its node: they disagree by a year legitimately and often, and by more
   than that only when the name is wrong.
 
-`date disagreed` in the run report counts every case where the document's first
-date is not the label's. It is expected to be non-zero on 徳島 and near zero
-elsewhere; a jump anywhere else is a mislabelled schedule and worth reading.
+`date disagreed` counts every case where the document's first date is not the
+label's. **Read over the eleven finished tenants (2026-09-21), it says the
+reversal was right.** 埼玉 has 190 of them in 1,598 documents, and every one is
+the 招集告示 printed above the sitting — 165 at exactly seven days early, the
+notice's usual week:
+
+> 埼玉県議会令和８年２月定例会を２月１９日に招集する。　　令和８年２月１２日
+
+Two of the 190 are not that, and both are worth knowing:
+
+* **one document is misprinted.** 「昭和五十八年定例県議会を二月十六日招集する。
+  昭和五十七年二月九日」 — the notice carries the wrong era year, 372 days out.
+  The listing is right and nothing needs doing.
+* **one label is wrong**, which is the counter-example to this whole section:
+  the schedule reads 「10月03日-06号」 while the document reads
+  「九月定例会第十九日（十月十三日）」. One in 1,598, against 190 the other way.
+  The rule stands; the exception is recorded here rather than coded around.
+
+`impossible years` behaved the same way: 熊本's seven are the seven sittings of
+one mis-typed 会議 (`council_id=185`, 「平成５７年　６月　定例会」), all correctly
+filed under 1982. Their `session` still reads 平成57年, because that is what the
+site says and only the date was in question.
 
 ---
 
@@ -321,5 +347,14 @@ The project's standing checks, plus the two this product adds:
    a value beginning mid-sentence is impossible; an *empty* one is still worth
    counting.
 5. `date disagreed` and `impossible years` from the run report.
-6. The listing against the corpus, per 会議 — `scripts/audit.py` does not know
-   this scraper yet.
+6. The listing against the corpus, per sitting — `scripts/audit.py` works on
+   this scraper as it stands, because a `MeetingRef` walk over a filled cache
+   needs no requests. **All eleven finished tenants reconcile exactly**
+   (2026-09-21): 16,636 sittings offered, 16,636 collected, 0 listed but not
+   collected, on every one.
+
+   The audit now sets `Settings.offline`, so a cache miss is an error rather
+   than a request. That matters beyond tidiness: 滋賀 and 石川 may only be
+   fetched on weekend evenings, and a check that quietly filled a gap in its own
+   input would break that promise from the one script whose entire purpose is to
+   read what we already have.

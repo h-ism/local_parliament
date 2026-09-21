@@ -36,6 +36,17 @@ class Settings:
     respect_robots: bool = os.environ.get("PT_RESPECT_ROBOTS", "1") != "0"
     use_cache: bool = True
 
+    offline: bool = os.environ.get("PT_OFFLINE", "0") == "1"
+    """Serve only what is cached; a miss is an error rather than a request.
+
+    The standing checks — `reparse.py`, `audit.py` — are described everywhere in
+    this project as costing nothing because every response is cached. That was
+    true by luck: a listing page that happened to be missing would have been
+    fetched, and on 滋賀 or 石川 that could mean a request outside the hours they
+    agreed to, from a script whose whole purpose is to read what we already have.
+    With this set, such a miss says so instead.
+    """
+
     cache_dir: Path = _default_root() / "cache"
     data_dir: Path = _default_root() / "data"
 

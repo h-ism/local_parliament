@@ -27,7 +27,9 @@ uv run pt export data/<pref>.jsonl   # JSONL corpus -> CSV (one row per speech)
 uv run pt inspect <url> --as-site <name>  # fetch through that site's robots exemption
 
 # The two checks the conventions below keep asking for. Both read only the cache,
-# so both cost zero requests and can be run as often as you like.
+# so both cost zero requests and can be run as often as you like — `audit.py`
+# sets `Settings.offline`, which makes that true by construction rather than by
+# luck: a miss is an error, not a request someone's server did not expect.
 uv run python scripts/reparse.py <site> data/<pref>.jsonl   # re-parse in place, and diff
 uv run python scripts/audit.py <site> data/<pref>.jsonl     # listing vs corpus, per item
 
@@ -96,6 +98,11 @@ Modules under `src/prefectural_transcripts/`:
   Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
   decision recorded in its configs — don't lower that either, and don't run two
   SSP tenants at once: all 17 share one host and the limiter is per-process.
+- **A check must not be able to fetch.** `PT_OFFLINE=1` / `Settings.offline`
+  serves only the cache and raises on a miss. Every re-parse and audit runs that
+  way, because the alternative is a "free" check that quietly asks an assembly's
+  server for the one page it is missing — and on a site with agreed hours, asks
+  at the wrong time.
 - **An operator's condition goes in the config, not in a runbook.** Three exist:
   `[robots]` (`RobotsExemption`), `[fetch_window]` (`FetchWindow`) and `[contact]`
   (`Contact`, the address that operator knows). The first two refuse
