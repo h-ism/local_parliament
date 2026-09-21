@@ -73,8 +73,22 @@ moves into `sites/ishikawa.toml` when that file exists.
    different question (`docs/inquiries/chiba.md`).
 3. `sites/ishikawa.toml` once the selectors are checked against the real markup,
    carrying `[robots]`, `[fetch_window]` and `[contact]`.
-4. **Collection from 2026-10-01**, in the weekend windows. If it has to start
-   sooner, ask them first — they told us what they are worried about.
+4. **Collection from 2026-10-01**, in the weekend windows — **reserved
+   2026-09-21**: `pt-voices-collect.timer` fires every Sat and Sun at 20:00, and
+   `collect_voices.sh` refuses 石川 before October, so the first run that can do
+   anything is **Sat 2026-10-03 20:00**. If it has to start sooner, ask them
+   first — they told us what they are worried about.
+
+   The reservation is real but conditional, and the condition is ours: **there is
+   no `sites/ishikawa.toml` yet.** Until the selectors are written from the
+   2026-09-26 reconnaissance, the timer will fire, find no config, write
+   `ishikawa: NO CONFIG … Nothing fetched.` to `data/logs/voices/run.log`, and
+   stop. A reservation that silently collects nothing would be worse than none.
+
+   An archive does not fit in one four-hour window. It does not need to: the
+   window closes at midnight, `PoliteClient` stops the run, and the next evening
+   resumes from the corpus — every response already fetched is in the cache and
+   costs nothing to pass again.
 
 ## What this makes two of
 

@@ -1,0 +1,12 @@
+[Unit]
+Description=The weekend evenings 滋賀 and 石川 agreed to — 20:00 Sat and Sun
+
+[Timer]
+# 石川's first window after its 定例会 ends (2026-09-30) is Sat 2026-10-03; the
+# script's own not-before guard is what enforces that, so this stays a plain
+# weekly schedule and the reason lives in the code rather than in a cron field.
+OnCalendar=Sat,Sun 20:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

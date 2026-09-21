@@ -1,0 +1,11 @@
+[Unit]
+Description=Collect 滋賀・石川 (VOICES) inside the hours they agreed to
+Documentation=file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/ishikawa.md file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/shiga.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/hideo-ishima/research_project/prefectual_transcripts
+# A window is four hours; the run stops itself when it closes.
+TimeoutStartSec=5h
+Environment=PATH=/home/hideo-ishima/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/bin/bash /home/hideo-ishima/research_project/prefectual_transcripts/scripts/collect_voices.sh
