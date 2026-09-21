@@ -2,6 +2,65 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-21 — the speaker split the scraper refused to guess (`feat/split-titles`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+`scrapers/ssp.py` keeps a title whole when it cannot read it, and counts it. On
+two sample documents per tenant that looked like a small number. Over the eleven
+finished archives it was **66% of 1,280,405 speeches** — because committees, and
+older documents, run name and office together (「赤嶺昇議長」) where 本会議 brackets
+them. The measurement that said otherwise was two documents per tenant, and
+those were the newest two. **A rule verified against recent documents says
+nothing about 1999** — written in CLAUDE.md a month ago, and it caught me anyway.
+
+`scripts/split_titles.py` closes it from the finished corpus, which knows what a
+single document cannot: 2,478 distinct offices pooled from every corpus in
+`data/`, and each prefecture's own names. A title splits when a known office
+ends it and what remains is corroborated — a name stated elsewhere, the unique
+start of one, or (for a committee member who never spoke in 本会議 and so has no
+bracketed title anywhere) the longest office in the vocabulary with a residual
+that does not itself end in an office.
+
+That last guard is the whole difference from the list this scraper deliberately
+removed in the first place: 「渡邊直二公安委員長」 now splits on 公安委員長, which
+is in the vocabulary because other assemblies print it separately, so it cannot
+become 「渡邊直二公安」.
+
+**461,787 speeches given a role; no role left on 15%, down from 66%; 14,085
+distinct speakers down to 12,099; zero speakers invented ending in an office;
+and the speech text is byte-identical — the pass compares the SHA-256 of every
+speech before and after.** `data/backup-pre-split/` holds the originals.
+
+What remains is three things and only the first is a defect: an office never
+seen stated separately (大分's 「石川商工労働観光部長事務取扱」), a title that is
+only an office (山口 prints many), and a title that is only a name (熊本's
+「岩中伸司」 — the source gives no office at all).
+
+### 日本語
+
+スクレイパは読めない話者名を丸ごと残して件数を数える。各県2文書の試験ではそれが
+わずかに見えた。完結した11県では**1,280,405発言の66%**だった。委員会と古い文書が
+「赤嶺昇議長」のように氏名と役職を続けて書くからで、本会議だけが括弧で分けている。
+**最近の文書で検証した規則は1999年について何も語らない**——1か月前に自分で
+CLAUDE.md に書いた教訓に、そのまま引っかかった。
+
+`scripts/split_titles.py` は完結したコーパスから解く。単一の文書には無い知識が
+そこにはある——`data/` 全体から集めた2,478の役職と、県ごとの氏名。既知の役職で
+終わり、かつ残りが裏付けられるときだけ切る（他所で単独表記される氏名、その一意な
+先頭、あるいは本会議に一度も出ない委員のように氏名がどこにも無い場合は、語彙中
+最長の役職で、残りがそれ自体役職で終わらないこと）。
+
+最後の条件が、最初に捨てた辞書との決定的な違いである。「渡邊直二公安委員長」は
+公安委員長で切れる——他県が単独で印字しているから語彙にある——ので、
+「渡邊直二公安」にはならない。
+
+**461,787発言に役職が付き、役職なしは66%→15%、話者は14,085→12,099、
+役職で終わる話者の捏造は0件、発言本文はバイト単位で不変**（前後のSHA-256を比較）。
+元のコーパスは `data/backup-pre-split/` にある。
+
 ## 2026-09-18 — 滋賀 and 石川, permissions with hours attached (`feat/fetch-window`)
 
 *English and Japanese. / 英語と日本語で併記する。*

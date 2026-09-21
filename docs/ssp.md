@@ -216,15 +216,46 @@ the source itself has no names) a committee speaker is stored as printed —
 brackets give 「梅澤佳一」. This is the 愛媛 duplicate-speaker problem, and it is
 open on those tenants.
 
-**The way to close it is a pass over the finished corpus, not a rule in the
-scraper.** Once a prefecture is collected, its own bracketed 本会議 titles are a
-verified office vocabulary for that prefecture — strictly more information than
-any single document has — and splitting the unsplit titles against it is
-deterministic, reviewable and re-runnable from the JSONL with no requests. That
-script does not exist yet; the counts above are what it would be measured
-against. Until then the corpus is honest about what it does not know.
+**The way to close it was a pass over the finished corpus, not a rule in the
+scraper** — `scripts/split_titles.py`, run 2026-09-21 over the eleven finished
+tenants.
 
----
+It takes the offices from *every* corpus in `data/` (2,478 distinct roles, each
+of which reached a `role` field from a title that was already unambiguous) and
+the names from each prefecture's own bracketed titles, and splits a title only
+when a known office ends it. Three strengths of claim, counted apart:
+
+1. **the residual is a name this prefecture states elsewhere** — 「赤嶺昇議長」
+   beside 「議長（赤嶺昇）」;
+2. **the residual is the unique start of one** — 長崎's 「冨岡委員長」 against a
+   roster reading 「冨岡孝介」; where several names start that way, the office
+   decides if exactly one of them has ever held it (「黒岩知事」), and otherwise
+   the title stands;
+3. **office only** — a committee member who never spoke in 本会議 has no
+   bracketed title anywhere, so nothing states their name. The longest office in
+   the vocabulary is still evidence, and the residual is rejected if it ends in
+   an office itself.
+
+That last guard is what makes this safe where the scraper's own list was not:
+「渡邊直二公安委員長」 splits on 公安委員長 — which is in the vocabulary because
+other assemblies print it separately — and so cannot become 「渡邊直二公安」.
+
+**Measured, 2026-09-21:**
+
+| | before | after |
+| --- | ---: | ---: |
+| speeches with no role | 848,000 (66%) | **190,510 (15%)** |
+| distinct speakers | 14,085 | **12,099** |
+| speeches given a role | — | **461,787** |
+| speakers invented ending in an office | — | **0** |
+| speech text changed | — | **none — byte-identical** |
+
+The 15% that remain are three things and only the first is a defect: an office
+this project has never seen stated separately (大分's
+「石川商工労働観光部長事務取扱」), a title that is only an office with no name at
+all (山口 prints many), and a title that is only a name (熊本's 「岩中伸司」,
+where the source itself gives no office). `data/backup-pre-split/` holds the
+corpora as they were.
 
 ## 5. Dates
 
