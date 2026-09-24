@@ -2,6 +2,77 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-24 — three more answers, and two obligations the code now keeps (`feat/notice-and-night-windows`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**岩手, 茨城 and 栃木 all answered: scraping is acceptable if done the way the
+letter described.** That sentence turns our own five undertakings into their
+terms, and two of them were promises no code was keeping.
+
+**「業務時間帯を避ける」 needed a window that crosses midnight.** 20:00–07:00 every
+day. `FetchWindow` only understood 滋賀's shape (20:00–24:00), and a `start`
+later than an `end` read as an empty interval — every request refused, looking
+like a bug in the crawler rather than a misread promise. It wraps now, and **the
+small hours belong to the evening that opened them**: a weekend window open at
+20:00 on Sunday is still open at 01:00 on Monday, and Monday's own evening is
+not.
+
+**栃木 asked to be told before each run**, which the crawler cannot do. So it
+refuses instead. `[notice]` records who was told, on what date, and the period
+the notice covered; `pt scrape` stops before fetching anything outside it and
+prints what to send. No notice has gone out, so **栃木 cannot run at all yet** —
+which is the point.
+
+That guard was tested within the hour, by accident. Changing the recon timer from
+weekends to nightly made systemd think it had missed three firings, so it ran
+immediately — at 11:22 on a Thursday. **Every site refused**: 栃木 on the notice,
+岩手 and 茨城 on the hours, 滋賀 and 石川 on the day. Zero cache entries were
+written. An unplanned firing is the only real test these guards get.
+
+**茨城 is DB-Search — the same product as 山梨, which said the opposite.** 山梨
+telephoned on 2026-09-17 to say the system is for one-at-a-time searching and
+should not be fetched automatically; 茨城 says scraping is fine. Same vendor, the
+same blanket `Disallow: /`, opposite intentions. Fifteen more DB-Search
+assemblies are unanswered and this is the evidence that **their answers cannot be
+guessed from each other**. It also means `importers/dbsearch.py`, written for
+山梨's downloaded files, describes a format we will now fetch directly — the
+parser should be reusable and only the transport differs.
+
+`recon_voices.py` became `recon_sites.py`, because 茨城 made the name wrong.
+Eighteen assemblies remain blocked, down from twenty-four a month ago.
+
+### 日本語
+
+**岩手・茨城・栃木から回答。「メールに記載した方法であればスクレイピング可」。**
+この一文で、こちらが申し出た5項目が先方の条件になった。うち2つは、コードが何も
+守っていなかった約束である。
+
+**「業務時間帯を避ける」には日をまたぐ窓が要る。** 毎日20時〜翌7時。`FetchWindow`
+は滋賀の形（20時〜24時）しか知らず、`start` が `end` より後だと空集合と読めて
+しまう——全リクエストが拒否され、**約束の読み違いではなくクローラのバグの顔**をして
+出てくる。日またぎに対応し、**深夜はそれを開けた晩に属する**ようにした（日曜20時に
+開いた窓は月曜1時でも開いていて、月曜の晩は開かない）。
+
+**栃木は事前通知が条件**で、これはクローラにはできない。だから拒否する方にした。
+`[notice]` に「誰に・いつ・どの期間を伝えたか」を書き、その外では `pt scrape` が
+取得前に停止して、送るべき内容を表示する。**まだ通知を出していないので栃木は1件も
+動かない**——それが狙いである。
+
+このガードは1時間以内に、事故で試された。下見タイマーを週末から毎晩に変えたところ、
+systemd が3回分の取りこぼしと判断して即実行した——木曜の11時22分に。**全サイトが
+拒否**（栃木は通知、岩手・茨城は時間帯、滋賀・石川は曜日）。キャッシュの書き込みは
+0件。**予定外の発火こそが、この種のガードの唯一の実地試験である。**
+
+**茨城は DB-Search——山梨と同じ製品で、山梨は逆のことを言った。** 同じベンダー、
+同じ blanket `Disallow: /`、反対の意思。残り15の DB-Search 議会について、
+**互いの回答から推測してはいけない**という証拠になった。
+
+`recon_voices.py` は `recon_sites.py` に改名（茨城で名前が嘘になったため）。
+取得不可は24→**18議会**。
+
 ## 2026-09-24 — SSP complete: 17 assemblies, two billion characters (`feat/committee-records`, merged)
 
 *English and Japanese. / 英語と日本語で併記する。*

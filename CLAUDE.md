@@ -110,9 +110,10 @@ Modules under `src/prefectural_transcripts/`:
   way, because the alternative is a "free" check that quietly asks an assembly's
   server for the one page it is missing — and on a site with agreed hours, asks
   at the wrong time.
-- **An operator's condition goes in the config, not in a runbook.** Three exist:
-  `[robots]` (`RobotsExemption`), `[fetch_window]` (`FetchWindow`) and `[contact]`
-  (`Contact`, the address that operator knows). The first two refuse
+- **An operator's condition goes in the config, not in a runbook.** Four exist:
+  `[robots]` (`RobotsExemption`), `[fetch_window]` (`FetchWindow`), `[contact]`
+  (`Contact`, the address that operator knows) and `[notice]` (`Notice`, an
+  operator who asked to be told before a run). The first two refuse
   to load without a reason and a date, both are scoped to one site, and both
   announce themselves. A condition someone has to remember is one that will be
   broken on a Tuesday afternoon with nothing to show for it.
@@ -200,11 +201,36 @@ See `docs/kensakusystem.md`.
 **Blocked, and why it is not a scraping problem**
 
 24 assemblies forbade crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
-gijiroku VOICES' CGI directory) — **21 now**: 山梨 moved to hand collection, and
-滋賀 and 石川 answered. No amount of selector work changes the rest; the way through is
+gijiroku VOICES' CGI directory) — **18 now**: 山梨 moved to hand collection, and
+滋賀・石川・岩手・茨城・栃木 answered. Every one of the three vendor products now
+has at least one assembly that has permitted collection, which means the verdict
+recorded against each of them in August was the vendor's boilerplate and not the
+assembly's position. No amount of selector work changes the rest; the way through is
 `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it — that is the
 researcher's call, not ours, and when it is made it gets written down in a config
 (`RobotsExemption`), not switched off for every site in the run.
+
+**岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
+
+All three answered that scraping is acceptable **if done the way the letter
+described**, which turns our own five undertakings into their terms. Two of
+those needed building:
+
+- 「業務時間帯を避ける」 — a `[fetch_window]` of **20:00–07:00 every day**, which
+  crosses midnight. That shape did not exist (滋賀's is 20:00–24:00) and read as
+  an empty interval would have refused everything and looked like a crawler bug.
+  `FetchWindow` wraps now, and **the small hours belong to the evening that
+  opened them**.
+- 栃木 asked to be told **before** each run. The crawler cannot send an email, so
+  it refuses instead: `[notice]` records who was told, when, and what period it
+  covers, and `pt scrape` stops before fetching anything outside that. No notice
+  has been sent, so 栃木 cannot run at all yet.
+
+**茨城 is DB-Search — the same product as 山梨, which said the opposite.** 山梨:
+don't fetch it automatically, use the download button. 茨城: scraping is fine.
+Same vendor, same blanket `Disallow: /`, opposite intentions. 15 more DB-Search
+assemblies are unanswered and **their answers cannot be guessed from each
+other**. See `docs/iwate-ibaraki-tochigi.md`.
 
 **滋賀・石川 — permitted, inside agreed hours (2026-09-18)**
 

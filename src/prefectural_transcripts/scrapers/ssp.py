@@ -46,7 +46,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from prefectural_transcripts.config import Contact, FetchWindow, RobotsExemption
+from prefectural_transcripts.config import Contact, FetchWindow, Notice, RobotsExemption
 from prefectural_transcripts.dates import ERA_BASE, parse_japanese_date
 from prefectural_transcripts.http import FetchError, Page, PoliteClient
 from prefectural_transcripts.models import Meeting, MeetingRef, Speech
@@ -137,6 +137,7 @@ class SspConfig:
     robots_exempt: RobotsExemption | None = None
     fetch_window: FetchWindow | None = None
     contact: Contact | None = None
+    notice: Notice | None = None
 
     years: list[int] = field(default_factory=list)
     """`view_year` nodes to list, e.g. `[2025, 2026]`. Empty means every year.
@@ -163,6 +164,7 @@ class SspConfig:
                 robots_exempt=RobotsExemption.from_toml(raw.get("robots", {})),
                 fetch_window=FetchWindow.from_toml(raw.get("fetch_window", {})),
                 contact=Contact.from_toml(raw.get("contact", {})),
+                notice=Notice.from_toml(raw.get("notice", {})),
                 **opts,
             )
         except (KeyError, TypeError) as exc:
@@ -444,6 +446,7 @@ class SspScraper(BaseScraper):
         self.robots_exempt = config.robots_exempt
         self.fetch_window = config.fetch_window
         self.contact = config.contact
+        self.notice = config.notice
         self.outcome = Outcome()
         self._sittings: dict[str, Sitting] = {}
         """Listing metadata by ref key. `MeetingRef` is deliberately cheap, and the

@@ -147,7 +147,14 @@ class FetchWindow:
 
     start: time
     end: time
-    """Half-open [start, end) in `timezone`. `end` of 00:00 means midnight, the day's end."""
+    """Half-open [start, end) in `timezone`, and it may cross midnight.
+
+    「20時以降」 with nothing after it is `20:00`–`24:00`: an `end` of 00:00 means
+    the day's end. 「業務時間帯を避ける」 is `20:00`–`07:00`, which runs past
+    midnight — so when `start` is later than `end` the window is the two pieces
+    either side of it. Reading that as an empty interval would refuse every
+    request and look like a bug in the crawler rather than a misread promise.
+    """
 
     reason: str
     """Whose instruction this is, in their words where possible."""
@@ -174,16 +181,25 @@ class FetchWindow:
 
     def allows(self, when: datetime) -> bool:
         local = when.astimezone(self.zone)
-        if local.weekday() not in self.days:
-            return False
         moment = local.time()
         if self.end == time(0, 0):
-            return moment >= self.start
-        return self.start <= moment < self.end
+            return local.weekday() in self.days and moment >= self.start
+        if self.start < self.end:
+            return local.weekday() in self.days and self.start <= moment < self.end
+        # Crosses midnight: the evening belongs to `days`, and the small hours
+        # after it belong to the evening that opened them — a window that opens
+        # on Saturday at 20:00 is still open at 01:00 on Sunday.
+        if moment >= self.start:
+            return local.weekday() in self.days
+        if moment < self.end:
+            return (local - timedelta(days=1)).weekday() in self.days
+        return False
 
     def next_open(self, when: datetime) -> datetime:
         """When the window next opens, for a message a person can act on."""
         local = when.astimezone(self.zone)
+        if self.allows(local):
+            return local
         for ahead in range(8):
             day = (local + timedelta(days=ahead)).date()
             if day.weekday() not in self.days:
@@ -197,8 +213,10 @@ class FetchWindow:
 
     def describe(self) -> str:
         names = [name for name, number in _WEEKDAYS.items() if number in self.days]
+        days = "every day" if len(self.days) == 7 else "/".join(names)
         end = "24:00" if self.end == time(0, 0) else self.end.strftime("%H:%M")
-        return f"{'/'.join(names)} {self.start.strftime('%H:%M')}-{end} {self.timezone}"
+        wrap = " (past midnight)" if self.start > self.end != time(0, 0) else ""
+        return f"{days} {self.start.strftime('%H:%M')}-{end}{wrap} {self.timezone}"
 
     @classmethod
     def from_toml(cls, raw: Mapping[str, Any]) -> FetchWindow | None:
@@ -260,3 +278,68 @@ class Contact:
             return cls(address=raw["address"], note=raw.get("note", ""))
         except KeyError as exc:
             raise ValueError(f"a [contact] table needs an address; missing {exc}") from exc
+
+
+@dataclass(frozen=True, slots=True)
+class Notice:
+    """An operator who asked to be told *before* a run, and what we last told them.
+
+    栃木県議会事務局 permitted collection on 2026-09-24 and asked for the timing in
+    advance. That obligation cannot be met by the crawler — somebody has to send
+    an email — but it can be made impossible to forget: the config records when
+    we last told them and what period we said we would run in, and a run outside
+    that period refuses to start.
+
+    It is the same shape as `RobotsExemption` and `FetchWindow`, for the same
+    reason: an undertaking that lives in someone's memory is an undertaking that
+    will be broken on a Tuesday afternoon with nothing to show for it.
+    """
+
+    who: str
+    """Who was told, in their own words — 「栃木県議会事務局 議事課」."""
+
+    last_sent: str
+    """ISO date the notice went out."""
+
+    covers_until: str
+    """ISO date the notice said we would be finished by. Past it, this refuses."""
+
+    what: str = ""
+    """What the notice said, so the next person can send the same thing again."""
+
+    def __post_init__(self) -> None:
+        if not self.who.strip():
+            raise ValueError("a notice must record who was told")
+        for field_name, value in (
+            ("last_sent", self.last_sent),
+            ("covers_until", self.covers_until),
+        ):
+            try:
+                date.fromisoformat(value)
+            except ValueError as exc:
+                raise ValueError(f"notice {field_name} must be YYYY-MM-DD, got {value!r}") from exc
+        if date.fromisoformat(self.covers_until) < date.fromisoformat(self.last_sent):
+            raise ValueError("a notice cannot cover a period before it was sent")
+
+    def covers(self, when: date) -> bool:
+        return date.fromisoformat(self.last_sent) <= when <= date.fromisoformat(self.covers_until)
+
+    def describe(self) -> str:
+        return f"told {self.who} on {self.last_sent}, covering until {self.covers_until}"
+
+    @classmethod
+    def from_toml(cls, raw: Mapping[str, Any]) -> Notice | None:
+        """Read a `[notice]` table from a site config; None when there is none."""
+        if not raw:
+            return None
+        try:
+            return cls(
+                who=raw["who"],
+                last_sent=raw["last_sent"],
+                covers_until=raw["covers_until"],
+                what=raw.get("what", ""),
+            )
+        except KeyError as exc:
+            raise ValueError(
+                f"a [notice] table needs who, last_sent and covers_until; missing {exc}"
+            ) from exc

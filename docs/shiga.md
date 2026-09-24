@@ -78,7 +78,7 @@ note = "照会は共同研究者Aが行い、2026-09-18 に許可を得た"
 which replaces `PT_CONTACT` in the User-Agent for that site alone and prints
 itself at the start of the run. **共同研究者A, given
 2026-09-18**, is the address 滋賀 has on file, and it is what
-`scripts/recon_voices.py` already sends; it goes into `sites/shiga.toml` the
+`scripts/recon_sites.py` already sends; it goes into `sites/shiga.toml` the
 moment that file exists.
 
 Note that the project-level `PT_CONTACT` (a 京都大学 address) is still marked
@@ -96,7 +96,7 @@ tail -f data/logs/voices-recon.log                    # the same, as it runs
 systemctl --user stop pt-voices-recon.timer           # call it off
 ```
 
-It runs `scripts/recon_voices.py` — shared with 石川, which answered the same day
+It runs `scripts/recon_sites.py` — shared with 石川, which answered the same day
 on the same terms (`docs/ishikawa.md`) — and what it does is **look, not
 collect**:
 at most 40 pages under `/voices/`, depth 2, 2 seconds apart, all of it into the
@@ -138,7 +138,7 @@ own robots.txt and its own shape apply) and whether it is even on this host.
 CLAUDE.md's rule covers exactly this: *a robots.txt verdict is not final until
 you know the URL that actually carries the data.*
 
-**Finding it, next window (Sat 2026-09-26 20:00).** `scripts/recon_voices.py`
+**Finding it, next window (Sat 2026-09-26 20:00).** `scripts/recon_sites.py`
 now walks a `discover` list when the start page turns out to be a signpost:
 `robots.txt`, `index.asp` and the host root, at most a dozen pages, following
 only links whose text or URL says 会議録・議事録・検索・voices・gijiroku, and

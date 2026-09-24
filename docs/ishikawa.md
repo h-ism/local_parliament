@@ -35,7 +35,7 @@ thing, and nothing about this corpus needs it to happen in September.
 
 ## What runs, and when
 
-`scripts/recon_voices.py` — the same script 滋賀 uses, which now carries a table
+`scripts/recon_sites.py` — the same script 滋賀 uses, which now carries a table
 of the VOICES installs that have answered. Scheduled by a `systemd --user` timer:
 
 ```
@@ -58,7 +58,7 @@ answers was theirs, and that is the address the secretariat can reply to.
 `Disallow: /voices/cgi/` — the vendor's boilerplate, identical across all nine
 VOICES installs and not a statement by this assembly. The exemption rests on the
 mail above, is scoped to `https://pref-ishikawa.gijiroku.com/voices/`, and quotes
-the instruction as its reason. It is in `scripts/recon_voices.py` for now and
+the instruction as its reason. It is in `scripts/recon_sites.py` for now and
 moves into `sites/ishikawa.toml` when that file exists.
 
 ## Still to do, in order

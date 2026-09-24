@@ -189,3 +189,92 @@ def test_a_contact_has_to_be_reachable() -> None:
 
     with pytest.raises(ValueError, match="an operator can use"):
         Contact(address="共同研究者A")
+
+
+# --- a window that crosses midnight ----------------------------------------
+
+NIGHTS = """
+[fetch_window]
+days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+start = "20:00"
+end = "07:00"
+reason = "岩手・茨城・栃木 (2026-09-24): 業務時間帯を避ける、と手紙で申し出た条件"
+decided_on = "2026-09-24"
+"""
+
+
+def nights() -> FetchWindow:
+    parsed = FetchWindow.from_toml(tomllib.loads(NIGHTS)["fetch_window"])
+    assert parsed is not None
+    return parsed
+
+
+def test_avoiding_business_hours_means_a_window_past_midnight() -> None:
+    # 20:00-07:00 read as a plain interval is empty, which would refuse every
+    # request and look like a crawler bug rather than a misread promise.
+    w = nights()
+    assert w.allows(datetime(2026, 9, 24, 21, 0, tzinfo=JST))  # Thursday evening
+    assert w.allows(datetime(2026, 9, 25, 2, 30, tzinfo=JST))  # the small hours
+    assert w.allows(datetime(2026, 9, 25, 6, 59, tzinfo=JST))
+    assert not w.allows(datetime(2026, 9, 25, 7, 0, tzinfo=JST))  # business hours
+    assert not w.allows(datetime(2026, 9, 25, 14, 0, tzinfo=JST))
+    assert not w.allows(datetime(2026, 9, 25, 19, 59, tzinfo=JST))
+
+
+def test_the_small_hours_belong_to_the_evening_that_opened_them() -> None:
+    # A weekend-only version of the same shape: 01:00 on Monday is still inside
+    # the window that opened on Sunday at 20:00, and Monday's own evening is not.
+    from datetime import time as clock
+
+    weekend = FetchWindow(
+        days=(5, 6),
+        start=clock(20, 0),
+        end=clock(7, 0),
+        reason="test",
+        decided_on="2026-09-24",
+    )
+    assert weekend.allows(datetime(2026, 9, 20, 23, 0, tzinfo=JST))  # Sunday night
+    assert weekend.allows(datetime(2026, 9, 21, 1, 0, tzinfo=JST))  # Monday 01:00
+    assert not weekend.allows(datetime(2026, 9, 21, 21, 0, tzinfo=JST))  # Monday night
+
+
+def test_next_open_inside_a_wrapping_window_is_now() -> None:
+    w = nights()
+    inside = datetime(2026, 9, 25, 3, 0, tzinfo=JST)
+    assert w.next_open(inside) == inside
+    daytime = datetime(2026, 9, 25, 10, 0, tzinfo=JST)
+    assert w.next_open(daytime) == datetime(2026, 9, 25, 20, 0, tzinfo=JST)
+
+
+# --- being told before we run ----------------------------------------------
+
+
+def test_a_notice_covers_a_period_and_then_stops_covering_it() -> None:
+    from datetime import date
+
+    from prefectural_transcripts.config import Notice
+
+    n = Notice.from_toml(
+        tomllib.loads(
+            '[notice]\nwho = "栃木県議会事務局 議事課"\n'
+            'last_sent = "2026-09-24"\ncovers_until = "2026-10-05"\n'
+            'what = "10月1日〜5日の夜間に実施予定"\n'
+        )["notice"]
+    )
+    assert n is not None
+    assert n.covers(date(2026, 9, 24))
+    assert n.covers(date(2026, 10, 5))
+    assert not n.covers(date(2026, 10, 6))  # the notice has run out
+    assert not n.covers(date(2026, 9, 23))  # before it was sent
+    assert "栃木県議会事務局" in n.describe()
+
+
+def test_a_notice_must_be_dated_and_cannot_cover_the_past() -> None:
+    from prefectural_transcripts.config import Notice
+
+    with pytest.raises(ValueError, match="who was told"):
+        Notice(who=" ", last_sent="2026-09-24", covers_until="2026-10-05")
+    with pytest.raises(ValueError, match="last_sent"):
+        Notice(who="栃木", last_sent="soon", covers_until="2026-10-05")
+    with pytest.raises(ValueError, match="before it was sent"):
+        Notice(who="栃木", last_sent="2026-10-05", covers_until="2026-09-24")

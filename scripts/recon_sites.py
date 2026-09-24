@@ -1,10 +1,14 @@
-"""Reconnaissance on the gijiroku VOICES installs that have answered, in their hours.
+"""Reconnaissance on the assemblies that have answered, inside their own terms.
 
-Two assemblies have now permitted collection on the same condition — 滋賀 on
-2026-09-18 and 石川 the same day — and both said the same thing: fetch only on
-weekend evenings, from 20:00. They run the same product (`/voices/`), whose
-robots.txt closes the CGI directory as vendor boilerplate across all nine
-installs; the operators' own answers are what these exemptions rest on.
+Five so far, on three different products, and **no two sets of terms are the
+same**: 滋賀 and 石川 (VOICES) allow weekend evenings from 20:00; 岩手 (VOICES,
+root-level `.asp`), 茨城 (**DB-Search**) and 栃木 (VOICES) allow collection by the
+method our letter described, which commits us to avoiding business hours; and
+栃木 also wants to be told when we will run. Each robots.txt in question is the
+vendor's boilerplate, identical across its product's installs; the operators'
+own answers are what these exemptions rest on.
+
+This file was `recon_voices.py` until 茨城 answered and made the name wrong.
 
 **Why a separate script rather than `pt inspect`.** The window is a few hours a
 week and thinking is not. Everything this fetches lands in the cache, so the work
@@ -17,9 +21,9 @@ Bounded on purpose: at most `MAX_PAGES` pages per site, all under that site's ow
 `PoliteClient` refuses outright when the window is shut — so a timer that fires
 on a Tuesday fetches nothing at all and says why.
 
-    uv run python scripts/recon_voices.py             # every site that has answered
-    uv run python scripts/recon_voices.py shiga       # one of them
-    uv run python scripts/recon_voices.py --dry-run
+    uv run python scripts/recon_sites.py             # every site that has answered
+    uv run python scripts/recon_sites.py shiga       # one of them
+    uv run python scripts/recon_sites.py --dry-run
 """
 
 from __future__ import annotations
@@ -35,7 +39,7 @@ from urllib.parse import urldefrag, urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from prefectural_transcripts.config import Contact, FetchWindow, RobotsExemption, Settings
+from prefectural_transcripts.config import Contact, FetchWindow, Notice, RobotsExemption, Settings
 from prefectural_transcripts.http import (
     FetchError,
     OutsideFetchWindow,
@@ -52,6 +56,12 @@ MAX_DEPTH = 2
 # Both answers name the same hours, and both letters were sent by the same
 # collaborator, so the address they have on file is 共同研究者A's.
 WEEKEND_EVENINGS = dict(days=(5, 6), start=time(20, 0), end=time(0, 0), decided_on="2026-09-18")
+# 岩手・茨城・栃木 (2026-09-24) permitted collection "by the method described", and
+# the method we described says 業務時間帯を避ける. 20:00-07:00 every day is
+# unambiguously outside business hours; the window wraps past midnight.
+OUTSIDE_BUSINESS_HOURS = dict(
+    days=(0, 1, 2, 3, 4, 5, 6), start=time(20, 0), end=time(7, 0), decided_on="2026-09-24"
+)
 CONTACT = Contact(
     address="(共同研究者Aの連絡先)",
     note="照会は共同研究者Aが行った",
@@ -94,6 +104,17 @@ class Site:
     discover_hint: str = r"会議録|議事録|会議|録画|検索|voices|gijiroku|minutes"
     """Only links whose text or URL says they might lead to the minutes."""
 
+    requires_notice: bool = False
+    """The operator asked to be told before we run. 栃木 did.
+
+    The crawler cannot send that email, so it refuses instead: nothing is
+    fetched until a `[notice]` records who was told and what period it covers.
+    A reconnaissance visit is a run like any other — the first notice should say
+    so.
+    """
+
+    notice: Notice | None = None
+
     avoid: str = r"Video|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
     """Links not worth a slot in the cap.
 
@@ -111,25 +132,30 @@ def _voices(
     note: str = "",
     discover: tuple[str, ...] = (),
     start: str = "",
+    path: str = "/voices/",
+    hours: dict[str, object] | None = None,
+    requires_notice: bool = False,
+    notice: Notice | None = None,
 ) -> Site:
-    prefix = f"https://{host}/voices/"
+    prefix = f"https://{host}{path}"
     return Site(
         key=key,
         prefecture=prefecture,
         start=start or prefix,
         prefix=prefix,
-        window=FetchWindow(reason=reason, **WEEKEND_EVENINGS),  # type: ignore[arg-type]
+        window=FetchWindow(reason=reason, **(hours or WEEKEND_EVENINGS)),  # type: ignore[arg-type]
         exemption=RobotsExemption(
             prefixes=(prefix,),
             reason=(
-                f"{who} 2026-09-18: 自動取得を許可、土日20時以降に限定。"
-                "robots.txt の Disallow: /voices/cgi/ はベンダー標準で、"
-                f"運営者本人の回答が優先する。docs/{key}.md"
+                f"{who}: 運営者本人の回答による許可。robots.txt の Disallow は"
+                f"ベンダー標準で、回答が優先する。docs/{key}.md"
             ),
             decided_on="2026-09-18",
         ),
         note=note,
         discover=discover,
+        requires_notice=requires_notice,
+        notice=notice,
     )
 
 
@@ -140,6 +166,13 @@ ROBOTS_READABLE = RobotsExemption(
     prefixes=("https://www.shigaken-gikai.jp/robots.txt",),
     reason="robots.txt itself, to find where 滋賀's minutes moved to. RFC 9309 §2.3.",
     decided_on="2026-09-21",
+)
+
+
+_BY_METHOD = (
+    "（2026-09-24）手紙に記載した方法（1件2秒以上・直列、既取得は再取得しない、"
+    "User-Agent に研究目的と連絡先、業務時間帯を避ける、支障があれば即停止）であれば"
+    "スクレイピング可、との回答"
 )
 
 
@@ -182,6 +215,47 @@ SITES: dict[str, Site] = {
             note=(
                 "定例会の会期中（9月30日まで）につき、取得時間帯にくれぐれも留意するよう"
                 "念を押されている。会期中は下見にとどめ、本収集は10月以降に回すのが安全。"
+            ),
+        ),
+        _voices(
+            "tochigi",
+            "栃木県",
+            "pref-tochigi.gijiroku.com",
+            "栃木県議会事務局",
+            f"栃木県議会事務局{_BY_METHOD}",
+            hours=OUTSIDE_BUSINESS_HOURS,
+            requires_notice=True,
+            note=(
+                "**実行のタイミングを事前に知らせること**（先方の指示）。本収集の前に"
+                "通知を送り、sites/tochigi.toml の [notice] に記録する。下見も同じ扱いに"
+                "しておくのが筋なので、最初の通知に下見の予定も書くこと。"
+            ),
+        ),
+        _voices(
+            "iwate",
+            "岩手県",
+            "iwatekengikai.gijiroku.com",
+            "岩手県議会事務局",
+            f"岩手県議会事務局{_BY_METHOD}",
+            path="/",
+            hours=OUTSIDE_BUSINESS_HOURS,
+            note=(
+                "同じ VOICES でも /voices/ ではなくルート直下の *.asp。石川の形が"
+                "そのまま当てはまるとは限らない。"
+            ),
+        ),
+        _voices(
+            "ibaraki",
+            "茨城県",
+            "www.pref.ibaraki.dbsr.jp",
+            "茨城県議会事務局",
+            f"茨城県議会事務局{_BY_METHOD}",
+            path="/",
+            hours=OUTSIDE_BUSINESS_HOURS,
+            note=(
+                "DB-Search。**山梨と同じ製品で、山梨は「自動取得は控えて」だった**。"
+                "ベンダーの robots は同一でも議会の意思は別物だという実例なので、"
+                "他の DB-Search 15県の可否をここから推測しないこと。"
             ),
         ),
     )
@@ -315,6 +389,11 @@ def main() -> int:
             continue
 
         now = current_time()
+        if site.requires_notice and not (site.notice and site.notice.covers(now.date())):
+            log.error("%s: 事前通知が条件。通知を送り、[notice] に記録するまで実行しない", key)
+            log.error("  %s", site.note or "")
+            failed += 1
+            continue
         if not site.window.allows(now):
             log.error("%s: outside the agreed hours (%s)", key, site.window.describe())
             log.error(

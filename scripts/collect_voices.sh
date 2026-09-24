@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Collect the gijiroku VOICES assemblies that have answered, inside their hours.
+# Collect the assemblies that have answered, inside the terms each of them set.
 #
 # 滋賀 and 石川 permitted automated collection on 2026-09-18 on one condition:
 # **weekend evenings, from 20:00**. 石川 added that the assembly sits until
@@ -36,6 +36,9 @@ mkdir -p "$LOGS"
 SITES_ALL=(
   "shiga:"
   "ishikawa:2026-10-01"
+  "iwate:"
+  "ibaraki:"
+  "tochigi:"      # also gated by [notice]: pt scrape refuses without one
 )
 
 wanted=("$@")

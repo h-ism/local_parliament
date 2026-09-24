@@ -1,8 +1,8 @@
 [Unit]
-Description=The hours 滋賀 and 石川 agreed to — weekend evenings from 20:00
+Description=Nightly at 20:00; each site's own window decides whether it may run
 
 [Timer]
-OnCalendar=Sat,Sun 20:00
+OnCalendar=*-*-* 20:00
 Persistent=true
 
 [Install]

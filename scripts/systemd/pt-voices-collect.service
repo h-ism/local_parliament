@@ -1,5 +1,5 @@
 [Unit]
-Description=Collect 滋賀・石川 (VOICES) inside the hours they agreed to
+Description=Collect the assemblies that answered, inside the hours each agreed to
 Documentation=file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/ishikawa.md file:///home/hideo-ishima/research_project/prefectual_transcripts/docs/shiga.md
 
 [Service]

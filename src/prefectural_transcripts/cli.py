@@ -102,6 +102,16 @@ def scrape(
         )
         typer.echo(f"Reason ({window.decided_on}): {window.reason}")
         raise typer.Exit(1)
+    # Somebody promised to tell them when we would run. The crawler cannot send
+    # that email, but it can refuse to start when nobody has — see `Notice`.
+    if (notice := scraper.notice) and not notice.covers(current_time().date()):
+        typer.echo(f"{name} was promised advance notice of when we run: {notice.describe()}.")
+        typer.echo(f"Today is {current_time().date()}, which that notice does not cover.")
+        if notice.what:
+            typer.echo(f"What to send: {notice.what}")
+        typer.echo("Send it, then update [notice] in the site config.")
+        raise typer.Exit(1)
+
     # The operator sees the User-Agent and nothing else. Where a site's
     # permission came through someone else's enquiry, the address they can reply
     # to is that person's — see `Contact`.

@@ -13,7 +13,7 @@ loginctl enable-linger "$USER"     # or they stop when you log out
 | unit | what it does |
 | --- | --- |
 | `pt-ssp-collect` | Runs `collect_ssp.sh small`. The timer is a **watchdog**, not a schedule: every 20 minutes it starts the script, which takes a `flock`, skips finished tenants and exits at once when the set is done. A fire that is not needed costs nothing and no request. |
-| `pt-voices-recon` | Runs `recon_voices.py` at **Sat/Sun 20:00**, which is the only time 滋賀 and 石川 agreed to. `PoliteClient` carries the window too, so even a misfiring timer fetches nothing outside it. |
+| `pt-voices-recon` | Runs `recon_sites.py` at **Sat/Sun 20:00**, which is the only time 滋賀 and 石川 agreed to. `PoliteClient` carries the window too, so even a misfiring timer fetches nothing outside it. |
 | `pt-voices-collect` | Runs `collect_voices.sh` on the same evenings. It collects a site only once three things hold: October has started (石川 sits until 2026-09-30), a config exists in `sites/` (so somebody has read the markup), and the window is open. Each condition prints what is missing instead of failing quietly. |
 
 Two things this is guarding against, both of which have happened to crawls
