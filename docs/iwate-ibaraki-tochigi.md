@@ -7,7 +7,7 @@ Nothing collected yet, and nothing fetched.
 | --- | --- | --- | --- |
 | 岩手 | gijiroku VOICES | `iwatekengikai.gijiroku.com` | permitted, by the method described |
 | 茨城 | **DB-Search** | `www.pref.ibaraki.dbsr.jp` | permitted, by the method described |
-| 栃木 | gijiroku VOICES | `pref-tochigi.gijiroku.com` | permitted, **and tell us when you run** |
+| 栃木 | gijiroku VOICES | `pref-tochigi.gijiroku.com` | permitted, **tell us when you run**, and **土日夜間** while it sits |
 
 ---
 
@@ -40,6 +40,34 @@ that opened them**: a weekend window open at 20:00 on Sunday is still open at
 
 Weekend daytime would presumably be acceptable too, but nothing says so, and the
 only cost of the narrower reading is wall-clock time.
+
+### 栃木, hours later: 「土日夜間での実施推奨」
+
+The same day, the secretariat wrote again, relaying their system vendor:
+
+> 1点、本日システムベンダーから連絡があり、可能であれば、ただいま会期中（9/17-10/13）
+> と言うこともあり、土日夜間での実施推奨とのことでした。可能でしたらご検討お願い致します。
+
+**A second condition from the same operator does not replace the first — it is
+ANDed with it.** 「業務時間帯を避ける」 gave the hours and this gives the days, so
+栃木's window is 土日 20:00–07:00: 滋賀's days with 岩手's hours, and the first
+window here that is both. Reading it as "weekends" alone would have re-opened
+Saturday *daytime*, which is a promise we made and they did not withdraw.
+
+It is phrased as a recommendation (「可能でしたら」), not an instruction. It is
+followed anyway: the only thing it costs is wall-clock time, and the assembly is
+sitting — which is exactly when a slow page is somebody's afternoon.
+
+**It does not lapse on 2026-10-13 by itself.** The 会期 is the vendor's stated
+reason, so the restriction plausibly ends with it — but "plausibly" is us
+answering a question they were asked and we were not. `WEEKEND_NIGHTS` stays
+until someone says otherwise, and the notice that has to go out before the first
+run is the natural place to ask.
+
+**And it is 栃木's, not the product's.** 岩手 runs the same VOICES install family
+and answered the same day in the same words; its vendor said nothing to anybody.
+Widening or narrowing 岩手 on 栃木's vendor's advice would be the DB-Search
+mistake below, in the other direction.
 
 ### 栃木: 「実行のタイミングを事前に教えて欲しい」
 
@@ -115,7 +143,9 @@ reusable; the transport is the only difference.
 2. Selectors from the reconnaissance cache, offline.
 3. `sites/*.toml` once the selectors are checked against the real markup, each
    carrying `[robots]`, `[fetch_window]`, `[contact]` and — for 栃木 — `[notice]`.
-4. **Send 栃木 the notice** before the first run, and record it.
+   栃木's `[fetch_window]` is `days = ["sat", "sun"]`, not every day.
+4. **Send 栃木 the notice** before the first run, and record it — and ask in it
+   whether 土日夜間 still applies after the 会期 ends on 2026-10-13.
 
 ## What the three answers make, counted
 

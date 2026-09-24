@@ -278,3 +278,33 @@ def test_a_notice_must_be_dated_and_cannot_cover_the_past() -> None:
         Notice(who="栃木", last_sent="soon", covers_until="2026-10-05")
     with pytest.raises(ValueError, match="before it was sent"):
         Notice(who="栃木", last_sent="2026-10-05", covers_until="2026-09-24")
+
+
+# --- 栃木: a second answer narrowed the first ------------------------------
+
+
+def test_tochigi_keeps_to_weekend_nights_while_the_assembly_sits() -> None:
+    """Two conditions from the same operator on the same day, and both hold.
+
+    栃木 answered on 2026-09-24 that the method our letter described is
+    acceptable — which commits us to 業務時間帯を避ける, hence 20:00–07:00. Hours
+    later the secretariat relayed their system vendor: 「ただいま会期中（9/17-10/13）
+    と言うこともあり、土日夜間での実施推奨」. That is the days, not a replacement for
+    the hours, so the window is the intersection of the two and not the newer of
+    them.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from recon_sites import SITES
+
+    w = SITES["tochigi"].window
+    assert not w.allows(datetime(2026, 9, 24, 21, 0, tzinfo=JST))  # Thursday night: the days
+    assert not w.allows(datetime(2026, 9, 26, 14, 0, tzinfo=JST))  # Saturday noon: the hours
+    assert w.allows(datetime(2026, 9, 26, 21, 0, tzinfo=JST))  # Saturday night
+    assert w.allows(datetime(2026, 9, 28, 3, 0, tzinfo=JST))  # Monday 03:00 is Sunday's window
+
+    # 岩手 answered the same day in the same words on the same product, and its
+    # vendor said nothing. The narrowing is 栃木's, not VOICES'.
+    assert SITES["iwate"].window.allows(datetime(2026, 9, 24, 21, 0, tzinfo=JST))

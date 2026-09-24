@@ -26,6 +26,25 @@ the notice covered; `pt scrape` stops before fetching anything outside it and
 prints what to send. No notice has gone out, so **栃木 cannot run at all yet** —
 which is the point.
 
+**Then 栃木 wrote again, and a second condition is not a replacement.** Hours
+after the permission, the secretariat relayed their system vendor:
+「ただいま会期中（9/17-10/13）と言うこともあり、土日夜間での実施推奨」. The letter
+had already committed us to 業務時間帯を避ける, so the two are **ANDed**: 栃木's
+window is 土日 20:00–07:00 — 滋賀's days with 岩手's hours, the first window here
+that is both — while 岩手 and 茨城 stay every-day. Taking the newer message as
+*the* condition would have re-opened Saturday daytime, which is a promise we made
+and nobody withdrew. The shape needed no code: the wrap built this morning and
+the weekend days built in September compose, and a test now pins the combination
+to 栃木 specifically.
+
+It does not widen again when the 会期 ends on 2026-10-13. That is the vendor's
+stated reason and the restriction probably ends with it — but "probably" is us
+answering a question that was put to them and not to us. The notice that has to
+go out before the first run asks it instead; staying narrow costs wall-clock time
+and nothing else. And the narrowing is **栃木's, not VOICES'**: 岩手 runs the same
+product, answered the same day in the same words, and its vendor said nothing to
+anyone.
+
 That guard was tested within the hour, by accident. Changing the recon timer from
 weekends to nightly made systemd think it had missed three firings, so it ran
 immediately — at 11:22 on a Thursday. **Every site refused**: 栃木 on the notice,
@@ -60,6 +79,22 @@ Eighteen assemblies remain blocked, down from twenty-four a month ago.
 `[notice]` に「誰に・いつ・どの期間を伝えたか」を書き、その外では `pt scrape` が
 取得前に停止して、送るべき内容を表示する。**まだ通知を出していないので栃木は1件も
 動かない**——それが狙いである。
+
+**その数時間後に栃木から追報があり、2つ目の条件は1つ目の置き換えではない。**
+事務局経由でシステムベンダーの推奨として
+「ただいま会期中（9/17-10/13）と言うこともあり、土日夜間での実施推奨」。
+手紙では既に「業務時間帯を避ける」と申し出ているので、両方が重なる——栃木の窓は
+**土日の20時〜翌7時**（滋賀の曜日に岩手の時間帯、両方を備えた最初の窓）で、
+岩手・茨城は毎晩のまま。新しい連絡を「条件そのもの」と読めば土曜の**昼**が開いて
+しまい、それはこちらが出した約束を誰も取り下げていないのに緩める話になる。
+コードの変更は要らなかった——今朝の日またぎと9月の曜日指定がそのまま合成される。
+テストで「これは栃木の窓である」ことを固定した。
+
+会期が明ける10月13日をもって自動的に戻したりはしない。理由が会期である以上たぶん
+そこで終わる推奨だが、その「たぶん」は、**先方に向けられた問いにこちらが答える**
+ことになる。初回の通知でそのまま尋ねる。狭いままでいる代償は実時間だけである。
+そしてこの狭め方は**栃木のものであって VOICES のものではない**——岩手は同じ製品で
+同じ日に同じ文面の回答をくれたが、そのベンダーは誰にも何も言っていない。
 
 このガードは1時間以内に、事故で試された。下見タイマーを週末から毎晩に変えたところ、
 systemd が3回分の取りこぼしと判断して即実行した——木曜の11時22分に。**全サイトが

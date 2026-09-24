@@ -38,7 +38,10 @@ SITES_ALL=(
   "ishikawa:2026-10-01"
   "iwate:"
   "ibaraki:"
-  "tochigi:"      # also gated by [notice]: pt scrape refuses without one
+  "tochigi:"      # also gated by [notice]: pt scrape refuses without one, and
+                  # by a 土日 window — their vendor asked for weekend nights
+                  # while the assembly sits (会期 9/17-10/13). A weekday firing
+                  # here is meant to refuse; that is the window doing its job.
 )
 
 wanted=("$@")

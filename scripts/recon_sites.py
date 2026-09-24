@@ -4,9 +4,11 @@ Five so far, on three different products, and **no two sets of terms are the
 same**: 滋賀 and 石川 (VOICES) allow weekend evenings from 20:00; 岩手 (VOICES,
 root-level `.asp`), 茨城 (**DB-Search**) and 栃木 (VOICES) allow collection by the
 method our letter described, which commits us to avoiding business hours; and
-栃木 also wants to be told when we will run. Each robots.txt in question is the
-vendor's boilerplate, identical across its product's installs; the operators'
-own answers are what these exemptions rest on.
+栃木 also wants to be told when we will run, and — after its vendor was
+consulted — to keep to **weekend** nights while the assembly is sitting.
+Each robots.txt in question is the vendor's boilerplate,
+identical across its product's installs; the operators' own answers are what
+these exemptions rest on.
 
 This file was `recon_voices.py` until 茨城 answered and made the name wrong.
 
@@ -66,6 +68,16 @@ WEEKEND_EVENINGS = dict(days=(5, 6), start=time(20, 0), end=time(0, 0), decided_
 OUTSIDE_BUSINESS_HOURS = dict(
     days=(0, 1, 2, 3, 4, 5, 6), start=time(20, 0), end=time(7, 0), decided_on="2026-09-24"
 )
+# 栃木, later the same day: their system vendor asked for 土日夜間 while the
+# assembly is sitting (会期 2026-09-17〜10-13). So the two conditions are ANDed —
+# weekends, and the night window that avoids business hours — which is 滋賀's days
+# with 岩手's hours, and the first window this project has that is both.
+#
+# It does not widen again by itself when the 会期 ends on 2026-10-13. Deciding
+# that a recommendation lapses with the sitting is an answer nobody has given us;
+# the cost of staying narrow is wall-clock time, and the cost of guessing wrong
+# is the permission. Ask in the next notice instead.
+WEEKEND_NIGHTS = dict(days=(5, 6), start=time(20, 0), end=time(7, 0), decided_on="2026-09-24")
 # The letters were not all sent by the same person, and the address an operator
 # sees has to be the one *that* assembly can reply to. A wrong address is worse
 # than none: it tells them who to complain to and the complaint never arrives.
@@ -242,14 +254,20 @@ SITES: dict[str, Site] = {
             "栃木県",
             "pref-tochigi.gijiroku.com",
             "栃木県議会事務局",
-            f"栃木県議会事務局{_BY_METHOD}",
+            f"栃木県議会事務局{_BY_METHOD}"
+            "／同日の追報 (2026-09-24): システムベンダーより、会期中"
+            "（9/17〜10/13）につき土日夜間での実施を推奨、との連絡。"
+            "業務時間帯を避ける約束と合わせ、土日の20時〜翌7時に限定する",
             contact=COLLABORATOR_B,
-            hours=OUTSIDE_BUSINESS_HOURS,
+            hours=WEEKEND_NIGHTS,
             requires_notice=True,
             note=(
                 "**実行のタイミングを事前に知らせること**（先方の指示）。本収集の前に"
                 "通知を送り、sites/tochigi.toml の [notice] に記録する。下見も同じ扱いに"
                 "しておくのが筋なので、最初の通知に下見の予定も書くこと。"
+                " また 2026-09-24 の追報により、会期中（9/17〜10/13）は"
+                "**土日夜間**に限定する。会期後に平日夜間へ戻すかどうかは、"
+                "こちらで決めずに次の通知で確認すること。"
             ),
         ),
         _voices(
