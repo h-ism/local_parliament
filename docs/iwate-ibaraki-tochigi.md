@@ -81,11 +81,12 @@ User-Agent has to be the one *that* assembly can reply to. `[contact]` is per
 site for exactly this reason, and until today it looked like a mechanism with one
 user.
 
-**栃木's address is not recorded yet**, and 岩手 and 茨城's sender has not been
-confirmed — ask before either runs, rather than assuming 角's address covers
-them. Nothing should be guessed here: a wrong address in a User-Agent is worse
-than none, because it tells an operator who to complain to and the complaint
-never arrives.
+栃木's is **共同研究者B** (given 2026-09-24).
+**岩手 and 茨城's sender is not confirmed**, so neither is fetched: the recon
+table now refuses a site whose contact is unknown, with the same shape as the
+window and the notice. Running under the wrong colleague's name is not a smaller
+mistake than running unannounced — a wrong address tells an operator who to
+complain to and the complaint never arrives.
 
 ## 茨城 is DB-Search, and 山梨 said the opposite
 

@@ -62,9 +62,16 @@ WEEKEND_EVENINGS = dict(days=(5, 6), start=time(20, 0), end=time(0, 0), decided_
 OUTSIDE_BUSINESS_HOURS = dict(
     days=(0, 1, 2, 3, 4, 5, 6), start=time(20, 0), end=time(7, 0), decided_on="2026-09-24"
 )
-CONTACT = Contact(
+# The letters were not all sent by the same person, and the address an operator
+# sees has to be the one *that* assembly can reply to. A wrong address is worse
+# than none: it tells them who to complain to and the complaint never arrives.
+COLLABORATOR_A = Contact(
     address="(共同研究者Aの連絡先)",
     note="照会は共同研究者Aが行った",
+)
+COLLABORATOR_B = Contact(
+    address="(共同研究者Bの連絡先)",
+    note="照会は共同研究者Bが行った",
 )
 
 
@@ -115,6 +122,11 @@ class Site:
 
     notice: Notice | None = None
 
+    contact: Contact | None = None
+    """Whose enquiry this assembly answered. **None means unconfirmed**, and a
+    site with no confirmed contact is not fetched at all: running under the wrong
+    colleague's name is not a smaller mistake than running unannounced."""
+
     avoid: str = r"Video|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
     """Links not worth a slot in the cap.
 
@@ -136,6 +148,7 @@ def _voices(
     hours: dict[str, object] | None = None,
     requires_notice: bool = False,
     notice: Notice | None = None,
+    contact: Contact | None = None,
 ) -> Site:
     prefix = f"https://{host}{path}"
     return Site(
@@ -156,6 +169,7 @@ def _voices(
         discover=discover,
         requires_notice=requires_notice,
         notice=notice,
+        contact=contact,
     )
 
 
@@ -186,6 +200,7 @@ SITES: dict[str, Site] = {
             "滋賀県議会事務局",
             "滋賀県議会事務局の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降）に限定"
             "するようお願い申し上げます",
+            contact=COLLABORATOR_A,
             # Given by the researcher 2026-09-21. `/voices/` itself is only a
             # meta-refresh to the assembly's top page; the search form is here,
             # and the vendor's naming matches 石川's (g07…, g08v…).
@@ -208,6 +223,7 @@ SITES: dict[str, Site] = {
             "石川県議会事務局企画調査課",
             "石川県議会事務局企画調査課の指示 (2026-09-18): 取得の時間帯を土日の夜間帯"
             "（20時以降など）に限定いただいた上での自動取得は可能",
+            contact=COLLABORATOR_A,
             # From the first window: the 本会議会議録 listing, rather than the
             # directory, so the cap is spent inside the archive instead of
             # rediscovering the way in.
@@ -223,6 +239,7 @@ SITES: dict[str, Site] = {
             "pref-tochigi.gijiroku.com",
             "栃木県議会事務局",
             f"栃木県議会事務局{_BY_METHOD}",
+            contact=COLLABORATOR_B,
             hours=OUTSIDE_BUSINESS_HOURS,
             requires_notice=True,
             note=(
@@ -262,9 +279,10 @@ SITES: dict[str, Site] = {
 }
 
 
-def settings() -> Settings:
+def settings(site: Site) -> Settings:
     s = Settings()
-    s.contact = CONTACT.address
+    assert site.contact is not None  # main() refuses a site without one
+    s.contact = site.contact.address
     s.min_interval = 2.0  # our first undertaking to them
     return s
 
@@ -388,6 +406,11 @@ def main() -> int:
             failed += 1
             continue
 
+        if site.contact is None:
+            log.error("%s: 照会者が未確認。誰の名義で取得するか決まるまで実行しない", key)
+            failed += 1
+            continue
+
         now = current_time()
         if site.requires_notice and not (site.notice and site.notice.covers(now.date())):
             log.error("%s: 事前通知が条件。通知を送り、[notice] に記録するまで実行しない", key)
@@ -402,7 +425,7 @@ def main() -> int:
             log.error("  %s", site.window.reason)
             failed += 1
             continue
-        log.info("%s: inside the window; contact %s", key, CONTACT.address)
+        log.info("%s: inside the window; contact %s", key, site.contact.address)
         if site.note:
             log.info("%s: %s", key, site.note)
         if dry_run:
@@ -418,7 +441,9 @@ def main() -> int:
                 reason=f"{exemption.reason} / {ROBOTS_READABLE.reason}",
                 decided_on=exemption.decided_on,
             )
-        with PoliteClient(settings(), robots_exempt=exemption, fetch_window=site.window) as client:
+        with PoliteClient(
+            settings(site), robots_exempt=exemption, fetch_window=site.window
+        ) as client:
             fetched = walk(site, client)
             if site.discover and len(fetched) <= 1:
                 # One page and no further links means the install is not there
