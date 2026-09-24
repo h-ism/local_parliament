@@ -93,6 +93,13 @@ Modules under `src/prefectural_transcripts/`:
 
 ## Conventions
 
+- **Verbatim only.** A 要点記録 summarises what was said in the third person and
+  lists remarks under 「［主な発言］」; 和歌山's committees and 秋田's 議会運営委員会
+  are both that. They are not collected (decided 2026-09-24). A summary
+  attributes words to a person without being that person's words, and mixing the
+  two makes every speech count and every who-spoke-how-much wrong. If that is
+  revisited, such records need a field saying what they are — not a place among
+  the speeches.
 - **Crawl politely.** Defaults (2s per host, robots respected, everything cached)
   are a deliberate choice about small public-sector servers, not a placeholder.
   Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
@@ -135,11 +142,13 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 | **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
 | **静岡** | **14,030 / 62,780** | **18,245 / 156,645** | 本会議 1999-05-19〜, 委員会 2007-05-18〜 |
 
-**SSP, 11 of 17 tenants finished (2026-09-21): 16,636 documents, 1,690,828
-speeches, 675,740,324 characters**, 1979–2026, reconciled item by item against
-every listing (0 missing). The remaining six are collecting. Counts after the
-one-block committee records were recovered and the speaker split re-run; see
-`docs/ssp.md`.
+**SSP, all 17 tenants, complete 2026-09-23: 45,082 documents, 4,345,822
+speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every listing
+reconciles item by item against its corpus, 0 missing on all seventeen.
+`docs/ssp.md` has the protocol and the traps.
+
+**The corpus is 23 prefectures, 88,695 documents, 5,226,081 speeches,
+2,001,260,733 characters.**
 
 **43,612 documents, 880,220 speeches, 424,049,474 characters.** Documents/speeches
 per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,

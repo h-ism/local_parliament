@@ -2,6 +2,77 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-24 — SSP complete: 17 assemblies, two billion characters (`feat/committee-records`, merged)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**All seventeen SSP tenants are collected.** 宮城 finished 2026-09-23 21:33, five
+days after the first request. 45,082 documents, 4,345,822 speeches,
+**1,577,194,070 characters**, 宮城 and 新潟 reaching **1947**. Every tenant's
+listing reconciles against its corpus item by item: **0 listed but not collected,
+on all seventeen**. No document is undated.
+
+**The corpus is now 23 prefectures, 88,695 documents, 5,226,081 speeches,
+2,001,260,733 characters.** SSP is 3.7 times the five prefectures collected
+before it, in characters.
+
+Finishing ran in the order this file recorded a week ago, because the order is
+the trap: **re-parse, then split, then export**. `reparse.py` rebuilds speakers
+from the cache, so running it after `split_titles.py` silently undoes the split.
+`scripts/finish_ssp.sh` does the three in order over all seventeen; it reads only
+the cache and makes no requests. **1,628,769 speeches given a role, and zero
+speakers invented that end in an office** — the check that exists because 兵庫 once
+had 124 of them.
+
+**Verbatim only, decided today.** 1,262 sittings hold no speech and 707 of those
+are 秋田's: an agenda in a 名簿 block, and the 議会運営委員会's 要点記録, which
+writes up the meeting in the third person and then lists 「［主な発言］・鳥井委員：
+従来どおり２日でお願いしたい。」. Those stay out, as 和歌山's committees already
+did. A summary attributes words to a person without being that person's words,
+and a corpus that mixes the two makes every count of speeches wrong. Nothing had
+to be built for it: the record parser only opens a block titled 《委員会記録》, and
+a 要点記録 is titled 「協議事項」.
+
+**Merged to `main`**: four stacked branches — `feat/ssp-collection`,
+`feat/fetch-window`, `feat/split-titles`, `feat/committee-records`. The
+collection timer was stopped first, because `git checkout main` empties `ssp.py`
+and the configs out of the working tree for a moment and the collector starts a
+fresh `pt scrape` between tenants.
+
+What is still open, in the order it will matter: 大阪 (no answer, no config);
+滋賀 and 石川, whose windows are Saturday evenings and whose selectors are still
+to be written from the reconnaissance cache; `PT_CONTACT`, still 仮おき; and the
+eleven speeches in 福島 where the vendor glued a 議長's call to the end of the
+speech before it.
+
+### 日本語
+
+**SSP 17テナント、収集完了。** 宮城が 2026-09-23 21:33 に終了、最初のリクエストから
+5日。45,082文書・4,345,822発言・**15億7,719万字**、宮城と新潟は**1947年**まで。
+listing との突き合わせは**17県すべて一致、取りこぼし0**。日付欠落もなし。
+
+**コーパス全体で23県・88,695文書・5,226,081発言・20億0,126万字。** SSPだけで、
+それ以前に集めた5県の3.7倍（文字数）。
+
+仕上げは1週間前にこの file に書いた順序どおり——**再パース → 話者分割 → CSV**。
+`reparse.py` はキャッシュから話者を作り直すので、逆順だと分割を黙って消す。
+`scripts/finish_ssp.sh` が17県に対して順に実行する。リクエストは0。
+**1,628,769発言に役職が付き、役職で終わる発言者の捏造は0件**——兵庫で124件出した
+あの検査である。
+
+**逐語のみ、本日決定。** 発言0件が1,262件あり、うち707件は秋田——名簿ブロックの
+議案一覧と、議会運営委員会の要点記録（三人称で経過を書き、「［主な発言］・鳥井委員：
+従来どおり２日でお願いしたい。」と列挙する形）。和歌山の委員会と同じく収集しない。
+要約は発言者を特定していても本人の言葉ではなく、混ぜると発言数の意味が壊れる。
+実装は不要だった——記録パーサは《委員会記録》というタイトルのブロックしか開かず、
+要点記録のタイトルは「協議事項」だから。
+
+**main にマージ**（4本のブランチ）。マージ前にタイマーを停止した。`git checkout main`
+は一瞬 `ssp.py` と設定を作業ツリーから消し、収集は県の切れ目に `pt scrape` を
+起動し直すため。
+
 ## 2026-09-21 — the 110 million characters a warning had been reporting all along (`feat/committee-records`)
 
 *English and Japanese. / 英語と日本語で併記する。*

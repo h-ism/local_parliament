@@ -4,6 +4,10 @@
 会議録検索システム, used by 18 prefectural assemblies. **17 of them are configured
 here. 大阪 is not**, and the reason is the first section.
 
+**Collected, 2026-09-18 to 2026-09-23: 45,082 documents, 4,345,822 speeches,
+1,577,194,070 characters, 1947–2026.** Every tenant's listing reconciles against
+its corpus item by item, with nothing missing on any of them.
+
 Written 2026-09-18, when this moved out of `docs/collection-targets.md`'s Tier 2
 ("blocked; needs a letter, not a scraper").
 
@@ -208,6 +212,32 @@ zero speeches is what they are.
 blocks, not their length; what matters is a code-3 block with a transcript in it.
 山口 has 61 large ones and 奈良 3, and both are 《本会議録》 order papers in
 documents that already have speeches — nothing lost there.
+
+### Verbatim only — a decision, not an omission (2026-09-24)
+
+1,262 sittings across the seventeen hold no speech, and 707 of them are 秋田's.
+Those are not failures. Two kinds:
+
+* **an agenda** — 秋田 puts 「本日の会議案件」 and a list of bills in a 名簿 block;
+  nobody is speaking.
+* **a 要点記録** — 秋田's 議会運営委員会 writes up what happened in the third
+  person and then lists the remarks:
+
+  > 委員長から「この９月議会の総括審査の審査日程を…」との発言があり、協議を行い…
+  > ［主な発言］
+  > ・鳥井委員：従来どおり２日でお願いしたい。
+
+**The researcher's decision is to keep verbatim records only** (2026-09-24), as
+for 和歌山's committees, which are 要点筆記 and were left out for the same reason.
+A summary does attribute words to a person, but they are not that person's
+words, and a corpus that mixes the two makes every count of speeches and every
+measure of who spoke how much quietly wrong.
+
+Nothing needed to be built to enforce it: `_from_committee_record` only reads a
+block whose title says 《委員会記録》, and a 要点記録 is titled 「協議事項」. If that
+decision is ever revisited, these records are in the cache and a re-parse is
+free — but they would need a field saying what they are, not a place among the
+speeches.
 
 ---
 
