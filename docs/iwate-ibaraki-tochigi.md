@@ -60,7 +60,18 @@ a date, next to the robots exemption and the window, for the same reason all
 three do: an undertaking kept in somebody's memory is one that will be broken on
 a Tuesday afternoon with nothing to show for it.
 
-**No notice has been sent yet**, so 栃木 cannot run at all until one is.
+**No notice has been sent yet**, so 栃木 cannot run at all until one is. The
+draft is `docs/inquiries/tochigi-notice.md`; three things it is careful about:
+
+* the dates in the letter and the dates in `[notice]` must be **the same**, or we
+  run in a period nobody was told about, or refuse in one they were;
+* **the reconnaissance counts as a run** and is named in the letter. Forty pages
+  is still their server, and deciding on our own that a survey does not need
+  mentioning is the kind of reading that makes a promise worthless;
+* the size of the archive is unknown until the survey, so the letter says so and
+  promises a second notice rather than inventing a number.
+
+`pt scrape tochigi` refuses until the `[notice]` table exists and covers today.
 
 ## 茨城 is DB-Search, and 山梨 said the opposite
 
