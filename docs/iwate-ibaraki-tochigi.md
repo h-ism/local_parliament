@@ -73,6 +73,20 @@ draft is `docs/inquiries/tochigi-notice.md`; three things it is careful about:
 
 `pt scrape tochigi` refuses until the `[notice]` table exists and covers today.
 
+## The letters were not all sent by the same person
+
+滋賀 and 石川 were 共同研究者A's; **栃木 is 共同研究者B's**. Which
+matters for one thing, and it is the thing the operators see: the address in the
+User-Agent has to be the one *that* assembly can reply to. `[contact]` is per
+site for exactly this reason, and until today it looked like a mechanism with one
+user.
+
+**栃木's address is not recorded yet**, and 岩手 and 茨城's sender has not been
+confirmed — ask before either runs, rather than assuming 角's address covers
+them. Nothing should be guessed here: a wrong address in a User-Agent is worse
+than none, because it tells an operator who to complain to and the complaint
+never arrives.
+
 ## 茨城 is DB-Search, and 山梨 said the opposite
 
 This is worth stating plainly, because it is the second time the same evidence
