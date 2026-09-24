@@ -50,8 +50,12 @@ from prefectural_transcripts.http import (
 
 log = logging.getLogger("recon")
 
-MAX_PAGES = 40
-MAX_DEPTH = 2
+MAX_PAGES = 150
+MAX_DEPTH = 4
+# 40 pages at depth 2 reached 石川's year listings and stopped one level short of
+# a transcript, which is the one page a config cannot be written without. 150 at
+# depth 4 is five minutes at 2 s — still nothing to their server, and the
+# difference between a survey somebody can act on and one that has to be redone.
 
 # Both answers name the same hours, and both letters were sent by the same
 # collaborator, so the address they have on file is 共同研究者A's.
@@ -71,7 +75,7 @@ COLLABORATOR_A = Contact(
 )
 COLLABORATOR_B = Contact(
     address="(共同研究者Bの連絡先)",
-    note="照会は共同研究者Bが行った",
+    note="照会は共同研究者Bが行った — 岩手・茨城・栃木",
 )
 
 
@@ -127,7 +131,7 @@ class Site:
     site with no confirmed contact is not fetched at all: running under the wrong
     colleague's name is not a smaller mistake than running unannounced."""
 
-    avoid: str = r"Video|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
+    avoid: str = r"Video|broadcasting|help_|index_s|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
     """Links not worth a slot in the cap.
 
     石川's first run spent 23 of its 40 pages on 録画中継 (video) listings and one
@@ -254,6 +258,7 @@ SITES: dict[str, Site] = {
             "iwatekengikai.gijiroku.com",
             "岩手県議会事務局",
             f"岩手県議会事務局{_BY_METHOD}",
+            contact=COLLABORATOR_B,
             path="/",
             hours=OUTSIDE_BUSINESS_HOURS,
             note=(
@@ -267,6 +272,7 @@ SITES: dict[str, Site] = {
             "www.pref.ibaraki.dbsr.jp",
             "茨城県議会事務局",
             f"茨城県議会事務局{_BY_METHOD}",
+            contact=COLLABORATOR_B,
             path="/",
             hours=OUTSIDE_BUSINESS_HOURS,
             note=(
@@ -387,7 +393,9 @@ def report(site: Site, fetched: list[tuple[str, Page]], out_dir: Path) -> Path:
             fh.write(f"\n--- {url}\n")
             fh.write(f"    status={page.status} encoding={page.encoding} bytes={len(page.body)}\n")
             fh.write(f"    title={title(page)}\n")
-            for text, target in links(page)[:25]:
+            # 60, not 25: the first two dozen links on these pages are the site's
+            # own navigation, and the ones that lead to a sitting come after it.
+            for text, target in links(page)[:60]:
                 fh.write(f"    link  {text!r} -> {target}\n")
     return path
 
