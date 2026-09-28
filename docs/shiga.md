@@ -188,3 +188,27 @@ inside agreed hours. Each letter that comes back can move an assembly between
 categories, and the code has had to grow a mechanism for each one. Expect the
 next answer to need a mechanism of its own, and write it down rather than
 remembering it.
+
+## The survey never reached a sitting (found 2026-09-28)
+
+Two weekend windows, 150 pages each, and **not one listing or transcript is in
+the cache.** Every `g08v_viewh.asp` / `g08v_views.asp` page is a wrapper; the
+sittings are inside `<iframe src="cgi/voiweb.exe?ACT=100&…">`, and the survey
+followed `<a href>` only. The report looked complete — 81 committee pages, 43
+本会議 pages — and was 124 frames with nothing in them. On the second weekend
+every page came from cache, so the 150 cap (which counted cached pages) was
+spent before a single request went out.
+
+`recon_sites.py` now follows frames at the same depth and first in line, puts
+`voiweb.exe` links ahead of everything else, counts **requests** against the
+cap, skips the schedule pages, and samples evenly across each list of
+same-shaped links so 昭和62年 is in the sample as well as 令和8年. The walk starts
+at `g08v_viewh.asp`, because from the search form a transcript is at depth 5.
+
+**Next window: Sat 2026-10-03 20:00.** No config until then — the rule is not
+to write selectors against markup nobody has seen.
+
+**The committee side is 委員会*要録*.** The site's own label, and the word
+usually means a summary. If a sample reads like 和歌山's committees — third
+person, 「［主な発言］」 — it is not collected (verbatim only, decided
+2026-09-24), and 滋賀 is 本会議 only. Check it on the first sample.

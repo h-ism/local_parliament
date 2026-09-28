@@ -98,3 +98,13 @@ hours are not one assembly's quirk but what this vendor's operators consider
 reasonable, and `[fetch_window]` was built for one site and immediately needed
 for two. Seven more VOICES installs are still unanswered
 (北海道・岩手・栃木・群馬・長野・宮崎, plus 千葉's separate question).
+
+## The survey never reached a sitting (found 2026-09-28)
+
+Same as 滋賀 (`docs/shiga.md`): the listings live in
+`<iframe src="cgi/voiweb.exe?ACT=100…">`, the survey followed only `<a href>`,
+and the cache holds 145 wrapper pages and no transcript. Fixed in
+`recon_sites.py`; the next window is **Sat 2026-10-03 20:00**, which is also
+the first collection slot. The collector will find no config that night and
+say so — the config follows from that survey, and collection moves to the
+following weekend at the earliest.

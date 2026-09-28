@@ -2,6 +2,62 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-28 — the survey that looked complete and held no sitting (`feat/voices-configs`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+Asked to write 滋賀, 石川 and 岩手's configs from the reconnaissance cache. **None
+can be written**, and the reason is the survey, not the sites:
+
+- **滋賀・石川: 0 transcripts cached.** VOICES serves every listing and every
+  sitting inside `<iframe src="cgi/voiweb.exe?ACT=100…">`; the walk followed
+  `<a href>` only, so 124 and 145 wrapper pages were surveyed and not one
+  `voiweb.exe` page. Checked by grepping the whole cache: zero CGI URLs.
+- **岩手: the minutes are on another host.** `iwatekengikai.gijiroku.com` has
+  none; its 「本会議会議録」 link goes to `http://www3.pref.iwate.jp/gikai/user/www/`.
+  The 150 pages there were 93 calendar months and the assembly's news.
+- **And the survey had stopped surveying.** `MAX_PAGES` counted cached pages, so
+  from the second window on every site re-walked its first 150 from cache and
+  fetched nothing — three nights of "150 pages" that were zero requests.
+
+`scripts/recon_sites.py`: frames are followed (same depth, first in line);
+`voiweb.exe` links jump the queue; the cap counts requests, with a separate
+bound on the walk; schedule/notice pages are skipped; same-shaped links are
+sampled evenly (first and last kept, so the oldest markup is seen); `ACT=` is
+part of a URL's shape; 滋賀 starts at the 本会議 listing (depth 5 → 3 for a
+transcript); the area check ignores the scheme. **岩手 now surveys www3**, the
+researcher's decision today, with **robots.txt obeyed as it stands** — no
+exemption, since nobody answered about that host. 茨城 keeps running and will
+go further than it has since 9/24.
+
+Verified: 6 new tests (`tests/test_recon_walk.py`), 178 pass; ruff and mypy
+clean; an offline walk over the real cache lists `voiweb.exe` listings for
+1987–2026 among the misses it would fetch; `--dry-run` still refuses all five
+outside their windows. **No request was made.**
+
+Next: 岩手 and 茨城 tonight from 20:00; 滋賀 and 石川 Sat 2026-10-03 20:00.
+Configs after each. 滋賀's committee side is labelled 委員会**要録** — if it is a
+summary it is out of scope under the verbatim-only rule.
+
+### 日本語
+
+滋賀・石川・岩手の設定を下見キャッシュから書く依頼。**どれも書けない**。原因は
+サイトではなく下見の方にあった。
+
+- **滋賀・石川：本文がキャッシュに1件もない。** VOICES は一覧も本文も
+  `<iframe src="cgi/voiweb.exe?…">` の中で出し、下見は `<a href>` しかたどって
+  いなかった。キャッシュ全体を grep して CGI の URL は0件。
+- **岩手：会議録は別ホスト。** `gijiroku.com` には無く、「本会議会議録」リンクは
+  `www3.pref.iwate.jp/gikai/user/www/` へ出ていく。150ページは日程カレンダー等。
+- **しかも2回目以降は何も取っていなかった。** 上限がキャッシュ済みページも数えて
+  いたため、3晩とも「150ページ」＝新規リクエスト0件。
+
+下見を修正（iframe を追う、CGI を優先、上限はリクエスト数、日程系は除外、同形
+リンクは均等抽出）。**岩手は www3 を下見**（本日の研究者判断、robots は免除せず
+そのまま守る）。茨城は継続。テスト6件追加・全178件通過。リクエストは0件。
+
 ## 2026-09-24 — three more answers, and two obligations the code now keeps (`feat/notice-and-night-windows`)
 
 *English and Japanese. / 英語と日本語で併記する。*

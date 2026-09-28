@@ -153,3 +153,30 @@ Every one of the three vendor products now has at least one assembly that has
 permitted collection: SSP (17), VOICES (滋賀・石川・岩手・栃木), DB-Search (茨城).
 The robots verdict recorded for all of them in August was the vendor's
 boilerplate in each case. **24 assemblies were "blocked" a month ago; 18 are.**
+
+## 岩手's minutes are not on the host the letter named (2026-09-28)
+
+150 pages of `iwatekengikai.gijiroku.com` are cached — 93 calendar months, the
+assembly news, member lists — and no minutes, because that host has none. Its
+「本会議会議録」 link leaves for the prefecture's server:
+
+```
+http://www3.pref.iwate.jp/gikai/user/www/index.php
+```
+
+(the survey of August had noted it: `…/gikai/user/www/Kensaku/`, robots.txt 404).
+
+**Decided by the researcher, 2026-09-28: survey www3.** The permission was for
+岩手県議会's 会議録 by the method described, and this is where the assembly's
+own site says they are. Same terms — 2 s, serial, 20:00–07:00, 共同研究者B in the
+User-Agent. **robots.txt is obeyed as it stands there**: nobody has answered
+about that host's rules file, so there is no exemption to write, and if it now
+disallows the path the walk stops and says so. First window: tonight, 20:00.
+
+Worth saying in the next letter to 岩手 anyway: that we are reading
+`www3.pref.iwate.jp`, which the first letter did not name.
+
+`recon_sites.py` also now counts requests rather than pages walked, so 茨城's
+nightly survey — which fetched nothing on 9/25–27 because its first 150 pages
+were cached — goes further from tonight. Kept running at the researcher's
+choice (2026-09-28).

@@ -58,6 +58,19 @@ MAX_DEPTH = 4
 # a transcript, which is the one page a config cannot be written without. 150 at
 # depth 4 is five minutes at 2 s — still nothing to their server, and the
 # difference between a survey somebody can act on and one that has to be redone.
+#
+# MAX_PAGES counts **requests**, not pages walked. Until 2026-09-28 it counted
+# both, so once the first 150 pages were cached every later window walked the
+# same 150 from cache, fetched nothing, and reported success — three nights in a
+# row. A cached page costs their server nothing and should not spend the budget.
+MAX_WALKED = 2000
+"""A bound on the walk itself, cached or not, so a loop in the cache ends."""
+
+PER_SHAPE = 6
+# A page with 40 year links or 93 calendar months of the same shape is one
+# question asked 40 times. Keep an evenly spaced sample that includes the first
+# and the last, so the survey sees the oldest markup as well as the newest —
+# 静岡 needed five marker shapes and the old years were the worst.
 
 # Both answers name the same hours, and both letters were sent by the same
 # collaborator, so the address they have on file is 共同研究者A's.
@@ -110,7 +123,9 @@ class Site:
     """
 
     window: FetchWindow
-    exemption: RobotsExemption
+    exemption: RobotsExemption | None
+    """None where robots.txt is to be obeyed as it stands — 岩手's www3, which
+    the letter did not name and whose rules file nobody has answered about."""
     note: str = ""
 
     discover: tuple[str, ...] = ()
@@ -143,12 +158,21 @@ class Site:
     site with no confirmed contact is not fetched at all: running under the wrong
     colleague's name is not a smaller mistake than running unannounced."""
 
-    avoid: str = r"Video|broadcasting|help_|index_s|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
+    avoid: str = (
+        r"Video|broadcasting|help_|index_s|Nittei|Congress|Shitsumon|Oshirase|Koho|"
+        r"\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
+    )
     """Links not worth a slot in the cap.
 
     石川's first run spent 23 of its 40 pages on 録画中継 (video) listings and one
     on a PDF. The cap exists to keep the visit small; it should be spent on the
-    minutes."""
+    minutes. The schedule pages went the same way on 2026-09-28: 岩手's 150 were
+    93 calendar months, and 滋賀's 23 were 本会議の開催状況 — none of them a
+    transcript."""
+
+    focus: str = r"voiweb\.exe"
+    """Links that jump the queue. VOICES serves every listing and transcript from
+    its CGI, so that is where the budget should go first."""
 
 
 def _voices(
@@ -165,8 +189,10 @@ def _voices(
     requires_notice: bool = False,
     notice: Notice | None = None,
     contact: Contact | None = None,
+    scheme: str = "https",
+    exempt: bool = True,
 ) -> Site:
-    prefix = f"https://{host}{path}"
+    prefix = f"{scheme}://{host}{path}"
     return Site(
         key=key,
         prefecture=prefecture,
@@ -180,7 +206,9 @@ def _voices(
                 f"ベンダー標準で、回答が優先する。docs/{key}.md"
             ),
             decided_on="2026-09-18",
-        ),
+        )
+        if exempt
+        else None,
         note=note,
         discover=discover,
         requires_notice=requires_notice,
@@ -218,9 +246,11 @@ SITES: dict[str, Site] = {
             "するようお願い申し上げます",
             contact=COLLABORATOR_A,
             # Given by the researcher 2026-09-21. `/voices/` itself is only a
-            # meta-refresh to the assembly's top page; the search form is here,
-            # and the vendor's naming matches 石川's (g07…, g08v…).
-            start="https://www.shigaken-gikai.jp/voices/g07v_search.asp",
+            # meta-refresh to the assembly's top page; the search form is at
+            # g07v_search.asp, and the vendor's naming matches 石川's (g07…, g08v…).
+            # The walk starts at the 本会議 listing instead (2026-09-28): from the
+            # search form a transcript sits at depth 5, one past MAX_DEPTH.
+            start="https://www.shigaken-gikai.jp/voices/g08v_viewh.asp",
             discover=(
                 "https://www.shigaken-gikai.jp/robots.txt",
                 "https://www.shigaken-gikai.jp/index.asp",
@@ -273,15 +303,27 @@ SITES: dict[str, Site] = {
         _voices(
             "iwate",
             "岩手県",
-            "iwatekengikai.gijiroku.com",
+            # Not iwatekengikai.gijiroku.com, which the letter named: that host
+            # is the assembly's site, and its 「本会議会議録」 link leaves it for
+            # the prefecture's server (found in the cache 2026-09-28, after
+            # 150 pages there had surveyed calendars and member lists). The
+            # permission was for 岩手県議会's 会議録, and this is where the
+            # assembly itself says they are — the researcher's call, the same
+            # day. robots.txt is obeyed as it stands: nobody has answered about
+            # this host's rules file, so there is no exemption to write.
+            "www3.pref.iwate.jp",
             "岩手県議会事務局",
             f"岩手県議会事務局{_BY_METHOD}",
             contact=COLLABORATOR_B,
-            path="/",
+            scheme="http",  # as the assembly's own link gives it
+            path="/gikai/user/www/",
+            start="http://www3.pref.iwate.jp/gikai/user/www/index.php",
+            exempt=False,
             hours=OUTSIDE_BUSINESS_HOURS,
             note=(
-                "同じ VOICES でも /voices/ ではなくルート直下の *.asp。石川の形が"
-                "そのまま当てはまるとは限らない。"
+                "会議録は gijiroku.com（手紙で名指ししたホスト）ではなく、県議会サイトの"
+                "「本会議会議録」リンク先 www3.pref.iwate.jp/gikai/user/www/ にある。"
+                "robots.txt は免除せずそのまま守る（2026-08 時点で 404）。"
             ),
         ),
         _voices(
@@ -319,14 +361,51 @@ def links(page: Page) -> list[tuple[str, str]]:
     ]
 
 
+def frames(page: Page) -> list[str]:
+    """What an `<iframe>` or `<frame>` pulls into this page.
+
+    VOICES puts every listing and every transcript inside one:
+    `g08v_viewh.asp` is a wrapper, and the sittings are in
+    `<iframe src="cgi/voiweb.exe?ACT=100…">`. A walk that follows only `<a href>`
+    surveyed 150 wrappers on 滋賀 and 石川 and not one sitting — and wrote a report
+    that looked complete.
+    """
+    soup = BeautifulSoup(page.text, "lxml")
+    return [
+        urldefrag(urljoin(page.url, str(node["src"]))).url
+        for node in soup.find_all(["iframe", "frame"], src=True)
+    ]
+
+
+def spread(urls: list[str], k: int = PER_SHAPE) -> list[str]:
+    """At most `k` of each URL shape, evenly spaced, first and last included."""
+    groups: dict[str, list[str]] = {}
+    for url in dict.fromkeys(urls):
+        groups.setdefault(shape(url), []).append(url)
+    keep: set[str] = set()
+    for group in groups.values():
+        if len(group) <= k:
+            keep.update(group)
+        else:
+            step = (len(group) - 1) / (k - 1)
+            keep.update(group[round(i * step)] for i in range(k))
+    return [u for u in dict.fromkeys(urls) if u in keep]
+
+
 def title(page: Page) -> str:
     soup = BeautifulSoup(page.text, "lxml")
     return soup.title.get_text(strip=True) if soup.title else ""
 
 
 def shape(url: str) -> str:
-    """A URL with its numbers blanked, so repeated shapes collapse into one row."""
-    return re.sub(r"\d+", "N", urlparse(url).path)
+    """A URL with its numbers blanked, so repeated shapes collapse into one row.
+
+    A CGI's `ACT=` is kept: `voiweb.exe?ACT=100` (a listing) and `?ACT=203` (a
+    transcript) are one path and entirely different pages.
+    """
+    parts = urlparse(url)
+    act = re.search(r"(?:^|&)ACT=(\d+)", parts.query)
+    return re.sub(r"\d+", "N", parts.path) + (f"?ACT={act.group(1)}" if act else "")
 
 
 def discover(site: Site, client: PoliteClient) -> list[tuple[str, str]]:
@@ -364,31 +443,62 @@ def discover(site: Site, client: PoliteClient) -> list[tuple[str, str]]:
     return found
 
 
+def inside(url: str, prefix: str) -> bool:
+    """Whether `url` is in the area `prefix` names, whichever scheme each uses.
+
+    岩手's own link to its minutes is `http://`; if the server answers on
+    `https://`, every link it yields would otherwise fall outside the area and the
+    walk would end after one page, looking like a site with nothing in it.
+    """
+    return url.split("://", 1)[-1].startswith(prefix.split("://", 1)[-1])
+
+
 def walk(site: Site, client: PoliteClient) -> list[tuple[str, Page]]:
     seen: set[str] = set()
     queue: list[tuple[str, int]] = [(site.start, 0)]
     fetched: list[tuple[str, Page]] = []
+    requests = 0
     avoid = re.compile(site.avoid)
-    while queue and len(fetched) < MAX_PAGES:
+    focus = re.compile(site.focus)
+    while queue and requests < MAX_PAGES and len(fetched) < MAX_WALKED:
         url, depth = queue.pop(0)
-        if url in seen or not url.startswith(site.prefix) or avoid.search(url):
+        if url in seen or not inside(url, site.prefix) or avoid.search(url):
             continue
         seen.add(url)
         try:
             page = client.get(url)
         except OutsideFetchWindow:
-            log.warning("%s: the window closed mid-run; stopping at %d", site.key, len(fetched))
+            log.warning("%s: the window closed mid-run; stopping at %d", site.key, requests)
             break
         except FetchError as exc:
+            requests += 1
             log.warning("%s: could not fetch %s: %s", site.key, url, exc)
             continue
+        if not page.from_cache:
+            requests += 1
         fetched.append((url, page))
         found = links(page)
+        inner = frames(page)
         log.info(
-            "%s [%2d] %s — %s (%d links)", site.key, len(fetched), url, title(page), len(found)
+            "%s [%3d/%3d] %s — %s (%d links, %d frames)%s",
+            site.key,
+            requests,
+            len(fetched),
+            url,
+            title(page),
+            len(found),
+            len(inner),
+            " cached" if page.from_cache else "",
         )
+        # A frame is part of the page it sits in, not a page further away: same
+        # depth, and first in line, because it is usually the only thing there.
+        queue[:0] = [(u, depth) for u in inner if u not in seen]
         if depth < MAX_DEPTH:
-            queue.extend((u, depth + 1) for _, u in found if u not in seen)
+            nxt = [(u, depth + 1) for u in spread([u for _, u in found]) if u not in seen]
+            first = [item for item in nxt if focus.search(item[0])]
+            queue[:0] = first
+            queue.extend(item for item in nxt if not focus.search(item[0]))
+    log.info("%s: %d requests, %d pages walked", site.key, requests, len(fetched))
     return fetched
 
 
@@ -415,6 +525,8 @@ def report(site: Site, fetched: list[tuple[str, Page]], out_dir: Path) -> Path:
             # own navigation, and the ones that lead to a sitting come after it.
             for text, target in links(page)[:60]:
                 fh.write(f"    link  {text!r} -> {target}\n")
+            for target in frames(page):
+                fh.write(f"    frame -> {target}\n")
     return path
 
 
@@ -461,7 +573,7 @@ def main() -> int:
         out_dir = Path(f"data/logs/{key}")
         out_dir.mkdir(parents=True, exist_ok=True)
         exemption = site.exemption
-        if site.discover:
+        if site.discover and exemption is not None:
             exemption = RobotsExemption(
                 prefixes=exemption.prefixes + ROBOTS_READABLE.prefixes,
                 reason=f"{exemption.reason} / {ROBOTS_READABLE.reason}",
@@ -481,7 +593,10 @@ def main() -> int:
                     "\n".join(f"{t}\t{u}" for t, u in candidates), encoding="utf-8"
                 )
         log.info(
-            "%s: %d pages, all cached; report %s", key, len(fetched), report(site, fetched, out_dir)
+            "%s: %d pages walked, all now cached; report %s",
+            key,
+            len(fetched),
+            report(site, fetched, out_dir),
         )
 
     if not dry_run and not failed:

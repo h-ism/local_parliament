@@ -606,6 +606,14 @@ rather than treating them as local quirks.
   still running on the next. Wait on a pid (`until ! kill -0 <pid>`) or on a
   sentinel the job itself writes.
 
+- **A survey that follows only `<a href>` cannot see a frame.** VOICES serves
+  every listing and transcript inside `<iframe src="cgi/voiweb.exe?…">`; two
+  weekends of reconnaissance on 滋賀 and 石川 cached 270 wrapper pages and no
+  sitting, and the reports looked complete. And a page cap that counts cached
+  pages stops a resumed survey dead: three nights of "150 pages" were zero
+  requests. **Before writing a config, grep the cache for the page type you
+  need** — not the report.
+
 - **Check `robots.txt` before writing any config.** It is one request and it
   decides whether the rest of the work is worth doing. But it decides it only for
   the URLs you know about: SSP's `/tenant/` is allowed and its `/dnp/search/` API
