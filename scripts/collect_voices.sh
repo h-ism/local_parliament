@@ -32,13 +32,15 @@ DELAY=${PT_VOICES_DELAY:-2}   # the first undertaking in our letter
 LOGS=data/logs/voices
 mkdir -p "$LOGS"
 
-# site:not-before — empty means no date constraint
+# site:not-before:delay — empty means no date constraint / the default delay.
+# 茨城 is 5 s: 7 of 150 requests got 429 at 2 s on 2026-09-28, and DB-Search did
+# the same in August. Slower only — 2 s is the floor the letter promised.
 SITES_ALL=(
-  "shiga:"
-  "ishikawa:2026-10-01"
-  "iwate:"
-  "ibaraki:"
-  "tochigi:"      # also gated by [notice]: pt scrape refuses without one, and
+  "shiga::"
+  "ishikawa:2026-10-01:"
+  "iwate::"
+  "ibaraki::5"
+  "tochigi::"     # also gated by [notice]: pt scrape refuses without one, and
                   # by a 土日 window — their vendor asked for weekend nights
                   # while the assembly sits (会期 9/17-10/13). A weekday firing
                   # here is meant to refuse; that is the window doing its job.
@@ -54,8 +56,8 @@ fi
 today=$(date +%Y-%m-%d)
 ran=0
 for entry in "${SITES_ALL[@]}"; do
-  site=${entry%%:*}
-  not_before=${entry#*:}
+  IFS=: read -r site not_before site_delay <<< "$entry"
+  site_delay=${site_delay:-$DELAY}
   if [ ${#wanted[@]} -gt 0 ] && [[ ! " ${wanted[*]} " == *" $site "* ]]; then
     continue
   fi
@@ -75,7 +77,7 @@ for entry in "${SITES_ALL[@]}"; do
   fi
 
   echo "$(date -Is) $site starting" | tee -a "$LOGS/run.log"
-  if uv run pt scrape "$site" --delay "$DELAY" >> "$LOGS/$site.log" 2>&1; then
+  if uv run pt scrape "$site" --delay "$site_delay" >> "$LOGS/$site.log" 2>&1; then
     echo "$(date -Is) $site finished (or the window closed)" | tee -a "$LOGS/run.log"
   else
     # Outside the agreed hours is an ordinary outcome here, not a fault: the
@@ -84,7 +86,7 @@ for entry in "${SITES_ALL[@]}"; do
   fi
   tail -n 6 "$LOGS/$site.log" | tee -a "$LOGS/run.log"
   ran=$((ran + 1))
-  sleep "$DELAY"
+  sleep "$site_delay"
 done
 
 [ "$ran" -eq 0 ] && echo "$(date -Is) nothing was ready to collect" >> "$LOGS/run.log"

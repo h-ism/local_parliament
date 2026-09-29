@@ -172,6 +172,12 @@ class Site:
     93 calendar months, and 滋賀's 23 were 本会議の開催状況 — none of them a
     transcript."""
 
+    min_interval: float = 2.0
+    """Seconds between requests. 2 is the floor our letter promised; a site
+    that pushes back gets more. 茨城 answered 7 of 150 requests with 429 at 2 s
+    on 2026-09-28, and DB-Search did the same to this project in August — so
+    茨城 runs at 5, as SSP does (researcher's decision, 2026-09-29)."""
+
     focus: str = r"voiweb\.exe"
     """Links that jump the queue. VOICES serves every listing and transcript from
     its CGI, so that is where the budget should go first."""
@@ -193,6 +199,7 @@ def _voices(
     contact: Contact | None = None,
     scheme: str = "https",
     exempt: bool = True,
+    min_interval: float = 2.0,
 ) -> Site:
     prefix = f"{scheme}://{host}{path}"
     return Site(
@@ -216,6 +223,7 @@ def _voices(
         requires_notice=requires_notice,
         notice=notice,
         contact=contact,
+        min_interval=min_interval,
     )
 
 
@@ -337,6 +345,7 @@ SITES: dict[str, Site] = {
             contact=COLLABORATOR_B,
             path="/",
             hours=OUTSIDE_BUSINESS_HOURS,
+            min_interval=5.0,
             note=(
                 "DB-Search。**山梨と同じ製品で、山梨は「自動取得は控えて」だった**。"
                 "ベンダーの robots は同一でも議会の意思は別物だという実例なので、"
@@ -351,7 +360,7 @@ def settings(site: Site) -> Settings:
     s = Settings()
     assert site.contact is not None  # main() refuses a site without one
     s.contact = site.contact.address
-    s.min_interval = 2.0  # our first undertaking to them
+    s.min_interval = site.min_interval  # never below 2 s: our first undertaking
     return s
 
 

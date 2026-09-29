@@ -32,7 +32,11 @@ a site with a config.
 page (numbered blocks, ◯ U+25EF), so `importers/dbsearch.py` will parse it. The
 listing is the open part: 10 documents per page, page 2 by a CSRF-tokened POST
 to a session URL, and a `Part=3` (本文) filter whose GET form is unverified. See
-`docs/iwate-ibaraki-tochigi.md`. Also 7 × 429 at 2 s on 9/28.
+`docs/iwate-ibaraki-tochigi.md`. 7 × 429 at 2 s on 9/28, so **茨城 now runs at
+5 s** (the researcher's decision): a per-site interval in `recon_sites.py` and
+`collect_voices.sh`, the others unchanged at 2. `scripts/probe_ibaraki_part.py`
+tests the `Part=3` filter tonight at 21:00 — at most two requests, after the
+survey has left the host.
 
 Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
 `pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
@@ -51,7 +55,8 @@ ID範囲の欠け・日付と目次の食い違いを報告する。平成7年�
 
 **茨城は未設定。** 本文は山梨と同じ形式で既存パーサが使えるが、一覧が10件ごとの
 POST（CSRFトークン付き）で、本文だけに絞る `Part=3` がGETで効くかは未確認。
-今夜の窓で1リクエスト確かめる必要がある。9/28に2秒間隔で429が7回。
+今夜21時に最大2リクエストで確認する（`probe_ibaraki_part.py`）。9/28に2秒間隔で429が7回出たため、
+**茨城は5秒間隔**に変更（下見・確認・収集とも）。
 
 ## 2026-09-28 — the survey that looked complete and held no sitting (`feat/voices-configs`)
 

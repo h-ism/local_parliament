@@ -237,5 +237,5 @@ live request to settle.
   listing to a quarter — **but whether the GET links accept `Part=3` is
   unverified**, and verifying it is a request, so it waits for 20:00.
 - **429 at 2 s**: 7 of 150 requests on 9/28, all recovered on retry. DB-Search
-  429'd this project in August too. Proposed: 茨城 at 5 s, as SSP — slower only.
+  429'd this project in August too. **Decided 2026-09-29: 茨城 at 5 s**, as SSP — slower only; survey, probe and collector alike.
 - The 質問一覧 (`Template=mokuji.*-tuu`) are 発言通告 lists, not transcripts.
