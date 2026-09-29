@@ -48,6 +48,26 @@ cached 本文 (1989–2026): **0 unattributed, 0 swallowed markers**, 1.21 M cha
 山梨's import is identical line for line. 6 more tests. The probe also tries
 `&Page=2` as a GET (≤3 requests in all), since even filtered lists exceed 10.
 
+**Evening, inside the window.** The probe (3 requests, 5 s) settled 茨城's
+listing: `Part=3` cuts 議会運営委員会 2024 from 63 to 21 件, all 本文, and
+`&Page=2` pages as a plain GET — no POST, session or token. So `ibaraki.toml`
+exists, on a new `scraper = "dbsearch"` that walks 年別の会議録閲覧's 483 lists
+and parses with the 山梨 importer; each list's 「N 件」 is checked against what
+its pages yielded. `pt scrape ibaraki --limit 1` wrote 令和８年第１回定例会第９号,
+61 speeches, 0 unattributed. The shared parser now files anything that is not
+a 定例会/臨時会 as a committee, and drops the year from the name.
+
+**岩手's first night found five sittings with zero speeches** (33–204 KB — a rule,
+not a short day): 令和3年 writes 「〇議長（関根敏伸君）これより…」 with no space
+after the bracket, and the rule required one. The 56 survey pages had not
+included that generation — the lesson about bounds, again. On the 1,939 pages
+cached by 21:00 the rule also met ○ U+25CB, half-width brackets, a missing
+closing bracket in the source, 166 「（続）」 continuations read as a person
+named 続, and committee markers alone on their line. Now: 111,332 speeches,
+**0 unmatched 〇-lines, 0 swallowed**, 2,724 speakers (from 2,825). The
+collector loaded the old rule at 20:00, so **岩手.jsonl is re-parsed from
+cache once the night's run ends** — zero requests.
+
 Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
 `pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
 岩手. **No request was made.**

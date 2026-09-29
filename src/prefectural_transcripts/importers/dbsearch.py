@@ -287,6 +287,24 @@ def _body(block: list[str], first_line_rest: str) -> tuple[str, bool]:
     return "\n".join(line for line in stripped if line).strip(), trimmed
 
 
+_PLENARY = re.compile(r"(?:定例会|臨時会)$")
+_YEAR = re.compile(r"^(?:令和|平成|昭和)[元0-9０-９]{1,2}年")
+
+
+def _committee(session: str) -> str | None:
+    """The committee a session names, or None for 本会議.
+
+    Anything that is not a 定例会 or 臨時会 is a committee — 茨城 lists
+    「令和８年大学連携推進会議」 beside its committees, and a rule that looked for
+    委員会 would have filed it as a plenary. The year is dropped: 茨城 names each
+    committee-year 「令和８年土木企業立地推進常任委員会」, and one committee under
+    forty names is the digit-width lesson again, one field over.
+    """
+    if _PLENARY.search(session):
+        return None
+    return _YEAR.sub("", session).strip() or None
+
+
 def parse_document(
     raw: bytes | str,
     *,
@@ -327,7 +345,7 @@ def parse_document(
             f"{source_file}: 発言番号 {numbers[0]}..{numbers[-1]} for {len(numbers)} blocks"
         )
 
-    committee = header.session if "委員会" in header.session else None
+    committee = _committee(header.session)
     meeting = Meeting(
         prefecture=prefecture,
         url=None,

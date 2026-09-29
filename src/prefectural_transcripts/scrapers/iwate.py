@@ -70,14 +70,32 @@ _DATE = re.compile(
 )
 
 DEFAULT_SPEECH_SPLIT = (
-    # 本会議: 「〇議長（渡辺幸貫君）　」「〇27番（大宮惇幸君）　」
-    r"(?m)^〇(?:(?P<role>[^（\n　]{1,60}?)（(?P<speaker>[^）\n　]{1,30})）"
+    # 本会議: 「〇議長（渡辺幸貫君）　」「〇27番（大宮惇幸君）　」 — and 令和3年 writes
+    # 「〇議長（関根敏伸君）これより…」 with no space after the bracket, which a
+    # required space lost five whole sittings to on the first night. The bracket
+    # closes the marker by itself, so the space is optional there; 「君」 before
+    # the bracket is what keeps 「〇七年度の予算（案）」 out instead.
+    #
+    # Three more from the first night's 1,895 pages: some sittings use ○ (U+25CB)
+    # rather than 〇 (U+3007); one writes 「〇2番(畠山茂君)」 in half-width brackets;
+    # and a committee marker may stand alone on its line with the speech on the
+    # next. The role may still contain a half-width bracket (兵庫's 「参事(園芸・
+    # 公園担当)兼公園緑地課長（…）」) because it is matched lazily up to the one
+    # that closes on 「君」.
+    #
+    # 「〇高田一郎委員（続）」 is a speaker resuming after an interruption (166 on
+    # the first night): without its own branch the bracket reads as a person
+    # named 「続」. And two sittings print 「〇２番（畠山茂君　」 with the closing
+    # bracket missing — 「君」 and a space end the marker as surely as 「）」 does.
+    r"(?m)^[〇○](?:(?P<speaker3>[^（(\n　]{1,60}?)[（(]続[）)]　?"
+    r"|(?P<role>[^（\n　]{1,60}?)[（(](?P<speaker>[^）)\n　]{1,30})"
+    r"(?:[）)](?:　|(?<=君[）)]))|(?<=君)　)"
     # 委員会: 「〇佐々木朋和委員長　」「〇菊池（雄）委員　」 — name and office run
     # together, and the longest seen is a 36-character office.
-    r"|(?P<speaker2>[^　\n、。「」]{1,60}?))　"
+    r"|(?P<speaker2>[^　\n、。「」]{1,60}?)(?:　|$))"
 )
 """Every speech opens a line with 〇 (U+3007) and ends its marker with a
-full-width space. Counted over the 56 reconnaissance pages (1995-2026, both
+full-width space or the bracket. First counted over the 56 reconnaissance pages (1995-2026, both
 kinds of sitting): 7,493 speeches, 0 〇-lines unmatched, 0 swallowed."""
 
 

@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from prefectural_transcripts.scrapers.base import BaseScraper
+from prefectural_transcripts.scrapers.dbsearch import DbSearchConfig, DbSearchScraper
 from prefectural_transcripts.scrapers.generic import GenericScraper, SiteConfig
 from prefectural_transcripts.scrapers.iwate import IwateConfig, IwateScraper
 from prefectural_transcripts.scrapers.kensakusystem import (
@@ -28,6 +29,8 @@ SITES_DIR = Path(__file__).resolve().parent.parent / "sites"
 
 __all__ = [
     "BaseScraper",
+    "DbSearchConfig",
+    "DbSearchScraper",
     "GenericScraper",
     "IwateConfig",
     "IwateScraper",
@@ -49,6 +52,10 @@ def _kensakusystem(path: Path) -> BaseScraper:
     return KensakuSystemScraper(KensakuConfig.from_toml(path))
 
 
+def _dbsearch(path: Path) -> BaseScraper:
+    return DbSearchScraper(DbSearchConfig.from_toml(path))
+
+
 def _iwate(path: Path) -> BaseScraper:
     return IwateScraper(IwateConfig.from_toml(path))
 
@@ -59,6 +66,7 @@ def _ssp(path: Path) -> BaseScraper:
 
 SCRAPERS: dict[str, Callable[[Path], BaseScraper]] = {
     "generic": _generic,
+    "dbsearch": _dbsearch,
     "iwate": _iwate,
     "kensakusystem": _kensakusystem,
     "ssp": _ssp,

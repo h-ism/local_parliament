@@ -192,3 +192,41 @@ def test_the_marker_rule_keeps_numerals_and_headings_out() -> None:
         "高校教育課学校支援推進官兼義務教育課学校支援推進官",
     ]
     assert "〇七年度" in speeches[0].text
+
+
+def test_shapes_found_on_the_first_night() -> None:
+    text = "\n".join(
+        [
+            # 令和3年: no space after the bracket. Five sittings parsed to nothing.
+            "〇議長（関根敏伸君）これより本日の会議を開きます。",
+            # ○ U+25CB rather than 〇 U+3007.
+            "○保健福祉部長（野原勝君）　お答えします。",
+            # Half-width brackets.
+            "〇2番(畠山茂君)　希望いわての畠山茂です。",
+            # The closing bracket missing in the source.
+            "〇２番（畠山茂君　それぞれ丁寧な御答弁をいただきました。",
+            # A speaker resuming — not a person named 続.
+            "〇高田一郎委員（続）　続けます。",
+            # A committee marker alone on its line.
+            "〇小澤首席社会教育主事兼生涯学習文化財課総括課長",
+            "お答えいたします。",
+        ]
+    )
+    speeches = split_speeches(text, DEFAULT_SPEECH_SPLIT)
+    assert [(s.role, s.speaker) for s in speeches] == [
+        ("議長", "関根敏伸"),
+        ("保健福祉部長", "野原勝"),
+        ("2番", "畠山茂"),
+        ("２番", "畠山茂"),
+        (None, "高田一郎委員"),
+        # 澤 -> 沢: `normalize_speaker`'s 常用漢字 table, as on every site.
+        (None, "小沢首席社会教育主事兼生涯学習文化財課総括課長"),
+    ]
+    assert speeches[-1].text == "お答えいたします。"
+
+
+def test_a_bracket_without_kun_and_without_a_space_is_not_a_marker() -> None:
+    text = "〇議長（渡辺幸貫君）　予算について、\n〇七年度の予算（案）について説明します。"
+    speeches = split_speeches(text, DEFAULT_SPEECH_SPLIT)
+    assert len(speeches) == 1
+    assert "〇七年度" in speeches[0].text

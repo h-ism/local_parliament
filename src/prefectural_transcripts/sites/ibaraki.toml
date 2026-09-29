@@ -1,0 +1,41 @@
+# 茨城県議会 — 本会議・委員会（DB-Search, 大和速記情報センター）
+#
+# **The same product as 山梨, which asked not to be fetched.** 茨城 answered the
+# opposite on 2026-09-24: scraping is fine, done the way the letter described.
+# This config is 茨城's answer, not the product's — see `scrapers/dbsearch.py`
+# before writing one for any other `*.dbsr.jp` tenant.
+#
+# Verified 2026-09-29: the route from the cache (150 requests on 9/28), and the
+# two GET parameters it depends on by `scripts/probe_ibaraki_part.py` — three
+# requests at 21:00: `Part=3` cuts 議会運営委員会 2024 from 63 to 21 件, all 本文,
+# and `&Page=2` returns ten documents page 1 does not. 483 result lists,
+# 1989–2026. 30 cached 本文 parse with 0 unattributed speeches.
+#
+# **Run at 5 s** (`collect_voices.sh`): 7 of 150 requests got 429 at 2 s on
+# 2026-09-28. The researcher's decision, 2026-09-29.
+
+prefecture = "茨城県"
+name = "ibaraki"
+scraper = "dbsearch"
+
+[dbsearch]
+base_url = "https://www.pref.ibaraki.dbsr.jp/100000"
+
+# `Disallow: /` is DB-Search's boilerplate on every tenant; 茨城's own answer is
+# what this rests on. The whole host, because the listing, the documents and the
+# session paths all live at its root.
+[robots]
+exempt = ["https://www.pref.ibaraki.dbsr.jp/"]
+reason = "茨城県議会事務局: 運営者本人の回答による許可（手紙に記載した方法であれば可）。robots.txt の Disallow はベンダー標準で、回答が優先する。山梨は同製品で逆の回答なので、他の DB-Search 議会には及ばない。docs/iwate-ibaraki-tochigi.md"
+decided_on = "2026-09-24"
+
+[fetch_window]
+days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+start = "20:00"
+end = "07:00"
+reason = "茨城県議会事務局（2026-09-24）手紙に記載した方法（1件2秒以上・直列、既取得は再取得しない、User-Agent に研究目的と連絡先、業務時間帯を避ける、支障があれば即停止）であればスクレイピング可、との回答"
+decided_on = "2026-09-24"
+
+[contact]
+address = "(共同研究者Bの連絡先)"
+note = "照会は共同研究者Bが行った — 岩手・茨城・栃木"
