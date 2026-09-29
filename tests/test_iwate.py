@@ -230,3 +230,20 @@ def test_a_bracket_without_kun_and_without_a_space_is_not_a_marker() -> None:
     speeches = split_speeches(text, DEFAULT_SPEECH_SPLIT)
     assert len(speeches) == 1
     assert "〇七年度" in speeches[0].text
+
+
+def test_a_spaced_out_label_still_starts_a_sitting() -> None:
+    # 平成18年: 141 pages were left out until this matched.
+    html = MOKUJI_2.replace("第２号（10月４日）", "第 2 号（ 10 月 4 日）")
+    _, sittings, orphans = sittings_on(html, ROOT + "mokuji/2")
+    assert orphans == []
+    assert [len(s.pages) for s in sittings] == [3, 1]
+
+
+def test_a_first_page_with_no_date_is_dated_from_the_mokuji() -> None:
+    pages = dict(PAGES)
+    pages[ROOT + "page/2/376348/376362"] = _page(["〇30番（藤原良信君）　会派を代表して伺います。"])
+    scraper = _scraper()
+    meetings = list(scraper.scrape(FakeClient(pages)))  # type: ignore[arg-type]
+    assert meetings[1].date == date(2007, 10, 5)
+    assert any("dated from the 目次" in line for line in scraper.report())

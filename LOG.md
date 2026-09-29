@@ -68,6 +68,19 @@ named 続, and committee markers alone on their line. Now: 111,332 speeches,
 collector loaded the old rule at 20:00, so **岩手.jsonl is re-parsed from
 cache once the night's run ends** — zero requests.
 
+**岩手 is complete (22:25): 1,319 sittings, 179,576 speeches, 88,462,634
+characters, 1995-02-14 to 2026-03-23** — 806 本会議, 513 予算・決算特別委員会.
+`audit.py`: 1,319 listed, 1,319 collected. 0 empty (the CSV has exactly one row
+per speech), 0 undated, no 外字, no honorific splits. The run ended at 22:18;
+the re-parse under the corrected rule added 836 speeches in 52 sittings, and
+`report()` did what it was built for: seven 平成18年 目次 write 「第 1 号」 with
+spaces, no 第N号 matched, and 141 pages were never asked for. Fixed, and the 41
+sittings fetched at 2 s inside the window while the collector was on 茨城's
+host. Five 平成10年 sittings open on the member's question with no dated
+heading; they are dated from the 目次 label and counted as such. 41 ○-lines
+remain inside speeches and are correct — bullets in quoted company lists, not
+markers.
+
 Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
 `pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
 岩手. **No request was made.**

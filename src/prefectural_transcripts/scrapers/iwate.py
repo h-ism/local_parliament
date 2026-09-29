@@ -39,7 +39,7 @@ import re
 import tomllib
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -57,9 +57,11 @@ log = logging.getLogger(__name__)
 _MOKUJI = re.compile(r"/Zenbun/mokuji/\d+$")
 _PAGE = re.compile(r"/Zenbun/page/(\d+)/(\d+)/(\d+)$")
 
-# 「第２号（10月４日）」 on 本会議, 「第１号　　３月４日（水）」 on committees.
-_SITTING = re.compile(r"^第[０-９0-9]+号")
-_MONTH_DAY = re.compile(r"([０-９0-9]{1,2})月\s*([０-９0-9]{1,2})日")
+# 「第２号（10月４日）」 on 本会議, 「第１号　　３月４日（水）」 on committees — and
+# 平成18年 alone spaces it out, 「第 1 号（ 2 月16日）」: seven 目次, 141 pages,
+# found on the first night because `report()` counts pages before any 第N号.
+_SITTING = re.compile(r"^第\s*[０-９0-9]+\s*号")
+_MONTH_DAY = re.compile(r"([０-９0-9]{1,2})\s*月\s*([０-９0-9]{1,2})\s*日")
 
 # The first date on a sitting's first page is the sitting's own:
 # 「第３回岩手県議会定例会会議録（第２号）|平成19年10月４日（木曜日）」 or, on a
@@ -101,6 +103,18 @@ kinds of sitting): 7,493 speeches, 0 〇-lines unmatched, 0 swallowed."""
 
 def _digits(s: str) -> int:
     return int(s.translate(str.maketrans("０１２３４５６７８９", "0123456789")))
+
+
+def _from_label(heading: str, label: str) -> date | None:
+    """The year from 「平成10年2月定例会」, the month and day from 「第２号（２月27日）」."""
+    year = parse_japanese_date(re.sub(r"(年)\s*\d{1,2}月.*$", r"\g<1>1月1日", heading))
+    md = _MONTH_DAY.search(label)
+    if not year or not md:
+        return None
+    try:
+        return date(year.year, _digits(md.group(1)), _digits(md.group(2)))
+    except ValueError:
+        return None
 
 
 @dataclass(slots=True)
@@ -202,6 +216,7 @@ class IwateScraper(BaseScraper):
         self._gaps: list[str] = []
         self._orphans: list[str] = []
         self._date_mismatch: list[str] = []
+        self._dated_from_mokuji: list[str] = []
 
     def url_prefixes(self) -> list[str]:
         return [urljoin(self.config.index_url, "./")]
@@ -280,6 +295,13 @@ class IwateScraper(BaseScraper):
 
         m = _DATE.search(text[:400])
         when = parse_japanese_date(m.group(1)) if m else None
+        if when is None and sitting:
+            # 平成10年2月's 第N号 links open on the member's question, with no
+            # dated heading on the page. The 目次 still says 「第２号（２月27日）」
+            # and the heading gives the year; counted, since it is a second-best.
+            when = _from_label(heading, sitting.label)
+            if when:
+                self._dated_from_mokuji.append(f"{ref.url}: {when} from 目次")
         # The 目次 label carries the month and day too; a disagreement means one
         # of the two is not what it looks like, so it is counted.
         label_md = _MONTH_DAY.search(sitting.label) if sitting else None
@@ -314,6 +336,11 @@ class IwateScraper(BaseScraper):
         if self._orphans:
             out.append(f"{len(self._orphans)} 目次 with pages before the first 第N号:")
             out += [f"  {o}" for o in self._orphans]
+        if self._dated_from_mokuji:
+            out.append(
+                f"{len(self._dated_from_mokuji)} sitting(s) dated from the 目次, not the page:"
+            )
+            out += [f"  {d}" for d in self._dated_from_mokuji]
         if self._date_mismatch:
             out.append(f"{len(self._date_mismatch)} date(s) disagreeing with the 目次:")
             out += [f"  {d}" for d in self._date_mismatch]
