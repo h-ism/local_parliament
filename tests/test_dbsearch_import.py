@@ -15,6 +15,7 @@ from prefectural_transcripts.importers.dbsearch import (
     DocumentResult,
     _parse_header,
     decode,
+    page_to_download,
     parse_document,
 )
 
@@ -180,3 +181,78 @@ def test_importer_counts_index_documents_as_skipped(tmp_path: Path):
     assert len(outcome.meetings) == 1
     assert outcome.skipped == {"目次": 1}
     assert "1 documents, 6 speeches" in outcome.summary()[0]
+
+
+# -- 茨城: the same product, fetched as a page ---------------------------------
+
+IBARAKI_PAGE = """<html><body>
+<h1 class="logo"><img alt="茨城県議会"></h1>
+<h1>令和８年土木企業立地推進常任委員会　  本文 2026-06-10</h1>
+<h1>:</h1>
+<ul>
+<li class="voice-block voice_block d-none" data-voice_code="1"><div class="voice">
+<div class="voice__detail">1:</div>
+<p class="voice__text">　　　　　　　　　　　　　　　　午前10時29分開議<br/>
+◯坂本委員長　ただいまから、土木企業立地推進委員会を開会いたします。<br/>
+　　　　　───────────────────────────────<br/>
+</p></div></li>
+<li class="voice-block voice_block d-none" data-voice_code="2"><div class="voice">
+<div class="voice__detail">2:</div>
+<p class="voice__text">◯森田委員　二,三人じゃきかないですよ。パッと数えてもたくさんいる。<br/></p>
+</div></li>
+<li class="voice-block voice_block d-none" data-voice_code="3"><div class="voice">
+<div class="voice__detail">3:</div>
+<p class="voice__text">◯24番江尻加那議員　日本共産党の江尻加那です。<br/></p>
+</div></li>
+<li class="voice-block voice_block d-none" data-voice_code="4"><div class="voice">
+<div class="voice__detail">4:</div>
+<p class="voice__text">◯小野瀬書記<br/>　朗読いたします。<br/></p>
+</div></li>
+<li class="voice-block voice_block d-none" data-voice_code="5"><div class="voice">
+<div class="voice__detail">5:</div>
+<p class="voice__text">◯江尻委員今の知事の説明を多くの県民の皆さんが聞いています。<br/></p>
+</div></li>
+</ul></body></html>"""
+
+
+def ibaraki() -> DocumentResult:
+    return parse_document(page_to_download(IBARAKI_PAGE), prefecture="茨城県", source_file="x")
+
+
+def test_a_fetched_page_reads_like_a_download():
+    result = ibaraki()
+    assert result.header.kind == "本文"
+    assert result.header.date.isoformat() == "2026-06-10"
+    assert result.header.session == "令和８年土木企業立地推進常任委員会"
+    assert len(result.meeting.speeches) == 5
+
+
+def test_a_bare_office_ends_at_the_space_and_not_at_the_next_honorific():
+    # The honorific branch once read 「森田委員二,三人じゃ…たく」 as a speaker.
+    speeches = ibaraki().meeting.speeches
+    assert speeches[1].speaker == "森田委員"
+    assert speeches[1].text.startswith("二,三人")
+
+
+def test_the_chairs_first_words_are_not_lost_to_the_heading_above_them():
+    first = ibaraki().meeting.speeches[0]
+    assert first.speaker == "坂本委員長"
+    assert "開議" not in first.text
+    assert first.text.startswith("ただいまから")
+
+
+def test_a_seat_number_is_the_role_not_a_reason_to_drop_the_name():
+    third = ibaraki().meeting.speeches[2]
+    assert (third.role, third.speaker) == ("24番", "江尻加那議員")
+
+
+def test_a_marker_alone_on_its_line_still_names_the_speaker():
+    assert ibaraki().meeting.speeches[3].speaker == "小野瀬書記"
+
+
+def test_a_marker_with_no_space_costs_a_name_rather_than_inventing_one():
+    result = ibaraki()
+    last = result.meeting.speeches[4]
+    assert last.speaker == ""
+    assert "今の知事の説明" in last.text
+    assert len(result.unattributed) == 1

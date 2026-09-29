@@ -86,12 +86,33 @@ _RULE = re.compile(r"^[\s\u3000]*─{5,}[\s\u3000]*$")
 # one from the other side: a class that also excluded half-width ( ) cut an office
 # at 「参事」 and built a speaker out of the rest. Whichever bracket the marker
 # itself uses is the one to exclude, and here that is the full-width pair.
+#
+# 茨城 (the same product, fetched rather than downloaded) adds a third: its
+# committees write 「◯坂本委員長　」 — no brackets, no honorific, the name or office
+# ended by a full-width space. The honorific branch then read on into the speech
+# until it found a 「さん」 somewhere — 「森田委員二,三人じゃきかないですよ。パッと
+# 数えてもたく」 was a speaker, and 2,483 of 2,869 speeches were unattributed —
+# which is 和歌山's greedy-speaker failure again. So no branch crosses
+# punctuation; the honorific branch allows exactly one full-width space — 山梨
+# aligns 「◯飯島　修君　」 in a column — and the bare form ends at the first one,
+# or at the end of the line (「◯小野瀬書記」 alone, the speech on the next).
+#
+# Two more from 茨城's 本会議: 「◯24番江尻加那議員　」 puts the seat number in front
+# with no brackets, so it is read as the role — the digit guard below would
+# otherwise throw the name away. And one document writes a marker with no space
+# after it at all, 「◯江尻委員今の知事の説明を多くの県民の皆さん」: the honorific
+# branch must be followed by a space or the line end, or it reads to the first
+# 「さん」 in the speech. Unmatched, it costs a name, which is counted; matched,
+# it is a speaker made of words, which is not.
 _MARKER = re.compile(
-    r"^[\u25ef\u25cb\u3007]"  # ◯ ○ 〇
+    r"^[◯○〇]"  # ◯ ○ 〇
     r"(?:"
-    r"(?P<role>[^（）]{1,40}?)（(?P<name>[^（）]{1,40})）"
+    r"(?P<role>[^（）　]{1,40}?)（(?P<name>[^（）]{1,40})）"
     r"|"
-    r"(?P<name2>[^（）]{2,30}?(?:君|さん|氏))"
+    r"(?P<name2>[^（）　、。，,「」]{1,15}(?:　[^（）　、。，,「」]{1,15})?(?:君|さん|氏))"
+    r"(?=[　\s]|$)"
+    r"|"
+    r"(?:(?P<seat>[0-9０-９]{1,3}番))?(?P<name3>[^（）　、。，,「」]{1,40}?)(?:　|$)"
     r")"
 )
 
@@ -225,12 +246,32 @@ def _speaker_of(line: str) -> tuple[str, str | None, str]:
     match = _MARKER.match(line)
     if not match:
         return "", None, line
-    raw_name = match["name"] or match["name2"] or ""
+    raw_name = match["name"] or match["name2"] or match["name3"] or ""
     speaker = _clean_speaker(raw_name)
     if not speaker or _NOT_A_NAME.match(speaker):
         return "", None, line
-    role = (match["role"] or "").strip() or None
+    role = (match["role"] or match["seat"] or "").strip() or None
     return speaker, role, line[match.end() :]
+
+
+def _from_first_marker(block: list[str]) -> list[str]:
+    """Drop header lines that come before the block's first speech marker.
+
+    茨城's block 1 is 「　　午前10時29分開議」 and then 「◯坂本委員長　ただいまから、
+    …開会いたします。」 — the chair's first words, inside the same 発言番号. Read
+    from the first line only, the whole block went to nobody: 30 opening speeches
+    in 30 sittings. The lines above the marker are the clerk's heading, which
+    every other site drops the same way (see `split_speeches`). A block with no
+    marker anywhere is left alone, and is counted as unattributed as before.
+    Only lines before the first 罫線 are looked at, since what follows one is an
+    appended document, not speech.
+    """
+    for i, line in enumerate(block):
+        if _RULE.match(line):
+            break
+        if _MARKER.match(line):
+            return block[i:]
+    return block
 
 
 def _body(block: list[str], first_line_rest: str) -> tuple[str, bool]:
@@ -270,6 +311,7 @@ def parse_document(
         numbers.append(number)
         if not block:
             continue
+        block = _from_first_marker(block)
         speaker, role, rest = _speaker_of(block[0])
         body, was_trimmed = _body(block, rest)
         trimmed += was_trimmed
@@ -341,3 +383,30 @@ def find_downloads(source: Path) -> list[Path]:
     if source.is_file():
         return [source]
     return sorted(p for p in source.rglob("*.txt") if p.is_file())
+
+
+_PAGE_DATE = re.compile(r"\s*(\d{4}-\d{2}-\d{2})\s*$")
+
+
+def page_to_download(html: str) -> str:
+    """A fetched `?Template=document&Id=N` page, in the download's text shape.
+
+    茨城 permits fetching what 山梨 asked us not to, and the page carries the same
+    document the ダウンロード button saves: the `h1` is the header line (without
+    the colon before the date), and every speech is an `li.voice-block` whose
+    `data-voice_code` is the 発言番号. Rebuilding the text lets `parse_document`
+    do the one job it already does, rather than a second parser drifting from it.
+    """
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "lxml")
+    heads = [h.get_text(" ", strip=True) for h in soup.find_all("h1")]
+    header = next((h for h in heads if _PAGE_DATE.search(h)), None)
+    if header is None:
+        raise ValueError("no document header (an h1 ending in a date) on this page")
+    lines = [_PAGE_DATE.sub(r" : \1", header), "-" * 64]
+    for block in soup.select("li.voice-block"):
+        body = block.select_one("p.voice__text")
+        lines.append(f"{block.get('data-voice_code', '')}:")
+        lines.append(body.get_text().strip("\n") if body else "")
+    return "\n".join(lines)

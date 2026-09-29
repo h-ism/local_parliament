@@ -38,6 +38,16 @@ to a session URL, and a `Part=3` (本文) filter whose GET form is unverified. S
 tests the `Part=3` filter tonight at 21:00 — at most two requests, after the
 survey has left the host.
 
+**茨城's transcripts parse, after the 山梨 rule met a second tenant.** The page
+is the download in HTML (`page_to_download` rebuilds the text), but 茨城 writes
+markers 山梨 never did: 「◯坂本委員長　」 with no brackets or 「君」, 「◯24番江尻加那
+議員　」, a marker alone on its line, and the chair's first words inside block 1
+under the 開議 heading. The old rule gave **2,483 of 2,869 speeches no speaker**
+and made speakers out of speech text up to the next 「さん」. Now, on the 30
+cached 本文 (1989–2026): **0 unattributed, 0 swallowed markers**, 1.21 M chars;
+山梨's import is identical line for line. 6 more tests. The probe also tries
+`&Page=2` as a GET (≤3 requests in all), since even filtered lists exceed 10.
+
 Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
 `pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
 岩手. **No request was made.**

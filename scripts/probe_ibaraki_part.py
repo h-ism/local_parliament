@@ -9,8 +9,13 @@ The control is already cached: 議会運営委員会 2024 without the filter, 63
 So this costs **one request**, and a second only if the first is ignored
 (`Part=3` unrecognised, then the form's own spelling `Part[]=3`).
 
+Then one more: `&Page=2` on the same GET. The form pages by POSTing `Page=N`
+to a session URL with a CSRF token; if the GET takes it too, the whole
+listing is stateless. Judged by page 2 holding documents page 1 does not.
+At most three requests in all.
+
 Runs under 茨城's own terms from `recon_sites.py` — the exemption, the
-20:00-07:00 window, 共同研究者B in the User-Agent, 2 s — and refuses to start
+20:00-07:00 window, 共同研究者B in the User-Agent, 5 s — and refuses to start
 while the nightly survey is still on the same host.
 
     uv run python scripts/probe_ibaraki_part.py
@@ -38,6 +43,10 @@ BASE = (
     "&Cabinet=35&TermStart=2024-01-01&TermEnd=2024-12-31"
 )
 TRIES = [BASE + "&Part=3", BASE + "&Part%5B%5D=3"]
+
+
+def ids(page: Page) -> set[str]:
+    return set(re.findall(r"Template=document&(?:amp;)?Id=(\d+)", page.text))
 
 
 def summary(page: Page) -> tuple[str, list[str]]:
@@ -80,14 +89,27 @@ def main() -> int:
         control = c.get(BASE)
         count, kinds = summary(control)
         lines.append(f"control (cached={control.from_cache}): {count}, first page {kinds}")
+        chosen = BASE
         for url in TRIES:
             page = c.get(url)
             count, kinds = summary(page)
             lines.append(f"{url}\n  cached={page.from_cache} {count}, first page {kinds}")
             if kinds and all(k == "本文" for k in kinds):
                 lines.append("  -> the filter works: every result is 本文")
+                chosen = url
                 break
             lines.append("  -> not filtered")
+
+        first = c.get(chosen)
+        second = c.get(chosen + "&Page=2")
+        new = ids(second) - ids(first)
+        lines.append(
+            f"{chosen}&Page=2\n  cached={second.from_cache} page1 {sorted(ids(first))}"
+            f"\n  page2 {sorted(ids(second))}"
+        )
+        lines.append(
+            "  -> GET paging works" if new else "  -> Page=2 ignored: paging needs the form's POST"
+        )
 
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
