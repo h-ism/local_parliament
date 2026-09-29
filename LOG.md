@@ -2,6 +2,57 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-29 — 岩手 configured from the cache; 茨城's listing left for one live check (`feat/voices-configs`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+**岩手 has a config**, written entirely from the 9/28 survey without a request.
+It needed a scraper (`scrapers/iwate.py`) for one reason selectors cannot state:
+**a sitting is several pages.** The 目次 links 「第２号」 and then each member's
+question as separate ranges of paragraph ids, and the 第２号 page stops at
+「〔32番佐々木博君登壇〕」 — the member pages are the rest of the sitting, not
+copies of parts of it. One record per page would have made most 一般質問
+undated fragments. The scraper joins every page from one 第N号 to the next, and
+counts any gap in the ranges, any page before the first 第N号, and any date
+that disagrees with the 目次.
+
+Scope: 234 目次, 平成7年–令和8年, 本会議 and 予算・決算特別委員会 (both verbatim).
+Marker 〇 U+3007 in two shapes; on all 56 cached pages 7,493 speeches, 0
+unmatched 〇-lines, 0 swallowed. 26 whole sittings parse from cache, all dated
+and agreeing with the 目次.
+
+**Found on the way: tonight would have run two processes on one host.** Both
+timers fire at 20:00; `collect_voices.sh` starts a site once its config exists,
+and `recon_sites.py` surveyed every site regardless. `recon_sites.py` now skips
+a site with a config.
+
+**茨城 has no config yet.** The transcript is 山梨's DB-Search format inside a
+page (numbered blocks, ◯ U+25EF), so `importers/dbsearch.py` will parse it. The
+listing is the open part: 10 documents per page, page 2 by a CSRF-tokened POST
+to a session URL, and a `Part=3` (本文) filter whose GET form is unverified. See
+`docs/iwate-ibaraki-tochigi.md`. Also 7 × 429 at 2 s on 9/28.
+
+Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
+`pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
+岩手. **No request was made.**
+
+### 日本語
+
+**岩手の設定を追加**（下見キャッシュのみ、リクエスト0）。会議1回分が複数ページに
+分かれている（第N号の後に議員ごとの質問ページが続き、第N号ページは登壇で途切れる）
+ため、選択子では書けずスクレイパーを追加した。第N号から次の第N号までを連結し、
+ID範囲の欠け・日付と目次の食い違いを報告する。平成7年〜令和8年、234目次、本会議と
+予算・決算特別委員会（逐語）。キャッシュ56ページで7,493発言、取りこぼし0。
+
+**今夜20時に同一ホストへ2プロセスが走るところだった**（収集と下見のタイマーが同時刻）。
+設定のあるサイトは下見しないよう修正。
+
+**茨城は未設定。** 本文は山梨と同じ形式で既存パーサが使えるが、一覧が10件ごとの
+POST（CSRFトークン付き）で、本文だけに絞る `Part=3` がGETで効くかは未確認。
+今夜の窓で1リクエスト確かめる必要がある。9/28に2秒間隔で429が7回。
+
 ## 2026-09-28 — the survey that looked complete and held no sitting (`feat/voices-configs`)
 
 *English and Japanese. / 英語と日本語で併記する。*

@@ -17,6 +17,7 @@ from pathlib import Path
 
 from prefectural_transcripts.scrapers.base import BaseScraper
 from prefectural_transcripts.scrapers.generic import GenericScraper, SiteConfig
+from prefectural_transcripts.scrapers.iwate import IwateConfig, IwateScraper
 from prefectural_transcripts.scrapers.kensakusystem import (
     KensakuConfig,
     KensakuSystemScraper,
@@ -28,6 +29,8 @@ SITES_DIR = Path(__file__).resolve().parent.parent / "sites"
 __all__ = [
     "BaseScraper",
     "GenericScraper",
+    "IwateConfig",
+    "IwateScraper",
     "KensakuConfig",
     "KensakuSystemScraper",
     "SiteConfig",
@@ -46,12 +49,17 @@ def _kensakusystem(path: Path) -> BaseScraper:
     return KensakuSystemScraper(KensakuConfig.from_toml(path))
 
 
+def _iwate(path: Path) -> BaseScraper:
+    return IwateScraper(IwateConfig.from_toml(path))
+
+
 def _ssp(path: Path) -> BaseScraper:
     return SspScraper(SspConfig.from_toml(path))
 
 
 SCRAPERS: dict[str, Callable[[Path], BaseScraper]] = {
     "generic": _generic,
+    "iwate": _iwate,
     "kensakusystem": _kensakusystem,
     "ssp": _ssp,
 }

@@ -52,6 +52,8 @@ from prefectural_transcripts.http import (
 
 log = logging.getLogger("recon")
 
+SITES_DIR = Path(__file__).resolve().parent.parent / "src/prefectural_transcripts/sites"
+
 MAX_PAGES = 150
 MAX_DEPTH = 4
 # 40 pages at depth 2 reached 石川's year listings and stopped one level short of
@@ -542,6 +544,14 @@ def main() -> int:
         if site is None:
             log.error("no such site %r; known: %s", key, ", ".join(SITES))
             failed += 1
+            continue
+
+        # Once a config exists the survey has done its job, and `collect_voices.sh`
+        # takes the site over — from the same timer, at the same minute. Surveying
+        # it as well would put two processes on one host at once, which is the
+        # first undertaking in our letter broken by our own scheduling.
+        if (SITES_DIR / f"{key}.toml").exists():
+            log.info("%s: has a config; collected by collect_voices.sh, not surveyed", key)
             continue
 
         if site.contact is None:

@@ -180,3 +180,62 @@ Worth saying in the next letter to 岩手 anyway: that we are reading
 nightly survey — which fetched nothing on 9/25–27 because its first 150 pages
 were cached — goes further from tonight. Kept running at the researcher's
 choice (2026-09-28).
+
+## 岩手: configured (2026-09-29), from the cache alone
+
+`sites/iwate.toml`, `scraper = "iwate"` (`scrapers/iwate.py`). Worked out
+entirely offline from the 9/28 survey — 88 requests, 0 more today.
+
+- **Coverage**: 234 目次 on `Zenbun/` — 161 本会議, 73 予算・決算特別委員会
+  (incl. 決算特別委員会（企業会計）), 平成7年 to 令和8年. Both committee kinds
+  are verbatim 会議録, so both are in scope. No 常任委員会 on this server.
+- **A sitting is several pages.** `Zenbun/page/<目次>/<first>/<last>` is a range
+  of paragraph ids; the 目次 lists 「第２号（10月４日）」 and then each member's
+  question as its own range, and the first page stops at
+  「〔32番佐々木博君登壇〕」. Those are the *rest* of the sitting, not slices of it
+  (和歌山's member links are slices), so one record per page would leave most
+  一般質問 undated fragments. The scraper joins every page from one 第N号 to the
+  next. The ranges are contiguous inside a sitting, so a page the 目次 does not
+  link shows up as a gap — counted in `report()`, not trusted.
+- **Marker**: 〇 **U+3007**, two shapes — 本会議 「〇議長（渡辺幸貫君）」,
+  committees 「〇佐々木朋和委員長」 (name and office together, up to 36 chars
+  seen) — and always a full-width space after. On all 56 cached pages
+  (1995–2026): 7,493 speeches, **0** 〇-lines unmatched, **0** swallowed.
+- **Date**: the first page's own 「平成19年10月４日（木曜日）」, checked against
+  the 目次's month and day; a disagreement is reported. 26 whole sittings parse
+  from cache, all dated, all agreeing.
+- **Not yet seen**: a multi-page 本会議 sitting end to end (no such sitting is
+  fully cached) and any 本会議 目次 before 平成19年. Read `report()` after the
+  first night.
+- **Size**: ≈1,000 sittings, ≈5,000 pages — about three hours at 2 s, inside one
+  20:00–07:00 window. `collect_voices.sh` picks it up from the timer;
+  `recon_sites.py` now leaves a site with a config alone, so the two never run
+  on one host at once.
+
+## 茨城: the route is known, the listing is not verified (2026-09-29)
+
+From the 9/28 survey (150 requests). No config yet, for a reason that needs one
+live request to settle.
+
+- **The transcript is easy.** `?Template=document&Id=N` holds every speech of
+  the sitting as `li.voice-block` → `p.voice__text`, numbered `1:` … by the
+  vendor, ◯ **U+25EF** markers, ─ rules after — the same shape as 山梨's
+  downloads, and the `h1` is the download's header line verbatim
+  (「令和８年土木企業立地推進常任委員会　 本文 2026-06-10」). So
+  `importers/dbsearch.py` parses it as it stands; only the transport differs,
+  as expected on 9/24.
+- **`Id` is global; the number before `?` is a session.** `Id=10978` under
+  `/669261` and `/100000` is byte-identical text; `Id=0` is "whatever this
+  session last showed" and differs per session. Records must point at
+  `/100000?Template=document&Id=N`, never at a session URL.
+- **Each sitting is 3–4 documents**: 議事日程, 名簿, 本文, 質疑通告一覧表 —
+  only 本文 is a transcript.
+- **The listing is the problem.** 年別の会議録閲覧 gives 483 GET links (本会議
+  per 定例会, committees per year, 1989–2026), but each result list shows 10
+  documents, and page 2 is a **POST to the session URL with a CSRF `_token`**
+  (Laravel). The search form has `Part[]` = 3 (本文), which would cut the
+  listing to a quarter — **but whether the GET links accept `Part=3` is
+  unverified**, and verifying it is a request, so it waits for 20:00.
+- **429 at 2 s**: 7 of 150 requests on 9/28, all recovered on retry. DB-Search
+  429'd this project in August too. Proposed: 茨城 at 5 s, as SSP — slower only.
+- The 質問一覧 (`Template=mokuji.*-tuu`) are 発言通告 lists, not transcripts.

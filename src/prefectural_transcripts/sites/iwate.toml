@@ -1,0 +1,37 @@
+# 岩手県議会 — 本会議・予算特別委員会・決算特別委員会
+#
+# The minutes are on the prefecture's own server, not on the VOICES install the
+# letter named (`iwatekengikai.gijiroku.com`): the assembly's 「本会議会議録」
+# link leaves for `www3.pref.iwate.jp/gikai/user/www/`, and the researcher
+# decided on 2026-09-28 that this is the 会議録 the permission was about.
+# robots.txt is **obeyed as it stands** here (404 when last looked at) — nobody
+# was asked about this host's rules file, so there is no `[robots]` table.
+#
+# Why a scraper and not selectors: a sitting is several pages, and only the
+# 目次 says which. See `scrapers/iwate.py`.
+#
+# Verified 2026-09-29 from the reconnaissance cache, offline: 234 目次 on the
+# index (161 本会議, 73 committee), 平成7年 to 令和8年; the marker rule matched
+# every 〇 line on 56 pages across 1995-2026. See `docs/iwate-ibaraki-tochigi.md`.
+
+prefecture = "岩手県"
+name = "iwate"
+scraper = "iwate"
+
+[iwate]
+# `http://` redirects here; the cache and the records use the https form.
+index_url = "https://www3.pref.iwate.jp/gikai/user/www/Zenbun/"
+
+# 岩手県議会事務局 (2026-09-24): scraping is acceptable done the way the letter
+# described, and the letter said 業務時間帯を避ける. 20:00-07:00 every day.
+[fetch_window]
+days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+start = "20:00"
+end = "07:00"
+reason = "岩手県議会事務局（2026-09-24）手紙に記載した方法（1件2秒以上・直列、既取得は再取得しない、User-Agent に研究目的と連絡先、業務時間帯を避ける、支障があれば即停止）であればスクレイピング可、との回答"
+decided_on = "2026-09-24"
+
+# The enquiry 岩手 answered was 共同研究者B's; this is the address they have.
+[contact]
+address = "(共同研究者Bの連絡先)"
+note = "照会は共同研究者Bが行った — 岩手・茨城・栃木"
