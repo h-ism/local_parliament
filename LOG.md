@@ -81,6 +81,22 @@ heading; they are dated from the 目次 label and counted as such. 41 ○-lines
 remain inside speeches and are correct — bullets in quoted company lists, not
 markers.
 
+**茨城, first night (22:18 → 01:00): 1,717 sittings, 174,331 speeches,
+76,558,095 characters, 2012-02 to 2026-07** — 420 本会議, 1,297 委員会 under 42
+committee names. 0 undated, 0 empty; 6 unattributed blocks, all 会議録 headings.
+2 × 429 at 5 s, both recovered on retry. **1989–2011 is still to come.**
+
+**systemd stopped it at 01:00, not the window at 07:00.** The collector unit
+had `TimeoutStartSec=5h`, sized for 滋賀's 20:00–24:00; 岩手 and 茨城 run to
+07:00. Killed by SIGTERM, the script never wrote its "stopped" line, so
+`run.log` simply ends at "ibaraki starting". Now 11h30min, in the installed
+unit and in `scripts/systemd/`. Nothing broke a promise to 茨城 — it made fewer
+requests, not more — but six hours of window went unused and nothing said so.
+
+One speech lost to a bound: a 43-character office, and the bare-marker branch
+stopped at 40. Now 60, as 岩手. 山梨 unchanged; the re-parse changed exactly
+that one speaker.
+
 Verified: 7 new tests (`tests/test_iwate.py`), 185 pass; ruff and mypy clean;
 `pt scrape iwate` refuses outside the window; `recon_sites.py --dry-run` skips
 岩手. **No request was made.**

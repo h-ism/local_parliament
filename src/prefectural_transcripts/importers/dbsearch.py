@@ -104,6 +104,10 @@ _RULE = re.compile(r"^[\s\u3000]*─{5,}[\s\u3000]*$")
 # branch must be followed by a space or the line end, or it reads to the first
 # 「さん」 in the speech. Unmatched, it costs a name, which is counted; matched,
 # it is a speaker made of words, which is not.
+#
+# The bare form is bounded at 60, not 40: 茨城 has a 43-character office,
+# 「木名瀬グローバル戦略チームリーダー兼Ｇ20貿易・デジタル経済大臣会合推進チームリーダー」.
+# A bound is a claim about the data; 岩手 needed 60 for the same reason.
 _MARKER = re.compile(
     r"^[◯○〇]"  # ◯ ○ 〇
     r"(?:"
@@ -112,7 +116,7 @@ _MARKER = re.compile(
     r"(?P<name2>[^（）　、。，,「」]{1,15}(?:　[^（）　、。，,「」]{1,15})?(?:君|さん|氏))"
     r"(?=[　\s]|$)"
     r"|"
-    r"(?:(?P<seat>[0-9０-９]{1,3}番))?(?P<name3>[^（）　、。，,「」]{1,40}?)(?:　|$)"
+    r"(?:(?P<seat>[0-9０-９]{1,3}番))?(?P<name3>[^（）　、。，,「」]{1,60}?)(?:　|$)"
     r")"
 )
 

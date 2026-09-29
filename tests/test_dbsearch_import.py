@@ -256,3 +256,12 @@ def test_a_marker_with_no_space_costs_a_name_rather_than_inventing_one():
     assert last.speaker == ""
     assert "今の知事の説明" in last.text
     assert len(result.unattributed) == 1
+
+
+def test_a_long_office_is_not_cut_off_by_a_length_bound():
+    office = "木名瀬グローバル戦略チームリーダー兼Ｇ20貿易・デジタル経済大臣会合推進チームリーダー"
+    page = IBARAKI_PAGE.replace("◯小野瀬書記<br/>", f"◯{office}　説明します。<br/>")
+    speech = parse_document(
+        page_to_download(page), prefecture="茨城県", source_file="x"
+    ).meeting.speeches[3]
+    assert speech.speaker.startswith("木名瀬グローバル戦略")

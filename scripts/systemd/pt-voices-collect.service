@@ -5,7 +5,8 @@ Documentation=file:///home/hideo-ishima/research_project/prefectual_transcripts/
 [Service]
 Type=oneshot
 WorkingDirectory=/home/hideo-ishima/research_project/prefectual_transcripts
-# A window is four hours; the run stops itself when it closes.
-TimeoutStartSec=5h
+# The longest window is 20:00-07:00 (岩手・茨城, 11 h); the run stops itself
+# when it closes. 5h (sized for 滋賀's 20-24) killed 茨城 at 01:00 on 2026-09-30.
+TimeoutStartSec=11h30min
 Environment=PATH=/home/hideo-ishima/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/bin/bash /home/hideo-ishima/research_project/prefectual_transcripts/scripts/collect_voices.sh
