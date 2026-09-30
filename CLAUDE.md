@@ -162,7 +162,8 @@ reconciles item by item against its corpus, 0 missing on all seventeen.
 DB-Search fetched as pages and parsed by the 山梨 importer. Both at night inside
 the agreed windows; 茨城 at 5 s after 429s at 2 s.
 
-**43,612 documents, 880,220 speeches, 424,049,474 characters.** Documents/speeches
+**The five in the first table (和歌山・三重・愛媛・兵庫・静岡): 43,612 documents,
+880,220 speeches, 424,049,474 characters.** Documents/speeches
 per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,
 so its per-document counts are not comparable with the other four.
 Configs: `sites/{wakayama,wakayama_committee,mie,ehime,hyogo,shizuoka,shizuoka_committee}.toml`.
