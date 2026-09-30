@@ -26,6 +26,8 @@ for 滋賀・石川・岩手・茨城・栃木 — the vendor's boilerplate, not
   `last_day` and `holidays` for it: weekends plus スポーツの日 10/12, 文化の日
   11/3 and 勤労感謝の日 11/23, 20:00–06:00 (six, not seven). Outside the period
   it does not open at all, and says so rather than naming a next opening.
+- **Condition 2 is met**: the phone number was already given to them by email
+  (the researcher, 2026-09-30). What remains is the advance notice of when.
 - **Nothing runs until the reply is sent** — the reply carries the contact they
   asked for and the schedule, and is the advance notice. Draft:
   `docs/inquiries/hokkaido-notice.md`. `recon_sites.py` refuses 北海道 until
