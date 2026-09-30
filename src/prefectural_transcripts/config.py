@@ -7,6 +7,7 @@ a research crawl has no reason to be fast.
 from __future__ import annotations
 
 import os
+import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
@@ -314,14 +315,52 @@ class Contact:
             )
 
     @classmethod
+    def lookup(cls, ref: str, note: str = "") -> Contact:
+        """A collaborator's contact, from the local file that keeps it out of git.
+
+        The repository is public and the enquiries were made by colleagues, so
+        their names and addresses are not written in it (decided 2026-10-01).
+        A config says `ref = "collaborator_b"`; the address lives in
+        `contacts.toml` beside the repository (or `$PT_CONTACTS`), which is
+        gitignored. A missing file or entry refuses the site rather than falling
+        back to `PT_CONTACT`: running under the wrong name is not a smaller
+        mistake than not running.
+        """
+        path = contacts_file()
+        try:
+            table = tomllib.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError as exc:
+            raise ValueError(
+                f"contact {ref!r} is kept out of the repository, in {path}, which does "
+                "not exist — copy contacts.example.toml and fill it in"
+            ) from exc
+        entry = table.get(ref)
+        if not isinstance(entry, dict) or "address" not in entry:
+            raise ValueError(f"contact {ref!r} has no address in {path}")
+        return cls(address=str(entry["address"]), note=note or str(entry.get("note", "")))
+
+    @classmethod
     def from_toml(cls, raw: Mapping[str, Any]) -> Contact | None:
-        """Read a `[contact]` table from a site config; None when there is none."""
+        """Read a `[contact]` table from a site config; None when there is none.
+
+        `ref = "…"` names an entry in `contacts.toml`; `address = "…"` is still
+        read, for an address that may be public.
+        """
         if not raw:
             return None
+        if "ref" in raw:
+            return cls.lookup(str(raw["ref"]), note=raw.get("note", ""))
         try:
             return cls(address=raw["address"], note=raw.get("note", ""))
         except KeyError as exc:
-            raise ValueError(f"a [contact] table needs an address; missing {exc}") from exc
+            raise ValueError(f"a [contact] table needs ref or address; missing {exc}") from exc
+
+
+def contacts_file() -> Path:
+    """Where collaborators' addresses are kept: `$PT_CONTACTS`, else `contacts.toml`
+    at the repository root. Gitignored."""
+    env = os.environ.get("PT_CONTACTS")
+    return Path(env) if env else Path(__file__).resolve().parents[2] / "contacts.toml"
 
 
 @dataclass(frozen=True, slots=True)

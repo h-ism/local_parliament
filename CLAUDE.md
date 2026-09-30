@@ -125,6 +125,11 @@ Modules under `src/prefectural_transcripts/`:
 - Tests use `FakeClient` and inline HTML fixtures from `tests/conftest.py`; keep the
   suite offline.
 - `data/` and `cache/` are gitignored — scraped output is data, not source.
+- **The repository is public; collaborators are not.** Their names and addresses
+  stay out of git — configs say `[contact] ref = "collaborator_b"` and the address
+  lives in `contacts.toml` (gitignored; `contacts.example.toml` is the template).
+  In docs they are 共同研究者A / 共同研究者B. A missing entry refuses the site.
+  Scrubbed from the unpushed history on 2026-10-01 before the first push.
 
 ## Where this stands (updated 2026-09-09)
 

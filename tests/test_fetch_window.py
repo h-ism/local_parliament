@@ -369,3 +369,30 @@ def test_a_notice_owed_but_not_sent_covers_nothing() -> None:
     assert owed is not None and not owed.sent
     assert not owed.covers(datetime(2026, 10, 3, tzinfo=JST).date())
     assert "none has been sent" in owed.describe()
+
+
+def test_a_contact_ref_is_read_from_the_local_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from prefectural_transcripts.config import Contact
+
+    f = tmp_path / "contacts.toml"
+    f.write_text('[collaborator_b]\naddress = "b@example.org"\n', encoding="utf-8")
+    monkeypatch.setenv("PT_CONTACTS", str(f))
+    contact = Contact.from_toml({"ref": "collaborator_b", "note": "照会は共同研究者B"})
+    assert contact is not None and contact.address == "b@example.org"
+
+
+def test_a_missing_contact_refuses_rather_than_falling_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from prefectural_transcripts.config import Contact
+
+    monkeypatch.setenv("PT_CONTACTS", str(tmp_path / "absent.toml"))
+    with pytest.raises(ValueError, match="kept out of the repository"):
+        Contact.from_toml({"ref": "collaborator_b"})
+    f = tmp_path / "contacts.toml"
+    f.write_text('[collaborator_a]\naddress = "a@example.org"\n', encoding="utf-8")
+    monkeypatch.setenv("PT_CONTACTS", str(f))
+    with pytest.raises(ValueError, match="has no address"):
+        Contact.from_toml({"ref": "collaborator_b"})

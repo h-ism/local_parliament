@@ -110,14 +110,19 @@ HOKKAIDO_OFF_SESSION = dict(
 # The letters were not all sent by the same person, and the address an operator
 # sees has to be the one *that* assembly can reply to. A wrong address is worse
 # than none: it tells them who to complain to and the complaint never arrives.
-COLLABORATOR_A = Contact(
-    address="(共同研究者Aの連絡先)",
-    note="照会は共同研究者Aが行った",
-)
-COLLABORATOR_B = Contact(
-    address="(共同研究者Bの連絡先)",
-    note="照会は共同研究者Bが行った — 岩手・茨城・栃木",
-)
+
+
+def _collaborator(ref: str, note: str) -> Contact | None:
+    """From contacts.toml (gitignored); None — so the site refuses — if absent."""
+    try:
+        return Contact.lookup(ref, note)
+    except ValueError as exc:
+        log.warning("%s", exc)
+        return None
+
+
+COLLABORATOR_A = _collaborator("collaborator_a", "照会は共同研究者Aが行った")
+COLLABORATOR_B = _collaborator("collaborator_b", "照会は共同研究者Bが行った — 岩手・茨城・栃木")
 
 
 @dataclass(frozen=True, slots=True)

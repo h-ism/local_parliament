@@ -1,0 +1,11 @@
+# Copy to contacts.toml (gitignored) and fill in. Site configs refer to these by
+# key — `[contact] ref = "collaborator_b"` — so that collaborators' addresses,
+# which go in the User-Agent, never go in the public repository.
+
+[collaborator_a]   # 滋賀・石川
+name = ""
+address = ""
+
+[collaborator_b]   # 岩手・茨城・栃木・北海道
+name = ""
+address = ""

@@ -23,3 +23,6 @@ config.js.js
 
 #Test script
 sample.R
+
+# Collaborators' names and addresses. The repository is public; they are not.
+contacts.toml

@@ -2,6 +2,27 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-01 — collaborators' names and addresses kept out of the public repository (`main`)
+
+The repository is public, and 37 unpushed commits carried two collaborators'
+names, affiliations and email addresses — in configs, docs, letter drafts, code
+constants and commit messages. At the researcher's request (names too, not only
+addresses) the 37 commits were rewritten before the first push: names become
+共同研究者A / 共同研究者B, affiliations and addresses are removed, and the
+constants are `COLLABORATOR_A` / `COLLABORATOR_B`. Nothing had reached GitHub —
+checked first, and `git grep` over every rewritten commit and message finds
+none after.
+
+So the addresses the User-Agent needs come from `contacts.toml`, gitignored,
+by `[contact] ref = "…"` (`Contact.lookup`, `$PT_CONTACTS` to override). A
+missing file or entry refuses the site rather than falling back to
+`PT_CONTACT`. The rewrite left placeholders that are not addresses, so 岩手・
+茨城's configs and `recon_sites.py` would have failed to load tonight; they
+resolve again, from the local file. 2 new tests, 213 pass.
+
+共同研究者の氏名・所属・メールアドレスを公開リポジトリから除去（未 push の37コミットを
+書き換え）。実アドレスは gitignore した `contacts.toml` から `ref` で読む。
+
 ## 2026-10-01 — 茨城 complete (`feat/voices-configs`)
 
 **3,445 sittings, 367,261 speeches, 168,195,643 characters, 1989-02-28 to

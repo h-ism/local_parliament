@@ -71,7 +71,7 @@ address 滋賀 has on file is the collaborator's. A site config can therefore ca
 
 ```toml
 [contact]
-address = "(共同研究者Aの連絡先)"
+ref = "collaborator_a"  # contacts.toml (gitignored)
 note = "照会は共同研究者Aが行い、2026-09-18 に許可を得た"
 ```
 

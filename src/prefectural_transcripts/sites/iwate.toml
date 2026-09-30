@@ -33,5 +33,5 @@ decided_on = "2026-09-24"
 
 # The enquiry 岩手 answered was 共同研究者B's; this is the address they have.
 [contact]
-address = "(共同研究者Bの連絡先)"
+ref = "collaborator_b"  # the address is in contacts.toml, not in git
 note = "照会は共同研究者Bが行った — 岩手・茨城・栃木"
