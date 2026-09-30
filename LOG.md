@@ -2,6 +2,22 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-01 — 茨城 complete (`feat/voices-configs`)
+
+**3,445 sittings, 367,261 speeches, 168,195,643 characters, 1989-02-28 to
+2026-07-09** — 967 本会議, 2,478 委員会. The second night ran 20:00–22:47 and
+took 1989–2011. `audit.py`: 3,445 listed, 3,445 collected; no list fell short
+of its stated 件. 0 undated, 0 empty (CSV rows = speeches), 0 duplicate URLs,
+no 外字, no honorific splits. 40 speeches without a speaker, all 会議録
+headings. 72 ○-lines inside speeches, all correct: 茨城's marker is ◯ U+25EF
+and these are ○ U+25CB — anonymised names 「○○○さん」, 「○の２つ目」, rows of ○
+as rules, 「○日程第３」. 8 × 429 over both nights at 5 s, all recovered.
+
+**Corpus: 25 prefectures, 93,459 documents, 5,772,918 speeches, 2,257,919,010
+characters**, counted from `data/`. CLAUDE.md updated.
+
+茨城 完了。3,445会議・367,261発言・1.68億字（1989〜2026）。一覧と全件一致。
+
 ## 2026-09-30 — backups deleted (`feat/voices-configs`)
 
 8.5 GB of safety copies removed from `data/` at the researcher's request: the

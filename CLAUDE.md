@@ -148,8 +148,19 @@ speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every lis
 reconciles item by item against its corpus, 0 missing on all seventeen.
 `docs/ssp.md` has the protocol and the traps.
 
-**The corpus is 23 prefectures, 88,695 documents, 5,226,081 speeches,
-2,001,260,733 characters.**
+**The corpus is 25 prefectures, 93,459 documents, 5,772,918 speeches,
+2,257,919,010 characters** (2026-10-01, counted from `data/`).
+
+**岩手 and 茨城, complete (2026-09-29/30)** — each listing reconciles item by item:
+
+| | sittings | speeches | characters | range |
+| --- | --- | --- | --- | --- |
+| **岩手** (`scraper = "iwate"`) | 1,319 | 179,576 | 88,462,634 | 1995-02-14〜2026-03-23, 本会議 + 予算・決算特別委員会 |
+| **茨城** (`scraper = "dbsearch"`) | 3,445 | 367,261 | 168,195,643 | 1989-02-28〜2026-07-09, 本会議 967 + 委員会 2,478 |
+
+岩手 is a sitting spread over several pages, joined from the 目次; 茨城 is
+DB-Search fetched as pages and parsed by the 山梨 importer. Both at night inside
+the agreed windows; 茨城 at 5 s after 429s at 2 s.
 
 **43,612 documents, 880,220 speeches, 424,049,474 characters.** Documents/speeches
 per cell — note 静岡 counts *documents*, not sittings: one document is one 発言単位,
@@ -209,6 +220,15 @@ assembly's position. No amount of selector work changes the rest; the way throug
 `docs/inquiries/`. Don't set `PT_RESPECT_ROBOTS=0` to get around it — that is the
 researcher's call, not ours, and when it is made it gets written down in a config
 (`RobotsExemption`), not switched off for every site in the run.
+
+**北海道 — permitted off-session, notice first (2026-09-30)**
+
+10/3〜11/24 only, 土日祝 only, 20:00–06:00, and told before we run. `FetchWindow`
+has `first_day` / `last_day` / `holidays` for it and says when it will not open
+again. A `[notice]` with only `who` means "owed, not sent" and refuses — so a
+config cannot run unannounced by leaving the table out. The reply (the notice) is
+drafted in 共同研究者B's name, `docs/inquiries/hokkaido-notice.md`; nothing runs
+until it is sent and recorded.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 
