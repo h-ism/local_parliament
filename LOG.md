@@ -2,6 +2,43 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-30 — 北海道 answers: a period, weekends and holidays, and notice first (`feat/voices-configs`)
+
+*English and Japanese. / 英語と日本語で併記する。*
+
+### English
+
+北海道議会事務局 permitted collection on three conditions: only between 10/3 (Sat,
+after the session closes) and 11/24 (Tue, when the 第４回定例会 opens); only on
+土日祝; only 20:00–06:00. They also asked for a contact for emergencies, and
+the researcher added that they are to be told before we run.
+
+`FetchWindow` gained `first_day` / `last_day` (judged by the evening a window
+opens on) and `holidays` (dates, listed rather than computed — 10/12, 11/3,
+11/23). `next_open` looks a year ahead rather than a week, and `next_opening()`
+says "does not open again" after the period instead of raising in the middle
+of a refusal message. A `[notice]` table with only `who` now means **owed, not
+sent**, and refuses: before this, a config for 栃木 or 北海道 that simply left
+`[notice]` out would have run unannounced. `recon_sites.py` has 北海道 with
+`requires_notice`, and each exemption now carries the date of *that*
+operator's answer (it said 2026-09-18 for all five). The reply that is also the
+notice — contact and schedule — is drafted at `docs/inquiries/hokkaido-notice.md`,
+in 共同研究者B's name.
+
+Verified: 15 new tests (the period's edges, each holiday, 06:00, "never
+again", an owed notice), 211 pass; ruff and mypy clean; `--dry-run` refuses
+北海道 and 栃木 on the notice. No request was made.
+
+### 日本語
+
+北海道議会から条件付きで許可。①10/3（土）〜11/24（火）の土日祝、20時〜翌6時
+②不測の事態の連絡先を知らせる。加えて**事前連絡**（栃木と同じ扱い）。
+`FetchWindow` に期間と祝日を追加、期間後は「もう開かない」と表示。`[notice]` に
+`who` だけを書くと「連絡が必要で未送信」として停止するようにした（これまでは
+`[notice]` を書き忘れた設定がそのまま走り得た）。返信（連絡先＋実施予定）の下書きは
+`docs/inquiries/hokkaido-notice.md`（共同研究者B名義、未送信）。送信して `[notice]` に
+記録するまで、下見を含め1件も取得しない。
+
 ## 2026-09-29 — 岩手 configured from the cache; 茨城's listing left for one live check (`feat/voices-configs`)
 
 *English and Japanese. / 英語と日本語で併記する。*

@@ -299,7 +299,7 @@ class PoliteClient:
             return
         raise OutsideFetchWindow(
             f"{url} is outside the agreed hours ({window.describe()}); "
-            f"next window opens {window.next_open(current_time()):%Y-%m-%d %H:%M %Z}. "
+            f"{window.next_opening(current_time())}. "
             f"{window.reason}"
         )
 

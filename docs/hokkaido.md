@@ -9,6 +9,34 @@ neither publication route can be collected by `GenericScraper` as things stand �
 one is disallowed by `robots.txt`, the other is PDF-only. Details below, along
 with a draft config that becomes runnable the moment the first blocker is lifted.
 
+
+## Answered 2026-09-30 — permitted, on three conditions
+
+北海道議会事務局, answering 共同研究者B's letter:
+
+1. **時期をずらして欲しい** — 閉会後の **10月3日（土）から**、第４回定例会が始まる
+   **11月24日（火）まで**の間の、**土日祝の夜間帯（20時～6時）**.
+2. **不測の事態に対して連絡先を教えて欲しい.**
+3. And, from the researcher the same day: **tell them before running**, as 栃木.
+
+So this assembly is no longer "blocked", and the robots verdict below is — as
+for 滋賀・石川・岩手・茨城・栃木 — the vendor's boilerplate, not its intention.
+
+- **The window has a period and holidays.** `FetchWindow` gained `first_day`,
+  `last_day` and `holidays` for it: weekends plus スポーツの日 10/12, 文化の日
+  11/3 and 勤労感謝の日 11/23, 20:00–06:00 (six, not seven). Outside the period
+  it does not open at all, and says so rather than naming a next opening.
+- **Nothing runs until the reply is sent** — the reply carries the contact they
+  asked for and the schedule, and is the advance notice. Draft:
+  `docs/inquiries/hokkaido-notice.md`. `recon_sites.py` refuses 北海道 until
+  `[notice]` is recorded; and a `[notice]` with only `who` now means "owed, not
+  sent" and refuses too, so `sites/hokkaido.toml` cannot be written without it.
+- **Nineteen evenings in all**, 10/3–11/23. The archive runs to 昭和45年, so it
+  may not fit; if not, ask again rather than stretch the period.
+- The survey below still holds: VOICES, every listing and transcript inside an
+  `<iframe src="cgi/voiweb.exe?…">`, Shift_JIS. The first evening is the
+  reconnaissance; the config is written from its cache.
+
 ## What the given URL actually is
 
 `/kaigiroku/` is a portal page, not a search system. It links out to two

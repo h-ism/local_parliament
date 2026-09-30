@@ -98,7 +98,7 @@ def scrape(
     if (window := scraper.fetch_window) and not window.allows(current_time()):
         typer.echo(
             f"{name} may only be fetched {window.describe()} — "
-            f"next window opens {window.next_open(current_time()):%Y-%m-%d %H:%M %Z}."
+            f"{window.next_opening(current_time())}."
         )
         typer.echo(f"Reason ({window.decided_on}): {window.reason}")
         raise typer.Exit(1)

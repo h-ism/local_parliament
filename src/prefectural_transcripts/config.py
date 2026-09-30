@@ -162,9 +162,27 @@ class FetchWindow:
     decided_on: str
     timezone: str = "Asia/Tokyo"
 
+    holidays: tuple[date, ...] = ()
+    """Dates the window also opens on, whatever their weekday.
+
+    北海道 (2026-09-30) said 「土日祝の夜間帯」. Public holidays are listed as
+    dates rather than computed: the operator's calendar is what counts, a list
+    in the config can be checked against it, and a holiday library would be one
+    more thing to be wrong in silence.
+    """
+
+    first_day: date | None = None
+    last_day: date | None = None
+    """The period the permission covers, inclusive, judged by the evening a
+    window opens on. 北海道: 「閉会後の10月3日（土）から第４回定例会が始まる
+    11月24日（火）までの間」. Outside it the window never opens — and says so,
+    rather than naming a next opening that the permission does not reach."""
+
     def __post_init__(self) -> None:
-        if not self.days:
+        if not self.days and not self.holidays:
             raise ValueError("a fetch window must name at least one day")
+        if self.first_day and self.last_day and self.first_day > self.last_day:
+            raise ValueError("a fetch window's first_day is after its last_day")
         if not self.reason.strip():
             raise ValueError("a fetch window must record whose instruction it is")
         try:
@@ -179,44 +197,66 @@ class FetchWindow:
     def zone(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
 
+    def opens_on(self, day: date) -> bool:
+        """Whether the window opens on this day's evening (or morning, if not wrapping)."""
+        if self.first_day and day < self.first_day:
+            return False
+        if self.last_day and day > self.last_day:
+            return False
+        return day.weekday() in self.days or day in self.holidays
+
     def allows(self, when: datetime) -> bool:
         local = when.astimezone(self.zone)
         moment = local.time()
         if self.end == time(0, 0):
-            return local.weekday() in self.days and moment >= self.start
+            return self.opens_on(local.date()) and moment >= self.start
         if self.start < self.end:
-            return local.weekday() in self.days and self.start <= moment < self.end
+            return self.opens_on(local.date()) and self.start <= moment < self.end
         # Crosses midnight: the evening belongs to `days`, and the small hours
         # after it belong to the evening that opened them — a window that opens
         # on Saturday at 20:00 is still open at 01:00 on Sunday.
         if moment >= self.start:
-            return local.weekday() in self.days
+            return self.opens_on(local.date())
         if moment < self.end:
-            return (local - timedelta(days=1)).weekday() in self.days
+            return self.opens_on((local - timedelta(days=1)).date())
         return False
 
     def next_open(self, when: datetime) -> datetime:
-        """When the window next opens, for a message a person can act on."""
+        """When the window next opens. Raises if it never does again."""
         local = when.astimezone(self.zone)
         if self.allows(local):
             return local
-        for ahead in range(8):
+        # A year ahead, not a week: 北海道's period opens weeks after it was
+        # given, and a holiday-only window may be a month between openings.
+        for ahead in range(370):
             day = (local + timedelta(days=ahead)).date()
-            if day.weekday() not in self.days:
+            if not self.opens_on(day):
                 continue
             opens = datetime.combine(day, self.start, tzinfo=self.zone)
             if opens >= local:
                 return opens
-            if ahead == 0 and self.allows(local):
-                return local
-        raise ValueError("a fetch window with no opening in the next week")
+        raise ValueError("this fetch window does not open again")
+
+    def next_opening(self, when: datetime) -> str:
+        """`next_open` as a sentence a person can act on — including "never"."""
+        try:
+            return f"next window opens {self.next_open(when):%Y-%m-%d %H:%M %Z}"
+        except ValueError:
+            return (
+                f"the agreed period ended on {self.last_day}; the window does not open "
+                "again without a new answer from the operator"
+            )
 
     def describe(self) -> str:
         names = [name for name, number in _WEEKDAYS.items() if number in self.days]
         days = "every day" if len(self.days) == 7 else "/".join(names)
         end = "24:00" if self.end == time(0, 0) else self.end.strftime("%H:%M")
         wrap = " (past midnight)" if self.start > self.end != time(0, 0) else ""
-        return f"{days} {self.start.strftime('%H:%M')}-{end}{wrap} {self.timezone}"
+        extra = f" + {len(self.holidays)} holiday(s)" if self.holidays else ""
+        period = ""
+        if self.first_day or self.last_day:
+            period = f", {self.first_day or '…'} to {self.last_day or '…'}"
+        return f"{days}{extra} {self.start.strftime('%H:%M')}-{end}{wrap} {self.timezone}{period}"
 
     @classmethod
     def from_toml(cls, raw: Mapping[str, Any]) -> FetchWindow | None:
@@ -225,6 +265,7 @@ class FetchWindow:
             return None
         try:
             days = tuple(sorted(_WEEKDAYS[str(d).lower()[:3]] for d in raw["days"]))
+            first, last = raw.get("first_day"), raw.get("last_day")
             return cls(
                 days=days,
                 start=time.fromisoformat(str(raw["start"])),
@@ -232,6 +273,9 @@ class FetchWindow:
                 reason=raw["reason"],
                 decided_on=raw["decided_on"],
                 timezone=raw.get("timezone", "Asia/Tokyo"),
+                holidays=tuple(date.fromisoformat(str(d)) for d in raw.get("holidays", [])),
+                first_day=date.fromisoformat(str(first)) if first else None,
+                last_day=date.fromisoformat(str(last)) if last else None,
             )
         except KeyError as exc:
             raise ValueError(
@@ -298,10 +342,13 @@ class Notice:
     who: str
     """Who was told, in their own words — 「栃木県議会事務局 議事課」."""
 
-    last_sent: str
-    """ISO date the notice went out."""
+    last_sent: str = ""
+    """ISO date the notice went out. Empty means **promised and not yet sent**:
+    the table exists so that a config for an operator who asked to be told
+    cannot be written without it — leaving `[notice]` out would let the run go
+    ahead unannounced, which is the failure this class exists to prevent."""
 
-    covers_until: str
+    covers_until: str = ""
     """ISO date the notice said we would be finished by. Past it, this refuses."""
 
     what: str = ""
@@ -310,6 +357,8 @@ class Notice:
     def __post_init__(self) -> None:
         if not self.who.strip():
             raise ValueError("a notice must record who was told")
+        if not self.last_sent and not self.covers_until:
+            return  # owed, not sent: covers nothing
         for field_name, value in (
             ("last_sent", self.last_sent),
             ("covers_until", self.covers_until),
@@ -321,10 +370,18 @@ class Notice:
         if date.fromisoformat(self.covers_until) < date.fromisoformat(self.last_sent):
             raise ValueError("a notice cannot cover a period before it was sent")
 
+    @property
+    def sent(self) -> bool:
+        return bool(self.last_sent)
+
     def covers(self, when: date) -> bool:
+        if not self.sent:
+            return False
         return date.fromisoformat(self.last_sent) <= when <= date.fromisoformat(self.covers_until)
 
     def describe(self) -> str:
+        if not self.sent:
+            return f"{self.who} is owed notice before any run, and none has been sent"
         return f"told {self.who} on {self.last_sent}, covering until {self.covers_until}"
 
     @classmethod
@@ -335,11 +392,11 @@ class Notice:
         try:
             return cls(
                 who=raw["who"],
-                last_sent=raw["last_sent"],
-                covers_until=raw["covers_until"],
+                last_sent=str(raw.get("last_sent", "")),
+                covers_until=str(raw.get("covers_until", "")),
                 what=raw.get("what", ""),
             )
         except KeyError as exc:
             raise ValueError(
-                f"a [notice] table needs who, last_sent and covers_until; missing {exc}"
+                f"a [notice] table needs who (and last_sent, covers_until once sent); missing {exc}"
             ) from exc

@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import httpx
 import pytest
 
-from prefectural_transcripts.config import FetchWindow, Settings
+from prefectural_transcripts.config import FetchWindow, Notice, Settings
 from prefectural_transcripts.http import OutsideFetchWindow, PoliteClient
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -308,3 +308,64 @@ def test_tochigi_keeps_to_weekend_nights_while_the_assembly_sits() -> None:
     # 岩手 answered the same day in the same words on the same product, and its
     # vendor said nothing. The narrowing is 栃木's, not VOICES'.
     assert SITES["iwate"].window.allows(datetime(2026, 9, 24, 21, 0, tzinfo=JST))
+
+
+# -- 北海道 (2026-09-30): a period, weekends and holidays, 20:00-06:00 ----------
+
+HOKKAIDO = """
+[fetch_window]
+days = ["sat", "sun"]
+holidays = ["2026-10-12", "2026-11-03", "2026-11-23"]
+first_day = "2026-10-03"
+last_day = "2026-11-24"
+start = "20:00"
+end = "06:00"
+reason = "北海道議会事務局 (2026-09-30): 10/3〜11/24 の土日祝の夜間帯（20時～6時）"
+decided_on = "2026-09-30"
+"""
+
+
+def hokkaido() -> FetchWindow:
+    window = FetchWindow.from_toml(tomllib.loads(HOKKAIDO)["fetch_window"])
+    assert window is not None
+    return window
+
+
+@pytest.mark.parametrize(
+    ("when", "open_"),
+    [
+        (datetime(2026, 9, 26, 21, 0, tzinfo=JST), False),  # a Saturday, but before the period
+        (datetime(2026, 10, 3, 19, 59, tzinfo=JST), False),
+        (datetime(2026, 10, 3, 20, 0, tzinfo=JST), True),  # the first evening
+        (datetime(2026, 10, 4, 5, 59, tzinfo=JST), True),  # its small hours
+        (datetime(2026, 10, 4, 6, 0, tzinfo=JST), False),  # 6, not 7
+        (datetime(2026, 10, 5, 21, 0, tzinfo=JST), False),  # an ordinary Monday
+        (datetime(2026, 10, 12, 21, 0, tzinfo=JST), True),  # スポーツの日
+        (datetime(2026, 10, 13, 3, 0, tzinfo=JST), True),  # ... and the night after it
+        (datetime(2026, 11, 3, 22, 0, tzinfo=JST), True),  # 文化の日, a Tuesday
+        (datetime(2026, 11, 23, 23, 0, tzinfo=JST), True),  # 勤労感謝の日
+        (datetime(2026, 11, 24, 5, 59, tzinfo=JST), True),  # the last small hours
+        (datetime(2026, 11, 28, 21, 0, tzinfo=JST), False),  # a Saturday after it
+    ],
+)
+def test_hokkaido_window(when: datetime, open_: bool) -> None:
+    assert hokkaido().allows(when) is open_
+
+
+def test_the_next_opening_can_be_weeks_away() -> None:
+    today = datetime(2026, 9, 30, 9, 0, tzinfo=JST)
+    assert hokkaido().next_open(today) == datetime(2026, 10, 3, 20, 0, tzinfo=JST)
+
+
+def test_after_the_period_the_window_says_it_will_not_open() -> None:
+    later = datetime(2026, 11, 25, 12, 0, tzinfo=JST)
+    with pytest.raises(ValueError):
+        hokkaido().next_open(later)
+    assert "does not open again" in hokkaido().next_opening(later)
+
+
+def test_a_notice_owed_but_not_sent_covers_nothing() -> None:
+    owed = Notice.from_toml({"who": "北海道議会事務局"})
+    assert owed is not None and not owed.sent
+    assert not owed.covers(datetime(2026, 10, 3, tzinfo=JST).date())
+    assert "none has been sent" in owed.describe()

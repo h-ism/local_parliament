@@ -35,7 +35,7 @@ import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 from urllib.parse import urldefrag, urljoin, urlparse
 
@@ -93,6 +93,20 @@ OUTSIDE_BUSINESS_HOURS = dict(
 # the cost of staying narrow is wall-clock time, and the cost of guessing wrong
 # is the permission. Ask in the next notice instead.
 WEEKEND_NIGHTS = dict(days=(5, 6), start=time(20, 0), end=time(7, 0), decided_on="2026-09-24")
+# 北海道 (2026-09-30): 「閉会後の10月3日（土）から第４回定例会が始まる11月24日（火）
+# までの間の土日祝の夜間帯（20時～6時）」. Three conditions in one sentence — the
+# period, the days (holidays included), the hours — and all three are kept. The
+# holidays inside the period are listed, not computed: スポーツの日 10/12, 文化の日
+# 11/3, 勤労感謝の日 11/23. After 11/24 the window does not open at all.
+HOKKAIDO_OFF_SESSION = dict(
+    days=(5, 6),
+    holidays=(date(2026, 10, 12), date(2026, 11, 3), date(2026, 11, 23)),
+    first_day=date(2026, 10, 3),
+    last_day=date(2026, 11, 24),
+    start=time(20, 0),
+    end=time(6, 0),
+    decided_on="2026-09-30",
+)
 # The letters were not all sent by the same person, and the address an operator
 # sees has to be the one *that* assembly can reply to. A wrong address is worse
 # than none: it tells them who to complain to and the complaint never arrives.
@@ -200,6 +214,7 @@ def _voices(
     scheme: str = "https",
     exempt: bool = True,
     min_interval: float = 2.0,
+    answered_on: str = "2026-09-18",
 ) -> Site:
     prefix = f"{scheme}://{host}{path}"
     return Site(
@@ -214,7 +229,9 @@ def _voices(
                 f"{who}: 運営者本人の回答による許可。robots.txt の Disallow は"
                 f"ベンダー標準で、回答が優先する。docs/{key}.md"
             ),
-            decided_on="2026-09-18",
+            # The date of *that* operator's answer: 滋賀・石川 2026-09-18,
+            # 岩手・茨城・栃木 2026-09-24, 北海道 2026-09-30.
+            decided_on=answered_on,
         )
         if exempt
         else None,
@@ -301,6 +318,7 @@ SITES: dict[str, Site] = {
             contact=COLLABORATOR_B,
             hours=WEEKEND_NIGHTS,
             requires_notice=True,
+            answered_on="2026-09-24",
             note=(
                 "**実行のタイミングを事前に知らせること**（先方の指示）。本収集の前に"
                 "通知を送り、sites/tochigi.toml の [notice] に記録する。下見も同じ扱いに"
@@ -346,10 +364,32 @@ SITES: dict[str, Site] = {
             path="/",
             hours=OUTSIDE_BUSINESS_HOURS,
             min_interval=5.0,
+            answered_on="2026-09-24",
             note=(
                 "DB-Search。**山梨と同じ製品で、山梨は「自動取得は控えて」だった**。"
                 "ベンダーの robots は同一でも議会の意思は別物だという実例なので、"
                 "他の DB-Search 15県の可否をここから推測しないこと。"
+            ),
+        ),
+        _voices(
+            "hokkaido",
+            "北海道",
+            "pref-hokkaido.gijiroku.com",
+            "北海道議会事務局",
+            "北海道議会事務局 (2026-09-30): 時期をずらして欲しい（閉会後の10月3日（土）から"
+            "第４回定例会が始まる11月24日（火）までの間の土日祝の夜間帯（20時～6時））",
+            contact=COLLABORATOR_B,
+            hours=HOKKAIDO_OFF_SESSION,
+            requires_notice=True,
+            answered_on="2026-09-30",
+            # The 本会議 listing, as 滋賀 and 石川: from the search form a
+            # transcript is one level past MAX_DEPTH (docs/hokkaido.md).
+            start="https://pref-hokkaido.gijiroku.com/voices/g08v_viewh.asp",
+            note=(
+                "**実施前に連絡すること**、あわせて**不測の事態に備えた連絡先**を伝える"
+                "こと（2026-09-30 の回答）。連絡を送り [notice] に記録するまでは、下見も"
+                "含め1件も取得しない。期間は10/3〜11/24の土日祝20時〜翌6時で、11/24を"
+                "過ぎたら新たな回答なしには開かない。"
             ),
         ),
     )
@@ -576,9 +616,7 @@ def main() -> int:
             continue
         if not site.window.allows(now):
             log.error("%s: outside the agreed hours (%s)", key, site.window.describe())
-            log.error(
-                "  next window opens %s", site.window.next_open(now).strftime("%Y-%m-%d %H:%M %Z")
-            )
+            log.error("  %s", site.window.next_opening(now))
             log.error("  %s", site.window.reason)
             failed += 1
             continue
