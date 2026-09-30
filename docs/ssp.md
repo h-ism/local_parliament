@@ -336,8 +336,9 @@ The 15% that remain are three things and only the first is a defect: an office
 this project has never seen stated separately (大分's
 「石川商工労働観光部長事務取扱」), a title that is only an office with no name at
 all (山口 prints many), and a title that is only a name (熊本's 「岩中伸司」,
-where the source itself gives no office). `data/backup-pre-split/` holds the
-corpora as they were.
+where the source itself gives no office). The corpora as they were
+before it (`data/backup-pre-split/`) were deleted on 2026-09-30, the pass having
+been verified; the old rule is in git and the cache re-parses at no cost.
 
 ## 5. Dates
 

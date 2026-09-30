@@ -2,6 +2,17 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-09-30 — backups deleted (`feat/voices-configs`)
+
+8.5 GB of safety copies removed from `data/` at the researcher's request: the
+9/24 SSP `.bak` (17 tenants reconciled after it), the `.prenorm` copies (the
+normalisation was checked equal to a fresh parse), `backup-pre-split/` (speech
+text byte-identical by SHA-256), and this week's 岩手・茨城 `.bak` (diffs read).
+Checked first that every current corpus holds at least as many records as its
+backup. Anything in them is reproducible from the cache and git at zero
+requests. Older LOG entries that say where a backup is are left as written.
+削除前に、各コーパスの件数がバックアップ以上であることを確認した。
+
 ## 2026-09-30 — 北海道 answers: a period, weekends and holidays, and notice first (`feat/voices-configs`)
 
 *English and Japanese. / 英語と日本語で併記する。*
