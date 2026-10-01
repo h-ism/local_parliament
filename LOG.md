@@ -13,13 +13,15 @@ the tool and method, which it asked to hear about first. Both by early November.
 Recorded in `docs/tottori.md`; the reply, describing the program (GET only,
 serial, 5 s, cache, User-Agent, robots.txt, night hours on request, stop on
 contact) and accepting both, is drafted in `docs/inquiries/tottori-reply.md`.
-**Nothing has fetched とりネット**, and nothing will until 広報課 answers. Open
-before sending: are the committee minutes verbatim? A look in a browser decides
-whether ② is wanted at all. No names in the repository (public): the enquirer is
+**The crawler has not touched とりネット**, and will not until 広報課 answers.
+Whether ② is wanted at all was settled by viewing four pages one at a time, at
+the researcher's request: **verbatim**, HTML, ~100,000 characters a day, markers
+◎ chair / ● executive / ○ member. ~2,000 minutes over 平成18年度〜令和8年度,
+estimated from one year; ~3 hours at 5 s. The draft now says so. No names in the repository (public): the enquirer is
 共同研究者A, the secretariat's correspondent is unnamed.
 
 鳥取：本会議はファイル提供（H15〜すぐ、H7〜14は媒体待ち）、委員会はとりネットから
-自前取得（広報課の事前確認後）。返信下書きあり。とりネットへのアクセスは0件。
+自前取得（広報課の事前確認後）。委員会は逐語・HTML（4ページ閲覧で確認）、約2,000件の見込み。返信下書きあり。
 
 ## 2026-10-01 — collaborators' names and addresses kept out of the public repository (`main`)
 

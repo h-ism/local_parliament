@@ -231,8 +231,9 @@ researcher's call, not ours, and when it is made it gets written down in a confi
 
 The secretariat will send 本会議 (平成15年〜 now, 平成7〜14年 when the media turn
 up); 委員会 are on the prefecture's own site, whose 広報課 wants our method
-described before any automated access. `docs/tottori.md`; reply drafted.
-Nothing has touched とりネット.
+described before any automated access. Committee minutes are verbatim HTML
+(◎/●/○ markers), ~2,000 since 平成18年度. `docs/tottori.md`; reply drafted. The
+crawler has not touched とりネット.
 
 **北海道 — permitted off-session, notice first (2026-09-30)**
 
