@@ -2,6 +2,25 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-01 — 鳥取 answers: 本会議 as files, 委員会 from とりネット (`docs/tottori-answer`)
+
+鳥取県議会事務局 will **send** 本会議 as files: 平成15年以降 at once, 平成7〜14年
+once the old media are found (or via the vendor, which we will not ask for).
+委員会 are not on DB-Search but on とりネット, the prefecture's own site, and they
+would rather we fetch those ourselves — after the prefecture's 広報課 has approved
+the tool and method, which it asked to hear about first. Both by early November.
+
+Recorded in `docs/tottori.md`; the reply, describing the program (GET only,
+serial, 5 s, cache, User-Agent, robots.txt, night hours on request, stop on
+contact) and accepting both, is drafted in `docs/inquiries/tottori-reply.md`.
+**Nothing has fetched とりネット**, and nothing will until 広報課 answers. Open
+before sending: are the committee minutes verbatim? A look in a browser decides
+whether ② is wanted at all. No names in the repository (public): the enquirer is
+共同研究者A, the secretariat's correspondent is unnamed.
+
+鳥取：本会議はファイル提供（H15〜すぐ、H7〜14は媒体待ち）、委員会はとりネットから
+自前取得（広報課の事前確認後）。返信下書きあり。とりネットへのアクセスは0件。
+
 ## 2026-10-01 — collaborators' names and addresses kept out of the public repository (`main`)
 
 The repository is public, and 37 unpushed commits carried two collaborators'

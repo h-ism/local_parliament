@@ -227,6 +227,13 @@ assembly's position. No amount of selector work changes the rest; the way throug
 researcher's call, not ours, and when it is made it gets written down in a config
 (`RobotsExemption`), not switched off for every site in the run.
 
+**鳥取 — 本会議 as files, 委員会 from とりネット after 広報課 approves (2026-10-01)**
+
+The secretariat will send 本会議 (平成15年〜 now, 平成7〜14年 when the media turn
+up); 委員会 are on the prefecture's own site, whose 広報課 wants our method
+described before any automated access. `docs/tottori.md`; reply drafted.
+Nothing has touched とりネット.
+
 **北海道 — permitted off-session, notice first (2026-09-30)**
 
 10/3〜11/24 only, 土日祝 only, 20:00–06:00, and told before we run. `FetchWindow`
