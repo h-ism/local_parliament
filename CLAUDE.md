@@ -232,8 +232,10 @@ researcher's call, not ours, and when it is made it gets written down in a confi
 The secretariat will send 本会議 (平成15年〜 now, 平成7〜14年 when the media turn
 up); 委員会 are on the prefecture's own site, whose 広報課 wants our method
 described before any automated access. Committee minutes are verbatim HTML
-(◎/●/○ markers), ~2,000 since 平成18年度. `docs/tottori.md`; reply drafted. The
-crawler has not touched とりネット.
+(◎/●/○ markers), ~2,000 since 平成18年度. **Permitted 2026-10-05**: 土日 only
+(weekdays 06–20 and Thu 01–04 forbidden, weekends asked for), and five navigation
+pages excluded by URL — the survey follows only 年度 → 委員会 → 会議録 by link text.
+First window Sat 2026-10-10. `docs/tottori.md`.
 
 **北海道 — permitted off-session, notice first (2026-09-30)**
 

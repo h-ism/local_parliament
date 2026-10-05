@@ -84,3 +84,40 @@ def test_the_area_ignores_the_scheme() -> None:
     prefix = "http://www3.pref.iwate.jp/gikai/user/www/"
     assert inside("https://www3.pref.iwate.jp/gikai/user/www/Kensaku/x.php", prefix)
     assert not inside("https://www3.pref.iwate.jp/other/", prefix)
+
+
+def test_tottori_follows_only_year_committee_and_minutes() -> None:
+    # とりネット is the whole prefectural site, so the URL area bounds nothing;
+    # the operator also excluded the navigation the index links to (2026-10-05).
+    site = SITES["tottori_committee"]
+    root = "https://www.pref.tottori.lg.jp/"
+    year, committee, minute = root + "323536.htm", root + "323537.htm", root + "item/1432711.htm"
+    client = FakeClient(
+        {
+            site.start: (
+                f'<a href="{root}gikai/">ホーム</a><a href="{root}87615.htm">議会の動き</a>'
+                f'<a href="{root}99999.htm">観光情報</a>'
+                f'<a href="{year}">令和7年度委員会会議録・活動報告</a>'
+            ),
+            year: (
+                f'<a href="{committee}">総務教育常任委員会</a>'
+                f'<a href="{root}87659.htm">議会・議員</a>'
+            ),
+            committee: (
+                f'<a href="{minute}">令和８年２月25日会議録（確定版）</a>'
+                f'<a href="{root}1.htm">戻る</a>'
+            ),
+            minute: "<p>◎東田委員長　皆さん、おはようございます。</p>",
+        }
+    )
+    walked = [url for url, _ in walk(site, client)]  # type: ignore[arg-type]
+    assert walked == [site.start, year, committee, minute]
+
+
+def test_tottori_excludes_the_pages_it_was_asked_to() -> None:
+    import re
+
+    rule = re.compile(SITES["tottori_committee"].avoid)
+    for path in ("gikai/", "87615.htm", "87659.htm", "87660.htm", "87662.htm"):
+        assert rule.search("https://www.pref.tottori.lg.jp/" + path)
+    assert not rule.search("https://www.pref.tottori.lg.jp/item/1432711.htm")

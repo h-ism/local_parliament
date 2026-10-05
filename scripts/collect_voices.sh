@@ -40,6 +40,7 @@ SITES_ALL=(
   "ishikawa:2026-10-01:"
   "iwate::"
   "ibaraki::5"
+  "tottori_committee::5"   # とりネット: 土日のみ終日 (2026-10-05); 5 s, as we told them
   "tochigi::"     # also gated by [notice]: pt scrape refuses without one, and
                   # by a 土日 window — their vendor asked for weekend nights
                   # while the assembly sits (会期 9/17-10/13). A weekday firing

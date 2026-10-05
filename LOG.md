@@ -2,6 +2,30 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-05 — 鳥取's committees permitted: weekends, and not the navigation (`feat/tottori-committee`)
+
+広報課情報センター approved the method we described, on two conditions: the five
+navigation pages the index links to are out of scope, and not on weekdays
+06:00–20:00 nor Thursday 01:00–04:00, preferably 土日. 本会議 files come after
+10/14.
+
+`recon_sites.py` gains per-depth **link-text conditions** (`follow`) and a
+per-site request cap: とりネット is the whole prefectural website, so the URL
+area bounds nothing, and a walk from the index would otherwise reach the very
+pages they excluded and then the rest of the prefecture. 鳥取 follows only
+年度 → 委員会 → 会議録, excludes their five URLs verbatim, runs 土日 all day at 5 s,
+obeys robots.txt, stops at 40 requests. The cap defaults to `MAX_PAGES` at run
+time (a field default would have frozen it at import and silently broken the
+test that patches it). `collect_voices.sh` lists `tottori_committee::5`; it says
+NO CONFIG until the selectors are written from Saturday's cache.
+
+Verified: 2 new tests (the walk reaches year, committee and minute and nothing
+else; the five URLs refused), 215 pass; ruff, mypy clean; `--dry-run` refuses
+outside the weekend and names 2026-10-10 00:00. No request was made.
+
+鳥取 委員会：許可（土日推奨・平日日中と木曜1〜4時は不可、ナビ5ページは対象外）。土日
+終日・5秒・年度→委員会→会議録のみたどる設定。初回の下見は10/10（土）。
+
 ## 2026-10-01 — 鳥取 answers: 本会議 as files, 委員会 from とりネット (`docs/tottori-answer`)
 
 鳥取県議会事務局 will **send** 本会議 as files: 平成15年以降 at once, 平成7〜14年

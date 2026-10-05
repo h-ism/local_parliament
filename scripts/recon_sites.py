@@ -98,6 +98,20 @@ WEEKEND_NIGHTS = dict(days=(5, 6), start=time(20, 0), end=time(7, 0), decided_on
 # period, the days (holidays included), the hours — and all three are kept. The
 # holidays inside the period are listed, not computed: スポーツの日 10/12, 文化の日
 # 11/3, 勤労感謝の日 11/23. After 11/24 the window does not open at all.
+# 鳥取 とりネット (2026-10-05, the prefecture's 広報課情報センター via the
+# secretariat): 「平日日中帯（6時～20時）は避けてください。また、毎週水曜日深夜
+# （木曜日 1時～4時）は避けてください。もしも可能であれば、休日（土日）に実施する
+# ようにしてください」. Weekday nights are allowed, but 「可能であれば」 is followed
+# the way 栃木's vendor's was: Saturday and Sunday, all day — which also keeps
+# clear of Thursday 1–4 without having to say so.
+WEEKEND_ALL_DAY = dict(days=(5, 6), start=time(0, 0), end=time(0, 0), decided_on="2026-10-05")
+# 「一覧ページ（/88112.htm）からリンクしていても対象外とするURL」 — their list,
+# verbatim. `follow` already keeps the walk to 年度 → 委員会 → 会議録; this says
+# the same thing their way, so the condition is in the code as they wrote it.
+TOTTORI_EXCLUDED = (
+    r"^https://www\.pref\.tottori\.lg\.jp/(?:gikai/?|87615\.htm|87659\.htm|87660\.htm|87662\.htm)$"
+    r"|\.pdf$|\.docx?$|\.xlsx?$|\.zip$"
+)
 HOKKAIDO_OFF_SESSION = dict(
     days=(5, 6),
     holidays=(date(2026, 10, 12), date(2026, 11, 3), date(2026, 11, 23)),
@@ -197,6 +211,19 @@ class Site:
     on 2026-09-28, and DB-Search did the same to this project in August — so
     茨城 runs at 5, as SSP does (researcher's decision, 2026-09-29)."""
 
+    follow: tuple[str, ...] = ()
+    """Per depth, a regex the *link text* must match to be followed.
+
+    For a site whose area is a whole prefectural website — とりネット is
+    `www.pref.tottori.lg.jp/`, every page the prefecture has — a URL prefix
+    bounds nothing. 鳥取 (2026-10-05) also excluded the navigation that the index
+    links to (ホーム, 議会の動き, …). So from the index only 「…年度委員会会議録…」
+    is followed, from a year only a committee, from a committee only a 会議録.
+    Empty means no condition, as before."""
+
+    max_requests: int | None = None
+    """This site's request cap, when `MAX_PAGES` is more than the visit needs."""
+
     focus: str = r"voiweb\.exe"
     """Links that jump the queue. VOICES serves every listing and transcript from
     its CGI, so that is where the budget should go first."""
@@ -220,6 +247,9 @@ def _voices(
     exempt: bool = True,
     min_interval: float = 2.0,
     answered_on: str = "2026-09-18",
+    follow: tuple[str, ...] = (),
+    max_requests: int | None = None,
+    avoid: str | None = None,
 ) -> Site:
     prefix = f"{scheme}://{host}{path}"
     return Site(
@@ -246,6 +276,9 @@ def _voices(
         notice=notice,
         contact=contact,
         min_interval=min_interval,
+        follow=follow,
+        max_requests=max_requests,
+        **({"avoid": avoid} if avoid else {}),
     )
 
 
@@ -397,6 +430,31 @@ SITES: dict[str, Site] = {
                 "過ぎたら新たな回答なしには開かない。"
             ),
         ),
+        _voices(
+            "tottori_committee",
+            "鳥取県",
+            "www.pref.tottori.lg.jp",
+            "鳥取県 広報課情報センター",
+            "鳥取県議会事務局経由、広報課情報センターの回答 (2026-10-05): 平日日中帯（6時～20時）"
+            "と毎週水曜深夜（木曜1時～4時）は避け、可能であれば休日（土日）に実施すること。"
+            "一覧ページからリンクされていても、ホーム・議会の動き・議会・議員・開かれた議会・"
+            "議会その他は対象外",
+            contact=COLLABORATOR_A,
+            path="/",
+            start="https://www.pref.tottori.lg.jp/88112.htm",
+            exempt=False,
+            hours=WEEKEND_ALL_DAY,
+            min_interval=5.0,
+            answered_on="2026-10-05",
+            follow=(r"年度委員会会議録", r"委員会|協議会", r"会議録"),
+            max_requests=40,
+            avoid=TOTTORI_EXCLUDED,
+            note=(
+                "とりネット（県HP）の委員会会議録。DB-Search ではない。本会議は事務局から"
+                "ファイルで届く（10/14以降）。robots.txt は免除なしでそのまま守る。"
+                "下見は40リクエストまで、年度→委員会→会議録のリンクだけをたどる。"
+            ),
+        ),
     )
 }
 
@@ -516,7 +574,8 @@ def walk(site: Site, client: PoliteClient) -> list[tuple[str, Page]]:
     requests = 0
     avoid = re.compile(site.avoid)
     focus = re.compile(site.focus)
-    while queue and requests < MAX_PAGES and len(fetched) < MAX_WALKED:
+    cap = site.max_requests or MAX_PAGES
+    while queue and requests < cap and len(fetched) < MAX_WALKED:
         url, depth = queue.pop(0)
         if url in seen or not inside(url, site.prefix) or avoid.search(url):
             continue
@@ -550,6 +609,9 @@ def walk(site: Site, client: PoliteClient) -> list[tuple[str, Page]]:
         # depth, and first in line, because it is usually the only thing there.
         queue[:0] = [(u, depth) for u in inner if u not in seen]
         if depth < MAX_DEPTH:
+            if depth < len(site.follow):
+                rule = re.compile(site.follow[depth])
+                found = [(text, u) for text, u in found if rule.search(text)]
             nxt = [(u, depth + 1) for u in spread([u for _, u in found]) if u not in seen]
             first = [item for item in nxt if focus.search(item[0])]
             queue[:0] = first
