@@ -467,12 +467,33 @@ def settings(site: Site) -> Settings:
     return s
 
 
+_WINOPEN = re.compile(r"""winopen\(\s*['"]([^'"]+)['"]""")
+
+
 def links(page: Page) -> list[tuple[str, str]]:
+    """Every link a person could click: the `href`, or the URL a script opens.
+
+    VOICES lists each sitting as `<a href="javascript:;"
+    onClick="winopen('voiweb.exe?ACT=200&…')">02月10日-01号</a>`. Following only
+    `href` reached 95 listings on 滋賀 and 87 on 石川 over a weekend and not one
+    sitting — and the second night walked the same pages from cache and stopped,
+    having nothing left to follow. The URL is the site's own, written in the
+    page; reading it out of the call is following the link, not composing one.
+    """
     soup = BeautifulSoup(page.text, "lxml")
-    return [
-        (node.get_text(" ", strip=True)[:60], urldefrag(urljoin(page.url, str(node["href"]))).url)
-        for node in soup.find_all("a", href=True)
-    ]
+    out: list[tuple[str, str]] = []
+    for node in soup.find_all("a"):
+        text = node.get_text(" ", strip=True)[:60]
+        href = str(node.get("href") or "")
+        m = _WINOPEN.search(str(node.get("onclick") or ""))
+        if m:
+            target = m.group(1)
+        elif href and not href.lower().startswith("javascript:"):
+            target = href
+        else:
+            continue
+        out.append((text, urldefrag(urljoin(page.url, target)).url))
+    return out
 
 
 def frames(page: Page) -> list[str]:

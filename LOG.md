@@ -2,6 +2,28 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-05 — the survey followed frames and still reached no sitting (`fix/voices-winopen`)
+
+滋賀 and 石川's first two weekend windows (10/3, 10/4) ran: **95 and 90 requests,
+182 VOICES listings (`ACT=100`) and not one sitting.** The second night walked
+the same pages from cache and stopped with nothing left to follow — so the
+cap was not what ended it, the links were. VOICES opens each sitting with
+`<a href="javascript:;" onClick="winopen('voiweb.exe?ACT=200&…')">02月10日-01号</a>`,
+and the walk read `href` only. The frames fix of 9/28 was the same blind spot
+one level up.
+
+`links()` now takes the URL out of a `winopen('…')` call — the site's own link
+in the page, not one composed here — and skips `javascript:` hrefs. Replaying
+the walk offline over the cache: the next window would request **108 sittings
+on 滋賀 and 93 on 石川**, all `ACT=200`. One new test, 216 pass. No request.
+
+**Lesson**: a report that lists 95 pages is not evidence the survey reached
+what a config needs. Check the cache for the page type, as CLAUDE.md says —
+which is how this was found, two weekends late.
+
+滋賀・石川の下見は一覧（ACT=100）182ページで止まり、会議録は0件。会議録へのリンクが
+onClick の winopen() だったため。修正後、次の窓で滋賀108件・石川93件の会議録を取得する見込み。
+
 ## 2026-10-05 — 鳥取's committees permitted: weekends, and not the navigation (`feat/tottori-committee`)
 
 広報課情報センター approved the method we described, on two conditions: the five

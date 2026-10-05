@@ -121,3 +121,19 @@ def test_tottori_excludes_the_pages_it_was_asked_to() -> None:
     for path in ("gikai/", "87615.htm", "87659.htm", "87660.htm", "87662.htm"):
         assert rule.search("https://www.pref.tottori.lg.jp/" + path)
     assert not rule.search("https://www.pref.tottori.lg.jp/item/1432711.htm")
+
+
+def test_a_sitting_opened_by_script_is_still_a_link() -> None:
+    # VOICES: <a href="javascript:;" onClick="winopen('voiweb.exe?ACT=200&…')">.
+    # Following href only reached 182 listings over a weekend and no sitting.
+    page = make_page(
+        BASE + "cgi/voiweb.exe?ACT=100&KGTP=3",
+        """<a href="voiweb.exe?ACT=100&amp;PAGE=2">次</a>
+        <A HREF="javascript:;" TARGET="HLD_WIN"
+           onClick="winopen('voiweb.exe?ACT=200&amp;FINO=229&amp;UNID=K_H12021000011')">02月10日-01号</A>
+        <a href="javascript:void(0)">印刷</a>""",
+    )
+    assert recon_sites.links(page) == [
+        ("次", BASE + "cgi/voiweb.exe?ACT=100&PAGE=2"),
+        ("02月10日-01号", BASE + "cgi/voiweb.exe?ACT=200&FINO=229&UNID=K_H12021000011"),
+    ]
