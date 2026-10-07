@@ -259,8 +259,9 @@ those needed building:
   opened them**.
 - 栃木 asked to be told **before** each run. The crawler cannot send an email, so
   it refuses instead: `[notice]` records who was told, when, and what period it
-  covers, and `pt scrape` stops before fetching anything outside that. No notice
-  has been sent, so 栃木 cannot run at all yet.
+  covers, and `pt scrape` stops before fetching anything outside that. The notice
+  went out on **2026-09-30** with 北海道's; it is recorded as covering until
+  **10/13, provisionally** — the sent text's end date is not on file yet.
 - 栃木 wrote again the same day, relaying its **system vendor**: 会期中
   (9/17–10/13) につき **土日夜間** での実施を推奨. A second condition from the
   same operator is **ANDed with the first, not a replacement** — the letter gave

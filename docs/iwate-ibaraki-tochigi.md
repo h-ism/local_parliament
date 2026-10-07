@@ -88,7 +88,9 @@ a date, next to the robots exemption and the window, for the same reason all
 three do: an undertaking kept in somebody's memory is one that will be broken on
 a Tuesday afternoon with nothing to show for it.
 
-**No notice has been sent yet**, so 栃木 cannot run at all until one is. The
+**The notice was sent on 2026-09-30** (recorded 2026-10-07). Its end date is not
+on file; `recon_sites.py` records **10/13** (the 会期's last day) as the
+researcher's provisional figure — check it against the sent mail. The
 draft is `docs/inquiries/tochigi-notice.md`; three things it is careful about:
 
 * the dates in the letter and the dates in `[notice]` must be **the same**, or we

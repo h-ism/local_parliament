@@ -2,7 +2,7 @@
 
 Newest first. One entry per branch of work.
 
-## 2026-10-07 — 北海道's notice was sent on 9/30: record it (`feat/hokkaido-notice-sent`)
+## 2026-10-07 — 北海道's and 栃木's notices were sent on 9/30: record them (`feat/hokkaido-notice-sent`)
 
 The researcher confirmed today that the reply to 北海道 — the contact they asked
 for and the schedule, i.e. the advance notice — went out on **2026-09-30**, the
@@ -19,10 +19,17 @@ Verified with `--dry-run` at a pinned clock (no request): open 10/11 20:00,
 10/13 06:00 (next 10/17 20:00), Thursday 10/8 (next **10/10** 20:00) and
 11/28 (notice no longer covers). 216 tests pass; ruff, mypy clean.
 
+**栃木 too** — sent the same day. The letter's end date is not on file, so
+the notice is recorded as `covers_until="2026-10-13"` (the 会期's last day) on
+the researcher's word, **provisionally**, until the sent mail is checked.
+Dry-run: open 10/10 20:00, 10/11 20:00, 10/12 06:59; refused 10/12 07:00 and
+21:00 (weekday, 土日 only) and 10/17 (notice expired) — so a second notice is
+owed before the 本収集, and it should ask about weekdays after the 会期.
+
 **Note**: the timer fires every evening, so the first survey will be **Sat
 10/10 20:00**, not 10/11 — inside what the notice told them.
 
-北海道への通知は 9/30 に送信済みだった。記録を追加し、10/10（土）20時から下見が動く。
+北海道・栃木への通知は 9/30 に送信済みだった。記録を追加し、10/10（土）20時から両県の下見が動く。栃木の期間は 10/13 まで（暫定）。
 
 ## 2026-10-05 — the survey followed frames and still reached no sitting (`fix/voices-winopen`)
 

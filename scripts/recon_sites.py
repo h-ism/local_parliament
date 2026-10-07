@@ -356,11 +356,23 @@ SITES: dict[str, Site] = {
             contact=COLLABORATOR_B,
             hours=WEEKEND_NIGHTS,
             requires_notice=True,
+            # Sent 2026-09-30 with 北海道's (the researcher, 2026-10-07). The
+            # letter's end date is not on file; 10/13, the 会期's last day, is
+            # the researcher's provisional figure until the sent text is checked.
+            notice=Notice(
+                who="栃木県議会事務局",
+                last_sent="2026-09-30",
+                covers_until="2026-10-13",
+                what=(
+                    "土日 20時〜翌7時（会期中のベンダー推奨）。初回は下見、以降は会議録本文。"
+                    "1件2秒以上・直列。終了日 10/13 は暫定（送信文面で未確認）"
+                ),
+            ),
             answered_on="2026-09-24",
             note=(
-                "**実行のタイミングを事前に知らせること**（先方の指示）。本収集の前に"
-                "通知を送り、sites/tochigi.toml の [notice] に記録する。下見も同じ扱いに"
-                "しておくのが筋なので、最初の通知に下見の予定も書くこと。"
+                "**実行のタイミングを事前に知らせること**（先方の指示）。通知は"
+                "2026-09-30 送信済み、記録上の期間は 10/13 まで（暫定）。それ以降は"
+                "新しい通知を送り、ここと sites/tochigi.toml の [notice] に記録する。"
                 " また 2026-09-24 の追報により、会期中（9/17〜10/13）は"
                 "**土日夜間**に限定する。会期後に平日夜間へ戻すかどうかは、"
                 "こちらで決めずに次の通知で確認すること。"
