@@ -242,9 +242,9 @@ First window Sat 2026-10-10. `docs/tottori.md`.
 10/3〜11/24 only, 土日祝 only, 20:00–06:00, and told before we run. `FetchWindow`
 has `first_day` / `last_day` / `holidays` for it and says when it will not open
 again. A `[notice]` with only `who` means "owed, not sent" and refuses — so a
-config cannot run unannounced by leaving the table out. The reply (the notice) is
-drafted in 共同研究者B's name, `docs/inquiries/hokkaido-notice.md`; nothing runs
-until it is sent and recorded.
+config cannot run unannounced by leaving the table out. The reply (the notice) went out in
+共同研究者B's name **on 2026-09-30** (recorded 2026-10-07), covering the whole
+period, so the survey opens on the next weekend night; selectors come from its cache.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 

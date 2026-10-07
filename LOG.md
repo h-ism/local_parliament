@@ -2,6 +2,28 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-07 — 北海道's notice was sent on 9/30: record it (`feat/hokkaido-notice-sent`)
+
+The researcher confirmed today that the reply to 北海道 — the contact they asked
+for and the schedule, i.e. the advance notice — went out on **2026-09-30**, the
+day of their answer. It was never recorded, so `recon_sites.py` refused 北海道 on
+10/3 and 10/4 as "owed, not sent". Two of nineteen evenings lost to a missing
+line, not to them.
+
+`recon_sites.py` now carries `Notice(who="北海道議会事務局", last_sent="2026-09-30",
+covers_until="2026-11-24")` — the letter named the whole period, and 11/24 is
+also where the window stops. Docs and CLAUDE.md say sent.
+
+Verified with `--dry-run` at a pinned clock (no request): open 10/11 20:00,
+10/12 03:00, the holiday 10/12 20:30, 10/13 05:59 and 11/24 05:00; refused
+10/13 06:00 (next 10/17 20:00), Thursday 10/8 (next **10/10** 20:00) and
+11/28 (notice no longer covers). 216 tests pass; ruff, mypy clean.
+
+**Note**: the timer fires every evening, so the first survey will be **Sat
+10/10 20:00**, not 10/11 — inside what the notice told them.
+
+北海道への通知は 9/30 に送信済みだった。記録を追加し、10/10（土）20時から下見が動く。
+
 ## 2026-10-05 — the survey followed frames and still reached no sitting (`fix/voices-winopen`)
 
 滋賀 and 石川's first two weekend windows (10/3, 10/4) ran: **95 and 90 requests,

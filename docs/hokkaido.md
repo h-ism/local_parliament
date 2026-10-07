@@ -28,10 +28,11 @@ for 滋賀・石川・岩手・茨城・栃木 — the vendor's boilerplate, not
   it does not open at all, and says so rather than naming a next opening.
 - **Condition 2 is met**: the phone number was already given to them by email
   (the researcher, 2026-09-30). What remains is the advance notice of when.
-- **Nothing runs until the reply is sent** — the reply carries the contact they
-  asked for and the schedule, and is the advance notice. Draft:
-  `docs/inquiries/hokkaido-notice.md`. `recon_sites.py` refuses 北海道 until
-  `[notice]` is recorded; and a `[notice]` with only `who` now means "owed, not
+- **The reply was sent on 2026-09-30** (recorded 2026-10-07) — it carries the
+  contact they asked for and the schedule for the whole period, and is the
+  advance notice. Text: `docs/inquiries/hokkaido-notice.md`. `recon_sites.py`
+  records it as `Notice(last_sent="2026-09-30", covers_until="2026-11-24")`, so
+  the first two weekends (10/3, 10/4) were lost to a missing record, not to them; and a `[notice]` with only `who` now means "owed, not
   sent" and refuses too, so `sites/hokkaido.toml` cannot be written without it.
 - **Nineteen evenings in all**, 10/3–11/23. The archive runs to 昭和45年, so it
   may not fit; if not, ask again rather than stretch the period.

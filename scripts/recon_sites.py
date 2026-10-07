@@ -419,14 +419,26 @@ SITES: dict[str, Site] = {
             contact=COLLABORATOR_B,
             hours=HOKKAIDO_OFF_SESSION,
             requires_notice=True,
+            # Sent 2026-09-30, the day of their answer (the researcher,
+            # 2026-10-07): the letter gave their whole period, so it covers
+            # all of it — and 11/24 is also where the window stops opening.
+            notice=Notice(
+                who="北海道議会事務局",
+                last_sent="2026-09-30",
+                covers_until="2026-11-24",
+                what=(
+                    "10/3〜11/24 の土日祝（10/12・11/3・11/23）20時〜翌6時。初回は下見、"
+                    "以降は会議録本文。1件2秒以上・直列。連絡先は collaborator_b"
+                ),
+            ),
             answered_on="2026-09-30",
             # The 本会議 listing, as 滋賀 and 石川: from the search form a
             # transcript is one level past MAX_DEPTH (docs/hokkaido.md).
             start="https://pref-hokkaido.gijiroku.com/voices/g08v_viewh.asp",
             note=(
                 "**実施前に連絡すること**、あわせて**不測の事態に備えた連絡先**を伝える"
-                "こと（2026-09-30 の回答）。連絡を送り [notice] に記録するまでは、下見も"
-                "含め1件も取得しない。期間は10/3〜11/24の土日祝20時〜翌6時で、11/24を"
+                "こと（2026-09-30 の回答）。連絡は同日送信済み（期間全体を通知）。"
+                "期間は10/3〜11/24の土日祝20時〜翌6時で、11/24を"
                 "過ぎたら新たな回答なしには開かない。"
             ),
         ),
