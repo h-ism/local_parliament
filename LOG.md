@@ -2,6 +2,25 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-09 — a held site is not a failed run (`fix/recon-exit-code`)
+
+`recon_sites.py` exited 1 whenever a site was outside its window or its notice,
+so on every weekday evening — every site held, nothing fetched, nothing wrong —
+systemd recorded `pt-voices-recon.service` as **Failed**. Six nights a week of
+that is how a real crash comes to look routine.
+
+Now only what a person has to fix fails the run: an unknown site, an
+unconfirmed contact, and anything that raises. A window refusal logs at INFO
+("held"), a missing or expired notice at WARNING, and neither sets the exit
+status. The closing "read the reports" hint prints only after a walk happened.
+
+Verified: 3 new tests (weekday evening → 0; 栃木 after its notice → 0; unknown
+site and missing contact → 1). The first two fail on the old code. 219 pass;
+ruff, mypy clean. A dry run on a weekday afternoon exits 0. No request.
+
+平日夜に recon が毎晩「Failed」になっていたのを修正。時間外・通知期間外は正常終了とし、
+人が直すべきもの（未知のサイト、照会者未確認、例外）だけを失敗にした。
+
 ## 2026-10-07 — 北海道's and 栃木's notices were sent on 9/30: record them (`feat/hokkaido-notice-sent`)
 
 The researcher confirmed today that the reply to 北海道 — the contact they asked

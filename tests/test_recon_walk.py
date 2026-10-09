@@ -6,17 +6,22 @@ Offline — `FakeClient` serves the pages, so nothing here touches a server.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from conftest import FakeClient, make_page
+from prefectural_transcripts.config import Contact
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import recon_sites  # noqa: E402
 from recon_sites import SITES, frames, inside, shape, spread, walk  # noqa: E402
 
 BASE = "https://pref-ishikawa.gijiroku.com/voices/"
+JST = ZoneInfo("Asia/Tokyo")
 
 
 def test_follows_an_iframe_at_the_same_depth() -> None:
@@ -137,3 +142,37 @@ def test_a_sitting_opened_by_script_is_still_a_link() -> None:
         ("次", BASE + "cgi/voiweb.exe?ACT=100&PAGE=2"),
         ("02月10日-01号", BASE + "cgi/voiweb.exe?ACT=200&FINO=229&UNID=K_H12021000011"),
     ]
+
+
+def _runnable(key: str) -> recon_sites.Site:
+    # contacts.toml is gitignored, so without this every site fails on its contact.
+    return replace(SITES[key], contact=Contact(address="test@example.org"))
+
+
+def _run(monkeypatch: pytest.MonkeyPatch, when: datetime, *keys: str) -> int:
+    monkeypatch.setattr(recon_sites, "SITES", {k: _runnable(k) for k in keys})
+    monkeypatch.setattr(recon_sites, "current_time", lambda: when)
+    monkeypatch.setattr(sys, "argv", ["recon_sites.py", "--dry-run", *keys])
+    return recon_sites.main()
+
+
+def test_a_held_site_is_not_a_failed_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Weekday evenings: every site is outside its window or its notice, and the
+    # run used to exit 1 — systemd said "Failed" six nights a week.
+    thursday = datetime(2026, 10, 8, 20, 0, tzinfo=JST)
+    assert _run(monkeypatch, thursday, "shiga", "ishikawa", "hokkaido", "tottori_committee") == 0
+
+
+def test_a_site_with_no_notice_is_held_not_failed(monkeypatch: pytest.MonkeyPatch) -> None:
+    after_tochigi_notice = datetime(2026, 10, 17, 21, 0, tzinfo=JST)
+    assert _run(monkeypatch, after_tochigi_notice, "tochigi") == 0
+
+
+def test_what_a_person_must_fix_still_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    saturday = datetime(2026, 10, 10, 21, 0, tzinfo=JST)
+    assert _run(monkeypatch, saturday, "shiga") == 0
+    monkeypatch.setattr(sys, "argv", ["recon_sites.py", "--dry-run", "no_such_site"])
+    assert recon_sites.main() == 1
+    monkeypatch.setattr(recon_sites, "SITES", {"shiga": replace(SITES["shiga"], contact=None)})
+    monkeypatch.setattr(sys, "argv", ["recon_sites.py", "--dry-run", "shiga"])
+    assert recon_sites.main() == 1

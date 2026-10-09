@@ -699,7 +699,14 @@ def main() -> int:
     dry_run = "--dry-run" in sys.argv
     wanted = args or list(SITES)
 
+    # A site held back by its window or its notice is the config doing its job,
+    # not a failure: on six evenings a week every site is held, and an exit
+    # status of 1 for that made systemd report "Failed" each night — the same
+    # word it would use for a crash, so a real one would have looked routine.
+    # Only what a person has to fix fails the run: an unknown site, an
+    # unconfirmed contact, and anything that raises.
     failed = 0
+    walked = 0
     for key in wanted:
         site = SITES.get(key)
         if site is None:
@@ -722,15 +729,13 @@ def main() -> int:
 
         now = current_time()
         if site.requires_notice and not (site.notice and site.notice.covers(now.date())):
-            log.error("%s: 事前通知が条件。通知を送り、[notice] に記録するまで実行しない", key)
-            log.error("  %s", site.note or "")
-            failed += 1
+            log.warning("%s: 事前通知が条件。通知を送り、[notice] に記録するまで実行しない", key)
+            log.warning("  %s", site.note or "")
             continue
         if not site.window.allows(now):
-            log.error("%s: outside the agreed hours (%s)", key, site.window.describe())
-            log.error("  %s", site.window.next_opening(now))
-            log.error("  %s", site.window.reason)
-            failed += 1
+            log.info("%s: held — outside the agreed hours (%s)", key, site.window.describe())
+            log.info("  %s", site.window.next_opening(now))
+            log.info("  %s", site.window.reason)
             continue
         log.info("%s: inside the window; contact %s", key, site.contact.address)
         if site.note:
@@ -767,8 +772,9 @@ def main() -> int:
             len(fetched),
             report(site, fetched, out_dir),
         )
+        walked += 1
 
-    if not dry_run and not failed:
+    if walked and not failed:
         log.info("next: read the reports and the cache — selectors need no further requests")
     return 1 if failed else 0
 
