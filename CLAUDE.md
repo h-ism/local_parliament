@@ -244,7 +244,8 @@ has `first_day` / `last_day` / `holidays` for it and says when it will not open
 again. A `[notice]` with only `who` means "owed, not sent" and refuses — so a
 config cannot run unannounced by leaving the table out. The reply (the notice) went out in
 共同研究者B's name **on 2026-09-30** (recorded 2026-10-07), covering the whole
-period, so the survey opens on the next weekend night; selectors come from its cache.
+period. **Held 2026-10-09** (the researcher: no reply to it yet) — `hold=` in
+`recon_sites.py`, separate from the notice, which stays a record of what was sent.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 
@@ -262,6 +263,7 @@ those needed building:
   covers, and `pt scrape` stops before fetching anything outside that. The notice
   went out on **2026-09-30** with 北海道's; it is recorded as covering until
   **10/13, provisionally** — the sent text's end date is not on file yet.
+  **Held 2026-10-09** with 北海道 until they reply.
 - 栃木 wrote again the same day, relaying its **system vendor**: 会期中
   (9/17–10/13) につき **土日夜間** での実施を推奨. A second condition from the
   same operator is **ANDed with the first, not a replacement** — the letter gave

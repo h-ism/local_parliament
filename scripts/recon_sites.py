@@ -188,6 +188,12 @@ class Site:
 
     notice: Notice | None = None
 
+    hold: str = ""
+    """Why the researcher is holding this site back, with the date — empty when
+    not held. Separate from `notice`, which records a fact (what we told them
+    and when); a hold records a decision (not yet, even so). Folding one into the
+    other would rewrite what was sent to express what was decided."""
+
     contact: Contact | None = None
     """Whose enquiry this assembly answered. **None means unconfirmed**, and a
     site with no confirmed contact is not fetched at all: running under the wrong
@@ -250,6 +256,7 @@ def _voices(
     follow: tuple[str, ...] = (),
     max_requests: int | None = None,
     avoid: str | None = None,
+    hold: str = "",
 ) -> Site:
     prefix = f"{scheme}://{host}{path}"
     return Site(
@@ -278,6 +285,7 @@ def _voices(
         min_interval=min_interval,
         follow=follow,
         max_requests=max_requests,
+        hold=hold,
         **({"avoid": avoid} if avoid else {}),
     )
 
@@ -368,6 +376,10 @@ SITES: dict[str, Site] = {
                     "1件2秒以上・直列。終了日 10/13 は暫定（送信文面で未確認）"
                 ),
             ),
+            hold=(
+                "2026-10-09 研究者の判断で保留: 9/30 の通知に先方の返事がまだ無いため。"
+                "返事を確認してから外す"
+            ),
             answered_on="2026-09-24",
             note=(
                 "**実行のタイミングを事前に知らせること**（先方の指示）。通知は"
@@ -442,6 +454,10 @@ SITES: dict[str, Site] = {
                     "10/3〜11/24 の土日祝（10/12・11/3・11/23）20時〜翌6時。初回は下見、"
                     "以降は会議録本文。1件2秒以上・直列。連絡先は collaborator_b"
                 ),
+            ),
+            hold=(
+                "2026-10-09 研究者の判断で保留: 9/30 の通知に先方の返事がまだ無いため。"
+                "返事を確認してから外す"
             ),
             answered_on="2026-09-30",
             # The 本会議 listing, as 滋賀 and 石川: from the search form a
@@ -720,6 +736,10 @@ def main() -> int:
         # first undertaking in our letter broken by our own scheduling.
         if (SITES_DIR / f"{key}.toml").exists():
             log.info("%s: has a config; collected by collect_voices.sh, not surveyed", key)
+            continue
+
+        if site.hold:
+            log.warning("%s: held by the researcher — %s", key, site.hold)
             continue
 
         if site.contact is None:

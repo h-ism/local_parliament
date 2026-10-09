@@ -2,6 +2,22 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-09 — hold 栃木 and 北海道 until they reply (`feat/hold-tochigi-hokkaido`)
+
+The researcher held both surveys planned for 10/10: neither assembly has
+replied to the 9/30 notice yet. The notices stay recorded as sent — that is a
+fact about what we told them — and a new `Site.hold` (a reason with its date)
+records the decision. A held site is skipped before the contact, notice and
+window checks, logs a WARNING naming the reason, and does not fail the run.
+
+Verified: 1 new test (inside the window with the notice covering the night, the
+hold alone stops both); 220 pass; ruff, mypy clean. Dry runs at 10/10 and 10/11
+20:00: 滋賀・石川・鳥取 open, 栃木・北海道 held, exit 0. No request.
+To release: delete the `hold=` line for that site.
+
+栃木・北海道の下見を保留（通知への返事待ち）。通知の記録はそのまま、保留は別の欄に理由と日付付きで記録。
+解除は各サイトの `hold=` を消すだけ。
+
 ## 2026-10-09 — a held site is not a failed run (`fix/recon-exit-code`)
 
 `recon_sites.py` exited 1 whenever a site was outside its window or its notice,

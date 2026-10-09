@@ -176,3 +176,18 @@ def test_what_a_person_must_fix_still_fails(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(recon_sites, "SITES", {"shiga": replace(SITES["shiga"], contact=None)})
     monkeypatch.setattr(sys, "argv", ["recon_sites.py", "--dry-run", "shiga"])
     assert recon_sites.main() == 1
+
+
+def test_a_site_on_hold_is_skipped_inside_its_window(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # 2026-10-09: 栃木 and 北海道 were told on 9/30 and had not replied; the
+    # researcher held both. Inside the window, with the notice covering the
+    # night, the hold alone has to stop it — and stopping is not a failure.
+    saturday = datetime(2026, 10, 10, 21, 0, tzinfo=JST)
+    for key in ("tochigi", "hokkaido"):
+        assert SITES[key].hold
+        caplog.clear()
+        assert _run(monkeypatch, saturday, key) == 0
+        assert "held by the researcher" in caplog.text
+        assert "inside the window" not in caplog.text
