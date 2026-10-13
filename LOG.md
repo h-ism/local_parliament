@@ -27,6 +27,8 @@ condensed, and whether that is verbatim is the researcher's decision.
 鳥取: no config. The survey's 38 minutes are all 令和4/5/8年度 — 平成 committee
 pages list minutes as 「平成19年3月8日(木)（開会中）」 and the third level
 followed only 「会議録」. It now also follows a link text that begins with a date.
+Decided by the researcher the same day, for the config to come: **確定版 first,
+速報版 only where that committee has no 確定版 for the day** — some days carry both.
 
 Verified: offline over the cache — 滋賀 35 sittings / 2,411 speeches / 183
 speakers, 石川 23 / 1,949 / 120; 0 unread markers, 0 undated, 0 swallowed

@@ -238,6 +238,8 @@ pages excluded by URL — the survey follows only 年度 → 委員会 → 会�
 First window Sat 2026-10-10. `docs/tottori.md`. **No config yet** (2026-10-13):
 the survey reached no minute before 令和4, because 平成 committee pages label a
 minute by its date alone; the walk now follows that, and 10/17 samples them.
+**確定版 first, 速報版 only where no 確定版 exists** for that committee and day
+(researcher, 2026-10-13) — both are published for some days.
 
 **北海道 — permitted off-session, notice first (2026-09-30)**
 

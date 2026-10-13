@@ -70,6 +70,12 @@ unseen, and **no config yet**: a rule checked on 令和 says nothing about 平�
 
 The third level now also follows a link text that begins with a date. The next
 window (Sat 10/17, all day) samples the old years from the cache outwards;
-the config is written from that. Still to decide when it is: 速報版 and 確定版
-of the same day are both published — take 確定版, and a 速報版 only where no
-確定版 exists?
+the config is written from that.
+
+**速報版 and 確定版 — decided 2026-10-13 by the researcher: 確定版 first, a
+速報版 only where that committee has no 確定版 for the same day.** Both are
+published for some days (令和8年4月21日, 5月21日), and taking both would count
+every speech of those days twice. Pairing is by committee and date, not by
+title alone — 令和4年8月19日 has two 確定版 from two committees. A 速報版 that is
+kept is marked as such in the record's title, so it can be replaced when its
+確定版 appears.
