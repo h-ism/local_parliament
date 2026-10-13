@@ -212,3 +212,34 @@ to write selectors against markup nobody has seen.
 usually means a summary. If a sample reads like 和歌山's committees — third
 person, 「［主な発言］」 — it is not collected (verbatim only, decided
 2026-09-24), and 滋賀 is 本会議 only. Check it on the first sample.
+
+## The config, from the cache (2026-10-13)
+
+The surveys of 10/10 and 10/11 reached sittings at last, and `sites/shiga.toml`
+(`scraper = "voices"`, `scrapers/voices.py`) is written from them, offline. What
+the cache showed:
+
+* **`ACT=203` is the whole sitting.** It is named after one speech (`HUID=`) and
+  scrolls to it, but it holds every speech of the document, each opened by
+  `<A NAME="HUID…"></A>`. On all 56 sittings with both pages cached, the anchors
+  equal the speech list's checkboxes (`ACT=202`), 56/56. So a sitting is two
+  requests — the frameset `ACT=200`, then its frame `hat` — and the speech
+  boundaries are the vendor's. 石川, the same product: 51/51.
+* **Markers**: ○ chair, ◆ member, ◎ executive; △ is an agenda heading (and, in
+  older sittings, the text of an 意見書 案 under it), block 0 the front matter.
+  Recent sittings write members 「◆11番（黄野瀬明子議員）」 and a reporting chair
+  「◎20番（目片信悟議員［総務・企画常任委員長］）」; older ones
+  「◎20番（総務企画常任委員長黒川治君）」. Both are split into person and office.
+* **Dates**: year from the session title, month and day from the vendor's label
+  (「12月10日-06号」); the printed 「令和２年12月10日（木曜日）」 is the check. 38/38
+  cached sittings carried one and all agreed.
+* Over the 35 cached sittings that parse: 2,411 speeches, 183 speakers, **0
+  markers unread, 0 undated, 0 swallowed markers**, longest name 5 characters.
+
+Scale, estimated from the year lists: ~1,100 sittings 昭和62年〜令和8年, ~2,300
+requests at 2 s, about 80 minutes — one Saturday evening.
+
+**The committee side is not configured.** It is 「会議要録」 with a 「議事の経過概要」:
+first person (「私からお送りしました」) but condensed by the secretariat, not a
+transcript. The rule of 2026-09-24 was written for third-person 要点記録, so this
+is a new case and the researcher's call. 石川's committees are the same shape.

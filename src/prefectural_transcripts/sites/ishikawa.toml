@@ -1,0 +1,37 @@
+# 石川県議会 — 本会議（定例会・臨時会）, gijiroku VOICES
+#
+# Written 2026-10-13 from the reconnaissance cache of 2026-10-10/11, offline:
+# 51 sittings whose whole text (`ACT=203`) and speech list (`ACT=202`) are both
+# cached, and on every one the vendor's speech anchors equal the list, 56/56.
+# Route and block rules in `scrapers/voices.py`; the story in `docs/ishikawa.md`.
+#
+# 本会議 only. The committee side (g08v_views.asp) is 「会議記録」 whose body is
+# 「議事の経過概要」 — first person but condensed — and whether that counts as
+# verbatim is the researcher's decision, not made yet.
+
+prefecture = "石川県"
+name = "ishikawa"
+scraper = "voices"
+
+[voices]
+# The 本会議 index: 定例会 years (Sflg=11) and 臨時会 years (Sflg=21), 平成3年 to 令和8年.
+index_url = "https://pref-ishikawa.gijiroku.com/voices/g08v_viewh.asp"
+
+# robots.txt disallows /voices/cgi/ — the vendor's file, the same on every VOICES
+# install. The assembly answered our letter about collecting these minutes.
+[robots]
+exempt = ["https://pref-ishikawa.gijiroku.com/voices/"]
+reason = "石川県議会事務局企画調査課: 運営者本人の回答による許可（2026-09-18）。robots.txt の Disallow はベンダー標準で、回答が優先する。docs/ishikawa.md"
+decided_on = "2026-09-18"
+
+[fetch_window]
+days = ["sat", "sun"]
+start = "20:00"
+end = "24:00"
+reason = "石川県議会事務局企画調査課の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降など）に限定いただいた上での自動取得は可能"
+decided_on = "2026-09-18"
+
+# The enquiry 石川 answered was 共同研究者A's; that is the address they have.
+[contact]
+ref = "collaborator_a"  # the address is in contacts.toml, not in git
+note = "照会は共同研究者Aが行った"

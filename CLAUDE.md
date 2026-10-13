@@ -235,7 +235,9 @@ described before any automated access. Committee minutes are verbatim HTML
 (◎/●/○ markers), ~2,000 since 平成18年度. **Permitted 2026-10-05**: 土日 only
 (weekdays 06–20 and Thu 01–04 forbidden, weekends asked for), and five navigation
 pages excluded by URL — the survey follows only 年度 → 委員会 → 会議録 by link text.
-First window Sat 2026-10-10. `docs/tottori.md`.
+First window Sat 2026-10-10. `docs/tottori.md`. **No config yet** (2026-10-13):
+the survey reached no minute before 令和4, because 平成 committee pages label a
+minute by its date alone; the walk now follows that, and 10/17 samples them.
 
 **北海道 — permitted off-session, notice first (2026-09-30)**
 
@@ -297,6 +299,15 @@ letter in `docs/inquiries/` was sent by a collaborator** (confirmed 2026-09-18) 
 so the permission is ours, and what is open is only what goes in the User-Agent.
 A site config can name its own `[contact]` (`Contact`), which replaces
 `PT_CONTACT` for that site and prints at the start of the run — 共同研究者A for both. See `docs/shiga.md`, `docs/ishikawa.md`.
+
+**Configured 2026-10-13, 本会議 only** (`scraper = "voices"`, `scrapers/voices.py`),
+from the 10/10–11 cache, offline. `ACT=203` — named after one speech — is the
+**whole sitting**, one `<A NAME="HUID…">` per speech; the anchors equal the
+speech list on 107/107 cached sittings, so a sitting is two requests and the
+speech boundaries are the vendor's. First collection: **Sat 2026-10-17 20:00**
+by `pt-voices-collect.timer`, ~80 and ~60 minutes. Committees are 「会議要録」/
+「会議記録」 — 「議事の経過概要」, first person but condensed — and **not
+configured until the researcher decides** whether that is verbatim.
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 

@@ -486,7 +486,15 @@ SITES: dict[str, Site] = {
             hours=WEEKEND_ALL_DAY,
             min_interval=5.0,
             answered_on="2026-10-05",
-            follow=(r"年度委員会会議録", r"委員会|協議会", r"会議録"),
+            # The third level also takes a link that *begins with a date*: before
+            # 令和 the committee pages list minutes as 「平成19年3月8日(木)（開会中）」
+            # with no 会議録 in the text, so the survey of 2026-10-10/11 opened
+            # committee pages from 平成18年度 on and no minute older than 令和4.
+            follow=(
+                r"年度委員会会議録",
+                r"委員会|協議会",
+                r"会議録|^(?:平成|令和)[0-9０-９元]{1,2}年[0-9０-９]{1,2}月[0-9０-９]{1,2}",
+            ),
             max_requests=40,
             avoid=TOTTORI_EXCLUDED,
             note=(

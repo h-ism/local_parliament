@@ -59,3 +59,17 @@ How the code keeps them (`scripts/recon_sites.py`, then `sites/tottori_committee
   collector (`collect_voices.sh`, `tottori_committee::5`) takes it.
 
 本会議 files: from 10/14, after the 9月定例会.
+
+## The first survey reached no minute before 令和4 (2026-10-13)
+
+79 pages over 10/10–11, 38 minutes — all 令和4・5・8年度. From 平成18年度 the
+committee pages were opened, but their minutes are listed as
+「平成19年3月8日(木)（開会中）」, with no 会議録 in the link text, and the third
+level followed only text containing 会議録. So the markup of 平成18〜令和3 is
+unseen, and **no config yet**: a rule checked on 令和 says nothing about 平成18.
+
+The third level now also follows a link text that begins with a date. The next
+window (Sat 10/17, all day) samples the old years from the cache outwards;
+the config is written from that. Still to decide when it is: 速報版 and 確定版
+of the same day are both published — take 確定版, and a 速報版 only where no
+確定版 exists?

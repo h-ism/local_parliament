@@ -24,6 +24,7 @@ from prefectural_transcripts.scrapers.kensakusystem import (
     KensakuSystemScraper,
 )
 from prefectural_transcripts.scrapers.ssp import SspConfig, SspScraper
+from prefectural_transcripts.scrapers.voices import VoicesConfig, VoicesScraper
 
 SITES_DIR = Path(__file__).resolve().parent.parent / "sites"
 
@@ -39,6 +40,8 @@ __all__ = [
     "SiteConfig",
     "SspConfig",
     "SspScraper",
+    "VoicesConfig",
+    "VoicesScraper",
     "available_sites",
     "load_scraper",
 ]
@@ -64,12 +67,17 @@ def _ssp(path: Path) -> BaseScraper:
     return SspScraper(SspConfig.from_toml(path))
 
 
+def _voices(path: Path) -> BaseScraper:
+    return VoicesScraper(VoicesConfig.from_toml(path))
+
+
 SCRAPERS: dict[str, Callable[[Path], BaseScraper]] = {
     "generic": _generic,
     "dbsearch": _dbsearch,
     "iwate": _iwate,
     "kensakusystem": _kensakusystem,
     "ssp": _ssp,
+    "voices": _voices,
 }
 
 

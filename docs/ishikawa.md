@@ -108,3 +108,19 @@ and the cache holds 145 wrapper pages and no transcript. Fixed in
 the first collection slot. The collector will find no config that night and
 say so — the config follows from that survey, and collection moves to the
 following weekend at the earliest.
+
+## The config, from the cache (2026-10-13)
+
+`sites/ishikawa.toml`, the same scraper as 滋賀 (`scrapers/voices.py`; the route
+and the checks are in `docs/shiga.md`). Differences that matter:
+
+* 定例会 and 臨時会 are **two sets of year links** (`Sflg=11` and `Sflg=21`) where
+  滋賀 has one, so the scraper follows every year link rather than naming kinds.
+* Members are also written bare — 「◆北村茂男君」, 「◆（櫻井廣明君）」.
+* The printed date is 「三月四日（水曜日）」 with no year (and occasionally the full
+  date); it is checked as month and day. 39/39 cached sittings agreed.
+* 23 cached sittings parse to 1,949 speeches, 120 speakers, 0 unread markers.
+
+905 定例会 documents on the all-years list plus 臨時会, less ~140 目次: ~800
+sittings, ~1,700 requests, about an hour. Committees: 「会議記録」 /
+「議事の経過概要」, condensed — not configured, as 滋賀.

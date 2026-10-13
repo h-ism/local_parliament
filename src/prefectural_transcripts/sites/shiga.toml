@@ -1,0 +1,37 @@
+# 滋賀県議会 — 本会議, gijiroku VOICES
+#
+# Written 2026-10-13 from the reconnaissance cache of 2026-10-10/11, offline:
+# 56 sittings whose whole text (`ACT=203`) and speech list (`ACT=202`) are both
+# cached, and on every one the vendor's speech anchors equal the list, 56/56.
+# Route and block rules in `scrapers/voices.py`; the story in `docs/shiga.md`.
+#
+# 本会議 only. The committee side (g08v_views.asp) is 「会議要録」 whose body is
+# 「議事の経過概要」 — first person but condensed — and whether that counts as
+# verbatim is the researcher's decision, not made yet.
+
+prefecture = "滋賀県"
+name = "shiga"
+scraper = "voices"
+
+[voices]
+# The 本会議 index: one link per year, 昭和62年 to 令和8年.
+index_url = "https://www.shigaken-gikai.jp/voices/g08v_viewh.asp"
+
+# robots.txt disallows /voices/cgi/ — the vendor's file, the same on every VOICES
+# install. The assembly answered our letter about collecting these minutes.
+[robots]
+exempt = ["https://www.shigaken-gikai.jp/voices/"]
+reason = "滋賀県議会事務局: 運営者本人の回答による許可（2026-09-18）。robots.txt の Disallow はベンダー標準で、回答が優先する。docs/shiga.md"
+decided_on = "2026-09-18"
+
+[fetch_window]
+days = ["sat", "sun"]
+start = "20:00"
+end = "24:00"
+reason = "滋賀県議会事務局の指示 (2026-09-18): 取得の時間帯を土日の夜間帯（20時以降）に限定するようお願い申し上げます"
+decided_on = "2026-09-18"
+
+# The enquiry 滋賀 answered was 共同研究者A's; that is the address they have.
+[contact]
+ref = "collaborator_a"  # the address is in contacts.toml, not in git
+note = "照会は共同研究者Aが行った"

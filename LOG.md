@@ -2,6 +2,44 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-13 — 滋賀・石川 本会議 configured; 鳥取's survey widened (`feat/voices-tottori-configs`)
+
+After the power cut (10/12 08:30 – 10/13 09:24): nothing was lost — no window
+was open when it went down, the only window missed was 10/12 (祝日), when nothing
+was due to run, and the catch-up firing at boot fetched nothing (windows closed).
+
+**`scrapers/voices.py`**, for gijiroku VOICES, written from the 10/10–11 cache
+with no requests. Route: 本会議 index → every year link → its `<iframe>`
+(`ACT=100`) → each row's `winopen('…ACT=200…')` frameset → its frame `hat`
+(`ACT=203`). That page is **the whole sitting**: one `<A NAME="HUID…">` per
+speech, equal to the speech list (`ACT=202`) on 107/107 cached sittings. Blocks
+are split at those anchors; block 0 (front matter) and △ (headings) are dropped
+and counted, an unreadable marker keeps its words without a name and is counted.
+Dates: year from the session title, month/day from the vendor's label, the
+printed date as the check (all 77 cached sittings agree). 目次 skipped by label.
+
+`sites/shiga.toml`, `sites/ishikawa.toml`: `[robots]` (exempting `/voices/`,
+the vendor's Disallow, on the operator's answer of 2026-09-18), `[fetch_window]`
+土日 20:00–24:00, `[contact]` 共同研究者A — the same terms the survey ran under.
+**本会議 only**: both committee archives are 「議事の経過概要」, first person but
+condensed, and whether that is verbatim is the researcher's decision.
+
+鳥取: no config. The survey's 38 minutes are all 令和4/5/8年度 — 平成 committee
+pages list minutes as 「平成19年3月8日(木)（開会中）」 and the third level
+followed only 「会議録」. It now also follows a link text that begins with a date.
+
+Verified: offline over the cache — 滋賀 35 sittings / 2,411 speeches / 183
+speakers, 石川 23 / 1,949 / 120; 0 unread markers, 0 undated, 0 swallowed
+markers, 0 date disagreements, no honorific splits, longest name 6 characters.
+11 new tests (incl. that the date check and the unread count fire), the 鳥取 walk
+test extended, one recon test made independent of which configs exist; 231
+pass, ruff and mypy clean. `pt scrape --limit 1` cannot run until Saturday's
+window; the first run is that check.
+
+滋賀・石川：本会議の設定を作成（キャッシュのみで検証、要求ゼロ）。初回収集は10/17（土）20時。
+委員会は「議事の経過概要」（一人称の要約）のため保留＝研究者判断。鳥取は平成の会議録が
+未取得のため設定せず、下見のたどり方を修正。
+
 ## 2026-10-09 — hold 栃木 and 北海道 until they reply (`feat/hold-tochigi-hokkaido`)
 
 The researcher held both surveys planned for 10/10: neither assembly has

@@ -97,6 +97,7 @@ def test_tottori_follows_only_year_committee_and_minutes() -> None:
     site = SITES["tottori_committee"]
     root = "https://www.pref.tottori.lg.jp/"
     year, committee, minute = root + "323536.htm", root + "323537.htm", root + "item/1432711.htm"
+    old_minute = root + "item/277957.htm"
     client = FakeClient(
         {
             site.start: (
@@ -110,13 +111,16 @@ def test_tottori_follows_only_year_committee_and_minutes() -> None:
             ),
             committee: (
                 f'<a href="{minute}">令和８年２月25日会議録（確定版）</a>'
+                # 平成18年度 writes a minute as its date alone (2026-10-13).
+                f'<a href="{old_minute}#itemid277957">平成19年3月8日(木)（開会中）</a>'
                 f'<a href="{root}1.htm">戻る</a>'
             ),
             minute: "<p>◎東田委員長　皆さん、おはようございます。</p>",
+            old_minute: "<p>◎委員長　開会します。</p>",
         }
     )
-    walked = [url for url, _ in walk(site, client)]  # type: ignore[arg-type]
-    assert walked == [site.start, year, committee, minute]
+    walked = [url.split("#")[0] for url, _ in walk(site, client)]  # type: ignore[arg-type]
+    assert walked == [site.start, year, committee, minute, old_minute]
 
 
 def test_tottori_excludes_the_pages_it_was_asked_to() -> None:
@@ -168,7 +172,12 @@ def test_a_site_with_no_notice_is_held_not_failed(monkeypatch: pytest.MonkeyPatc
     assert _run(monkeypatch, after_tochigi_notice, "tochigi") == 0
 
 
-def test_what_a_person_must_fix_still_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_what_a_person_must_fix_still_fails(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # A site with a config is handed to the collector before its contact is
+    # looked at, and 滋賀 has one since 2026-10-13 — so no configs here.
+    monkeypatch.setattr(recon_sites, "SITES_DIR", tmp_path)
     saturday = datetime(2026, 10, 10, 21, 0, tzinfo=JST)
     assert _run(monkeypatch, saturday, "shiga") == 0
     monkeypatch.setattr(sys, "argv", ["recon_sites.py", "--dry-run", "no_such_site"])
