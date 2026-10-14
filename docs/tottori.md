@@ -5,7 +5,7 @@
 
 | | where | route | status |
 | --- | --- | --- | --- |
-| 本会議 平成15年〜 | DB-Search (`pref.tottori.dbsr.jp`) | **files from the secretariat**, can be sent at once | waiting for our reply |
+| 本会議 平成15年〜 | DB-Search (`pref.tottori.dbsr.jp`) | **files from the secretariat** | **received 2026-10-14, imported**: 907 sittings, 2003-05-09〜2025-06-30 |
 | 本会議 平成7〜14年 | same | files, once the old media (DVD/USB) are found — or via the vendor, which we will not ask for | waiting |
 | 委員会 平成18年度〜 | **とりネット** (`www.pref.tottori.lg.jp/88112.htm`), not DB-Search | **fetch it ourselves**, once 広報課情報センター has approved the method we describe | **permitted 2026-10-05**, weekends; verbatim |
 
@@ -79,3 +79,64 @@ every speech of those days twice. Pairing is by committee and date, not by
 title alone — 令和4年8月19日 has two 確定版 from two committees. A 速報版 that is
 kept is marked as such in the record's title, so it can be replaced when its
 確定版 appears.
+
+## 本会議 received and imported (2026-10-14)
+
+963 files, a zip extracted into `data/` with its Shift_JIS names read as cp437
+(「H19年」 arrived as 「H19öN」). `scripts/tottori_receive.py data manual/鳥取県`
+copies them unchanged under readable names; `pt import manual/鳥取県
+--prefecture 鳥取県 --format tottori` (`importers/tottori.py`) reads that tree.
+No request is made by either. Every file is cp932 and decodes cleanly.
+
+**Result: 907 sittings, 66,484 speeches, 58,204,604 characters, 330 speakers**,
+2003-05-09〜2025-06-30, written to `data/鳥取県.jsonl` (`committee` empty —
+本会議 only). A second run imports 0. Speeches reconcile with the markers:
+56,760 ◯ lines in the export and 56,759 speeches — the one is 「◯議長（野田修君）」
+alone with no words (平成26年12月9日), counted as `silent`.
+
+Two shapes:
+
+- **`export/` — 平成19年2月〜令和7年6月, 774 files**, the search system's export:
+  one sitting per file, first line 「2007年02月19日：平成19年２月定例会（第２号）
+  本文」, ◯ U+25EF, **no 発言番号** (unlike 山梨's downloads), so the markers are
+  the boundaries. 号 run 1..N with no gap in every session, no date twice. Filed
+  as `20070219_平成19年2月定例会_第2号.txt`, so a re-sent file replaces its
+  predecessor rather than arriving as another 「document (16).txt」.
+- **`H15-H18/` — 平成15年5月〜平成18年12月, 189 files** the secretariat kept, one
+  folder per session, named by hand: 57 目次・付録 (skipped by name) and 132
+  sittings in four layouts — the usual (header, 「平成１５年６月９日（月曜日）」,
+  attendance, ○ U+25CB); 平成15年5月臨時会 indented eight spaces and wrapped
+  mid-word; 平成17年6月定例会 body only, dated by the file name 「_170621」;
+  and 平成18年11月定例会's 「第1～4号」「第5～7号」, several sittings per file,
+  hard-wrapped at 150 columns, split at the printed date. 第1号 arrives both
+  alone and inside 「第1～4号」, and the two give the same speeches once the wrap
+  is undone (they did not before it — that is how the wrap was found).
+
+**The rule line is two things.** The 16-character separator ends a section;
+after it come 再開 stamps, 〔参照〕 tables, 〔事務局長朗読〕 and vote rolls
+(「白票を投じた議員の氏名」), dropped and counted. But a speaker can carry on
+after an inserted table with no new marker — 「…議席表のとおり指定いたします。」
+─ 〔参照〕 ─ 「次に、会議録署名議員の指名をいたします。」 — and **the first rule
+(cut everything after a separator) lost exactly those ten passages**; they are
+now joined to the speech before the table (`resumed`). Two passages follow a
+休憩 with no speaker printed — the 黙祷 announcement of 3月11日, 令和6年 and
+令和7年 — and are kept with an empty speaker rather than given to the chair.
+A long rule (33+) is not a separator: in a 委員長報告 it frames the 報告書, in a
+member's speech it stands where words were struck (平成26年11月定例会 第10号),
+and the speech goes on after it.
+
+**Asked of the secretariat** (`docs/inquiries/tottori-files.md`, unsent):
+
+1. three exports that hold only 「発言が指定されていません。」 — 平成20年6月5日
+   (5月定例会 第4号), 平成27年2月12日 (2月定例会 第1号), 令和6年7月3日
+   (6月定例会 第9号). Reported and **not written**, so the re-sent files import.
+2. nothing after 令和7年6月定例会, though they described the data as 平成15年〜.
+3. 平成17年6月定例会 starts at 6/21, the 代表質問; every other session starts at
+   its 開会日. The files carry no 号, so this is asked, not asserted.
+4. 平成15年2月定例会 — the delivery starts at the 5月臨時会 after the election;
+   asked whether it is with the 平成7〜14年 media.
+
+`importers/tottori.py` reports all of this on every run (`numbering`,
+`duplicate`, `no speaker`, `skipped`), so the re-sent files are checked the
+same way. 「山　●　陽　子」 in an attendance list is the secretariat's 外字
+placeholder; it is front matter and never reaches a speaker.

@@ -2,6 +2,32 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-14 — 鳥取 本会議: the secretariat's files, imported (`feat/tottori-honkaigi-import`)
+
+The delivery (H15〜R7, 963 files) was extracted into `data/` with mangled names
+(cp932 read as cp437). `scripts/tottori_receive.py` copies it unchanged into
+`manual/鳥取県/` — the export as `export/YYYYMMDD_<session>_第N号.txt` named
+from its own first line, the H15〜H18 files under their real names.
+
+`importers/tottori.py` + `pt import --format tottori`: the export (no 発言番号,
+◯) and the secretariat's four hand-made layouts (wrapped at 8-space indent,
+dateless, several sittings per file hard-wrapped at 150 columns). 目次・付録
+skipped by name; one sitting per date (H18.11 第1号 arrives twice — same
+speeches); three empty exports reported and not written.
+
+Verified: **907 sittings, 66,484 speeches, 58,204,604 characters**; 0
+unreadable markers; export speeches equal its ◯ lines less one marker with no
+words; the 号 of every session from 平成19年 are 1..N without gaps; no speaker
+name split by whitespace, width or honorific, no PUA; CSV rows equal speeches;
+a second import writes 0. What a separator drops was sorted by first line —
+which found ten passages of chairs continuing after a 〔参照〕 table, lost by the
+first rule and now joined to the speech before it. 237 tests pass; ruff, mypy
+clean.
+
+Open, asked in `docs/inquiries/tottori-files.md` (unsent): the three empty
+exports, everything after 令和7年6月定例会, 平成17年6月定例会's 開会日, and
+平成15年2月定例会.
+
 ## 2026-10-13 — 滋賀・石川 本会議 configured; 鳥取's survey widened (`feat/voices-tottori-configs`)
 
 After the power cut (10/12 08:30 – 10/13 09:24): nothing was lost — no window

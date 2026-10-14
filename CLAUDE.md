@@ -229,6 +229,13 @@ researcher's call, not ours, and when it is made it gets written down in a confi
 
 **鳥取 — 本会議 as files, 委員会 from とりネット after 広報課 approves (2026-10-01)**
 
+**本会議 received and imported 2026-10-14**: 907 sittings, 66,484 speeches,
+58,204,604 characters, 2003-05-09〜2025-06-30 (`importers/tottori.py`,
+`pt import manual/鳥取県 --prefecture 鳥取県 --format tottori`; the delivery is
+filed by `scripts/tottori_receive.py`). Three empty exports, nothing after
+令和7年6月, 平成17年6月's 開会日 and 平成15年2月 are asked of the secretariat
+(`docs/inquiries/tottori-files.md`, unsent).
+
 The secretariat will send 本会議 (平成15年〜 now, 平成7〜14年 when the media turn
 up); 委員会 are on the prefecture's own site, whose 広報課 wants our method
 described before any automated access. Committee minutes are verbatim HTML
@@ -510,6 +517,12 @@ rather than treating them as local quirks.
   **zero** speeches. Three prefectures, three codepoints: check the circle before
   copying any marker rule, and write it as `\u25ef` rather than pasting a glyph
   no one can tell apart in a monospace font.
+- **A rule line can end a speech or interrupt it.** 鳥取's export prints a
+  〔参照〕 table between two separators and the chair then *carries on with no
+  marker*; cutting everything after a separator lost those passages in ten
+  sittings, and nothing warned — the text simply was not there. Look at what
+  follows a separator before deciding it is never speech, and sort what is
+  dropped by its first line: the 再開 stamps are 99%, and the rest is the check.
 - **Where the vendor numbers the speeches, take the numbering.** 山梨's downloads
   carry `1:` … `39:`, and using them instead of the marker moves the failure: a
   marker that cannot be read costs a *name*, not the words, and an unnamed speaker

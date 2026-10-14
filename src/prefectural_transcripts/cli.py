@@ -12,6 +12,7 @@ import typer
 
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient, current_time
+from prefectural_transcripts.importers import tottori
 from prefectural_transcripts.importers.dbsearch import DbSearchImporter, find_downloads
 from prefectural_transcripts.scrapers import (
     GenericScraper,
@@ -214,6 +215,9 @@ def import_downloads(
     data_dir: Annotated[Path, typer.Option(help="Where the corpus lives.")] = Path("data"),
     csv: Annotated[bool, typer.Option(help="Write a CSV alongside the JSONL.")] = False,
     dry_run: Annotated[bool, typer.Option(help="Parse and report, write nothing.")] = False,
+    format: Annotated[
+        str, typer.Option(help="dbsearch (山梨's downloads) or tottori (鳥取's delivery).")
+    ] = "dbsearch",
     verbose: Annotated[bool, typer.Option("--verbose", "-v")] = False,
 ) -> None:
     """Import transcripts downloaded by hand from a DB-Search system.
@@ -221,8 +225,17 @@ def import_downloads(
     For assemblies that have asked us not to fetch their search system
     automatically — 山梨 did, by telephone on 2026-09-17 — and pointed at the
     page's ダウンロード button instead. This makes no requests.
+
+    `--format tottori` reads the files 鳥取県議会事務局 sent (2026-10-14), as
+    filed under manual/鳥取県 by scripts/tottori_receive.py.
     """
     _configure_logging(verbose)
+    if format == "tottori":
+        _import_tottori(source, prefecture, data_dir, csv=csv, dry_run=dry_run)
+        return
+    if format != "dbsearch":
+        typer.echo(f"Unknown format {format!r}: dbsearch or tottori")
+        raise typer.Exit(2)
     paths = find_downloads(source)
     if not paths:
         typer.echo(f"No .txt files under {source}")
@@ -242,6 +255,27 @@ def import_downloads(
                     csv_writer.write(meeting)
 
     typer.echo(f"read     : {len(paths)} files from {source}")
+    for line in outcome.summary():
+        typer.echo(line)
+    typer.echo(f"{'would write' if dry_run else 'wrote'}   : {store.path}")
+
+
+def _import_tottori(
+    source: Path, prefecture: str, data_dir: Path, *, csv: bool, dry_run: bool
+) -> None:
+    if prefecture != tottori.PREFECTURE:
+        typer.echo(f"--format tottori is for {tottori.PREFECTURE}, not {prefecture}")
+        raise typer.Exit(2)
+    store = TranscriptStore(data_dir, prefecture)
+    outcome = tottori.import_tree(source, skip=store.seen_keys())
+    if not dry_run:
+        with ExitStack() as stack:
+            stack.enter_context(store)
+            csv_writer = stack.enter_context(SpeechCsvWriter(data_dir, prefecture)) if csv else None
+            for meeting in outcome.meetings:
+                store.write(meeting)
+                if csv_writer:
+                    csv_writer.write(meeting)
     for line in outcome.summary():
         typer.echo(line)
     typer.echo(f"{'would write' if dry_run else 'wrote'}   : {store.path}")
