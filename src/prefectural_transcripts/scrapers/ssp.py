@@ -413,6 +413,8 @@ class Outcome:
     """Sittings read out of a single 議題 block. See `RECORD_TITLE`."""
     skipped_materials: int = 0
     """会議 under the listing's 「資料」 root. See `PROCEEDINGS_ROOT`."""
+    summary_documents: int = 0
+    """Sittings recorded only as a 要点記録. See `SspScraper._summary_record`."""
     """会議 whose printed year cannot be true — see `_council_year`."""
     unknown_block_codes: dict[int, int] = field(default_factory=dict)
     skipped_labels: dict[str, int] = field(default_factory=dict)
@@ -429,6 +431,7 @@ class Outcome:
             f"impossible years : {self.impossible_years}",
             f"one-block records: {self.record_documents}",
             f"資料 skipped      : {self.skipped_materials}",
+            f"summary records  : {self.summary_documents}",
         ]
         if self.unknown_block_codes:
             lines.append(f"unknown blocks   : {self.unknown_block_codes}")
@@ -663,6 +666,8 @@ class SspScraper(BaseScraper):
 
         if not speeches:
             speeches = self._from_committee_record(blocks)
+        if not speeches:
+            speeches = self._summary_record(blocks)
 
         self.outcome.documents += 1
         self.outcome.speeches += len(speeches)
@@ -700,6 +705,35 @@ class SspScraper(BaseScraper):
                 for i, (name, words) in enumerate(pairs)
             ]
         return []
+
+    def _summary_record(self, blocks: list[dict[str, Any]]) -> list[Speech]:
+        """A sitting recorded only as a 要点記録: its 議題 blocks, marked `summary`.
+
+        秋田's 議会運営委員会 has no speech block at all. Its record is
+        「△協議事項」 written up in the third person — 「総務課長から資料１により
+        …説明があり、了承された。」 — and 神奈川's is the same thing inside its
+        《委員会記録》 block, 「議長から…報告があった。」. Not anyone's words, and
+        until 2026-10-15 not collected; now kept as what they are
+        (`models.Kind`), so the store files them apart from the transcripts.
+
+        Only consulted when nothing else in the sitting is speech, and only blocks
+        that contain a sentence count: an order paper is a list of items and
+        never ends one with 「。」, so a sitting with no record stays empty — and
+        still warns.
+        """
+        passages = [
+            text
+            for block in blocks
+            if int(block.get("minute_type_code") or 0) == AGENDA_CODE
+            and "。" in (text := _strip_pre(block.get("body") or "").strip())
+        ]
+        if not passages:
+            return []
+        self.outcome.summary_documents += 1
+        return [
+            Speech(order=i, speaker="", role=None, text=text, kind="summary")
+            for i, text in enumerate(passages)
+        ]
 
     def _date(self, sitting: Sitting, front_matter: str, ref: MeetingRef) -> date | None:
         """The listing's date, cross-checked against the one the document prints.
@@ -760,6 +794,11 @@ def parse_committee_record(text: str) -> list[tuple[str, str]]:
     出席者氏名, 当局出席者) is a run of unindented lines and never qualifies, and
     the order of business (「５　同上質疑」) begins with a digit.
 
+    The indent is U+3000 everywhere but in 平成17年's 決算特別委員会, which
+    indents with two ASCII spaces — a 36,520-character 意見発表 that read as no
+    speech at all until 2026-10-15. Two, because a single space opens some
+    sub-items of a 要点記録.
+
     A record with no indented lines at all — 「１　開　　会」 and nothing else, of
     which 神奈川 has hundreds — yields nothing, which is the right answer for a
     sitting where nobody is recorded as speaking.
@@ -783,7 +822,7 @@ def parse_committee_record(text: str) -> list[tuple[str, str]]:
             continue
         following = lines[index + 1] if index + 1 < len(lines) else ""
         if (
-            following.startswith(_RECORD_SPEECH)
+            following.startswith((_RECORD_SPEECH, "  "))
             and not line[0].isdigit()
             and not unicodedata.normalize("NFKC", line[0]).isdigit()
             and len(line) <= 40

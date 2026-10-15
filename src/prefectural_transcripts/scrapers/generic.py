@@ -117,6 +117,16 @@ class DetailSelectors:
     one match to the next becomes that speech.
     """
 
+    summary: str | None = None
+    """Regex on a `speech_split` marker that says the passage is not verbatim.
+
+    和歌山's committees are 要点筆記 — 「●委員長」, 「Ｑ　谷口委員」 — except where
+    the same site prints a real transcript, 「○濱口委員長　山家委員。」, so what a
+    passage is has to be read off its own marker. A match marks the passage
+    `kind = "summary"` (see `models.Kind`); a record that is all summary is then
+    stored apart from the transcripts.
+    """
+
     patterns: dict[str, str] = field(default_factory=dict)
     """Regex fallbacks for meeting fields CSS cannot reach, matched on the
     container's text. Keys are `date`, `session`, `committee`, `title`; each value
@@ -343,7 +353,9 @@ class GenericScraper(BaseScraper):
         if sel.speech_split and not sel.speech:
             # Newlines are kept here: the split is done on text, and paragraph
             # breaks are the only structure these pages have left.
-            return split_speeches(root.get_text("\n", strip=True), sel.speech_split)
+            return split_speeches(
+                root.get_text("\n", strip=True), sel.speech_split, summary=sel.summary
+            )
         if not sel.speech:
             # No per-speech markup configured: keep the page as a single block
             # rather than silently dropping the transcript.
@@ -361,7 +373,7 @@ class GenericScraper(BaseScraper):
         return speeches
 
 
-def split_speeches(text: str, pattern: str) -> list[Speech]:
+def split_speeches(text: str, pattern: str, summary: str | None = None) -> list[Speech]:
     """Cut a flat transcript into speeches at each `pattern` match.
 
     Everything from one marker to the next is that speaker's text. Anything
@@ -374,8 +386,12 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
     alternatives, and a regex cannot use the name `speaker` twice. Any group
     named `speaker2`, `role3`, … therefore counts as that field; the first one
     that matched wins, in the order the branches are written.
+
+    `summary`, if given, is searched for in each marker as matched: where it is
+    found the passage is a summary, not a speech (`models.Kind`).
     """
     regex = re.compile(pattern)
+    summary_marker = re.compile(summary) if summary else None
     marks = list(regex.finditer(text))
     speeches: list[Speech] = []
     for i, mark in enumerate(marks):
@@ -390,6 +406,11 @@ def split_speeches(text: str, pattern: str) -> list[Speech]:
                 speaker=_clean_speaker(_branch(groups, "speaker")),
                 role=_branch(groups, "role").strip() or None,
                 text=body,
+                kind=(
+                    "summary"
+                    if summary_marker and summary_marker.search(mark.group(0))
+                    else "verbatim"
+                ),
             )
         )
     return speeches

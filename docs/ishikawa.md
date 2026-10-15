@@ -124,3 +124,19 @@ and the checks are in `docs/shiga.md`). Differences that matter:
 905 定例会 documents on the all-years list plus 臨時会, less ~140 目次: ~800
 sittings, ~1,700 requests, about an hour. Committees: 「会議記録」 /
 「議事の経過概要」, condensed — not configured, as 滋賀.
+
+## The committee side: decided, not configured (2026-10-15)
+
+**Decided**: the researcher — what is not verbatim is kept as not verbatim.
+「議事の経過概要」 is condensed by the secretariat, so its passages will be
+`kind = "summary"` and the records will go to `data/summary/`, apart from the
+本会議 transcripts (`models.Kind`). It is no longer waiting on a decision.
+
+**Not configured**, because no rule can be written from what is cached. The
+committee markers are a different shape from 本会議's — 「◆重田剛　委員」,
+「◎橋本　財政課長」, 「○木沢成人　副分科会長」: name, a full-width space, office,
+no brackets — and `_MARKER` reads none of them. The cache holds ~10 committee
+sittings per site: 滋賀's all from 令和7年12月〜令和8年3月, 石川's all
+平成29年 環境農林建設委員会. A rule verified on one committee-year says nothing
+about the others (静岡 needed five marker shapes). Next: a committee sample
+spread over years and committees, in a weekend window, after 本会議 is collected.

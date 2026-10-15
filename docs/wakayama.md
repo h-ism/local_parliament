@@ -201,6 +201,14 @@ speeches** from the others:
 令和7年's 総括質疑 is still 要点筆記 and 令和8年's is not. The site changed
 generation inside the range this config covers.
 
+**Kept as what it is (2026-10-15).** The researcher: what is not verbatim is
+kept as not verbatim. `detail.summary = '^[●ＱＡ]'` marks every 要点筆記
+passage `kind = "summary"`, and the 160 sittings made of nothing else are stored
+in `data/summary/和歌山県.jsonl` — 7,477 passages, 1,207,980 characters — not
+among the transcripts. The three 令和8年2月 予算特別委員会 sittings are 「○」
+throughout (337 speeches) and stay in `data/和歌山県.jsonl`; no sitting in the
+163 mixes the two forms.
+
 ### 予算特別委員会 is a level deeper, in some sessions only
 
 In a 2月定例会 its page is an index of 「総括質疑1日目」「総括質疑2日目」「採決」; in a

@@ -30,11 +30,13 @@ What a block is, by its first character:
 
 The 「目次」 documents are listed beside the sittings and are skipped by label.
 
-**The committee side is not collected.** Both sites publish committees as
+**The committee side is not configured yet.** Both sites publish committees as
 会議要録 / 会議記録 whose body is 「議事の経過概要」 — first person, but condensed
-by the secretariat. Whether that is "verbatim" is the researcher's call (the
-rule of 2026-09-24 was written for third-person 要点記録), so the configs point
-at the 本会議 index only. See `docs/shiga.md`.
+by the secretariat. Decided 2026-10-15: kept, as summary (`models.Kind`), not as
+speech. What is missing is a rule: committee markers are 「◆重田剛　委員」 and
+「◎橋本　財政課長」, which `_MARKER` reads on none of the ~20 cached committee
+sittings, and those are one committee-year on 石川 and one session on 滋賀 — too
+narrow to write a rule from. See `docs/shiga.md`.
 """
 
 from __future__ import annotations

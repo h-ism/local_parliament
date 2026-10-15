@@ -7,15 +7,29 @@ list of `Speech` records. Everything is serialised to JSONL, one Meeting per lin
 from __future__ import annotations
 
 import datetime as dt
+from typing import Literal
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, computed_field
 
 # `datetime` is imported under an alias because both models carry a field named
 # `date`, which would otherwise shadow the type inside the class body.
 
 
+Kind = Literal["verbatim", "summary"]
+"""What a passage is: somebody's own words, or a record *of* what was said.
+
+A 要点筆記 (和歌山's committees), a 要点記録 (秋田's and 神奈川's 議会運営委員会)
+and 兵庫's 「○（委員長発言の概要）」 attribute words to a person without being that
+person's words. They are kept — the researcher's decision of 2026-10-15 — but as
+what they are: a passage marked `summary` is never a speech, and every count of
+speeches, speakers or characters must leave it out. See `Meeting.kind` for where
+a whole record of them is stored.
+"""
+
+
 class Speech(BaseModel):
-    """A single contiguous utterance by one speaker."""
+    """A single contiguous utterance by one speaker — or, when `kind` says so,
+    a passage of a summary record attributed to one."""
 
     order: int = Field(description="0-based position within the meeting")
     speaker: str = Field(description="Speaker name as printed, e.g. '山田太郎'")
@@ -24,6 +38,10 @@ class Speech(BaseModel):
         description="Title/office as printed, e.g. '議長', '知事', '総務部長'",
     )
     text: str
+    kind: Kind = Field(
+        default="verbatim",
+        description="'summary' for a 要点筆記/要点記録/発言の概要 passage; see `Kind`",
+    )
 
 
 class MeetingRef(BaseModel):
@@ -88,6 +106,21 @@ class Meeting(BaseModel):
     @property
     def key(self) -> str:
         return record_key(str(self.url) if self.url else None, self.source_file)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def kind(self) -> Kind:
+        """`summary` when every passage is one; derived, so it cannot disagree.
+
+        A record that is summary throughout is not a transcript and is stored
+        apart from the transcripts (`TranscriptStore`). A transcript with a few
+        summarised passages — 兵庫's chair reading out 「発言の概要」 in a sitting
+        that is otherwise verbatim — stays a transcript, with those passages
+        marked in place, because moving them would lose where they were said.
+        """
+        if self.speeches and all(s.kind == "summary" for s in self.speeches):
+            return "summary"
+        return "verbatim"
 
     def full_text(self) -> str:
         return "\n\n".join(s.text for s in self.speeches)

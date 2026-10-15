@@ -7,7 +7,9 @@
 #
 # 本会議 only. The committee side (g08v_views.asp) is 「会議記録」 whose body is
 # 「議事の経過概要」 — first person but condensed — and whether that counts as
-# verbatim is the researcher's decision, not made yet.
+# verbatim is the researcher's decision, not made yet. Decided 2026-10-15: it is
+# not, and it is kept as a summary (`models.Kind`) — but it needs its own rule,
+# not yet written (scrapers/voices.py).
 
 prefecture = "石川県"
 name = "ishikawa"

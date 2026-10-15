@@ -2,6 +2,61 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-15 — What is not verbatim, kept as what it is (`feat/record-kind`)
+
+The researcher: 「逐語ではないものは、あくまで逐語ではないものとして、置いてください」.
+That replaces "verbatim only" (2026-09-24) — and it turned out the old rule had
+not held either: **和歌山's 160 要点筆記 committee sittings were in
+`data/和歌山県.jsonl` all along, 7,477 summary passages counted as speeches.**
+
+- `Speech.kind` (`verbatim` | `summary`) on every passage; `Meeting.kind` is
+  derived — summary when every passage is — so it cannot disagree with them.
+- `TranscriptStore` files a summary record under **`data/summary/<pref>.jsonl`**
+  (CSV likewise, with a `kind` column), never beside the transcripts, because
+  every count this project has published is over `data/*.jsonl`. `seen_keys`
+  reads both; `reparse.py` reads both and writes each record where its kind
+  says; `audit.py` counts both; `pt stats` reports passages apart from speeches.
+- Rules: `detail.summary` / `[kensakusystem] summary`, a regex on the marker —
+  和歌山 `^[●ＱＡ]`, 兵庫 `発言の概要`. SSP: `_summary_record` reads the 議題
+  blocks of a sitting with no speech, if they hold a sentence.
+- `KensakuSystemScraper.url_prefixes` — `reparse.py` could not route 兵庫 at all.
+- `parse_committee_record` accepts a two-ASCII-space indent: 神奈川 平成17年
+  決算特別委員会's 36,520-character 意見発表 read as no speech, and five more
+  sittings had speeches swallowed by the one before (ふじた委員's 6,134-character
+  反対意見 was filed under 東野委員). +238 speeches, 0 new speaker names.
+
+Result, all from cache, zero requests:
+
+| | transcripts | summary records | summary passages |
+| --- | --- | --- | --- |
+| 和歌山 | 1,171 (委員会 3, 337 speeches) | 160 | 7,477 |
+| 兵庫 | 5,058 | 340 | 1,282 + 1,083 in place |
+| 秋田 | 5,147 | 531 (議会運営委員会) | 1,458 |
+| 神奈川 | 3,655 | 223 (議会運営委員会 etc.) | 223 |
+
+Corpus: **26 prefectures, 93,112 transcripts, 5,829,575 speeches, 2,314,265,222
+characters** (verbatim only); 1,254 summary records, 11,523 passages, 3,064,771
+characters beside it.
+
+Verified: 和歌山 and 兵庫 re-parse to the same speaker, role and text on every
+record (1,331 and 5,398), only `kind` and the file moving; 秋田 5,147
+transcripts unchanged; 神奈川 3,649 unchanged and 6 changed, each new speech
+located inside the speech that had swallowed it. The SSP summary rule was run
+over all 1,262 empty SSP sittings first: it took 秋田's and 神奈川's 議会運営委員会
+and nothing on the other fifteen; 秋田's 予算特別委員会 order papers stay empty.
+245 tests (8 new), ruff, mypy clean.
+
+**Found, not fixed — 茨城's roles hold surnames.** `finish_ssp.sh` re-split
+神奈川 with 5 invented speakers (「佐川」「小川」「金子」) against 0 on 9/24; the
+cause, isolated by re-running with each corpus left out of the office pool, is
+茨城 (added 9/30): ~14,000 committee speeches in 846 sittings with role 「鈴木」
+and speaker 「義」. 神奈川 keeps its 9/24 split wherever its text did not change.
+Do not re-run the split over SSP until 茨城 is fixed.
+
+**Not configured — 滋賀・石川 committees.** Decided (summary), but their markers
+(「◆重田剛　委員」) are a new shape and the cache holds one committee-year per
+site. A spread sample first; `docs/shiga.md`.
+
 ## 2026-10-14 — 鳥取 本会議: the secretariat's files, imported (`feat/tottori-honkaigi-import`)
 
 The delivery (H15〜R7, 963 files) was extracted into `data/` with mangled names

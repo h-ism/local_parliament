@@ -239,6 +239,23 @@ decision is ever revisited, these records are in the cache and a re-parse is
 free — but they would need a field saying what they are, not a place among the
 speeches.
 
+**Revisited 2026-10-15: kept, as what they are.** The researcher: what is not
+verbatim is kept as not verbatim. `SspScraper._summary_record` reads a sitting
+with no speech block's 議題 blocks into passages marked `kind = "summary"`, and
+the store files the record under `data/summary/`, apart from the transcripts —
+a field saying what they are, and no place among the speeches. A block counts
+only if it holds a sentence (「。」), so an order paper stays an empty sitting.
+From the cache, zero requests: **秋田 531** (議会運営委員会; one of 532 has no
+sentence and stays empty) and **神奈川 223** — 神奈川's 議会運営委員会 writes its
+《委員会記録》 the same way, 「政策局長から、提出議案（81件）について説明があり
+…決定した。」. Nothing on the other fifteen tenants qualified.
+
+The same pass found one 神奈川 record that *was* a transcript: 平成17年
+決算特別委員会's 意見発表, 36,520 characters, indented with two ASCII spaces
+where every other record uses U+3000, so `parse_committee_record` read no
+speaker in it. It and five sittings like it now parse — 238 speeches, among
+them ふじた委員's 6,134-character 反対意見 that had been filed under 東野委員.
+
 ---
 
 ## 4. What is still hard: the speaker

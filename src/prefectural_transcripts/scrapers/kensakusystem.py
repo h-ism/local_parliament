@@ -338,6 +338,10 @@ class KensakuConfig:
     name: str = ""
     speech_split: str = DEFAULT_SPEECH_SPLIT
 
+    summary: str | None = None
+    """Regex on a marker meaning the passage is not verbatim — 兵庫's
+    「○（委員長発言の概要）」. See `DetailSelectors.summary`."""
+
     encoding: str = "cp932"
     """Charset to decode a transcript with, rather than sniffing it.
 
@@ -413,6 +417,10 @@ class KensakuSystemScraper(BaseScraper):
     def __init__(self, config: KensakuConfig) -> None:
         self.config = config
         self.prefecture = config.prefecture
+
+    def url_prefixes(self) -> list[str]:
+        """One tenant, one directory: every record's URL starts with `base_url`."""
+        return [self.config.base_url]
 
     # -- listing ---------------------------------------------------------------
 
@@ -568,7 +576,7 @@ class KensakuSystemScraper(BaseScraper):
     # -- detail ----------------------------------------------------------------
 
     def _speeches(self, text: str) -> list[Speech]:
-        speeches = split_speeches(text, self.config.speech_split)
+        speeches = split_speeches(text, self.config.speech_split, summary=self.config.summary)
         if not self.config.roster_split:
             return speeches
         names, offices = roster_names(text), roster_offices(text)

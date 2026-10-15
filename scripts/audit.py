@@ -21,6 +21,7 @@ from pathlib import Path
 from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
 from prefectural_transcripts.scrapers import load_scraper
+from prefectural_transcripts.storage import summary_path
 
 
 def main(argv: list[str]) -> int:
@@ -29,7 +30,14 @@ def main(argv: list[str]) -> int:
         return 2
     site, corpus = argv[0], Path(argv[1])
     scraper = load_scraper(site)
-    have = {json.loads(line)["url"] for line in corpus.open(encoding="utf-8") if line.strip()}
+    # A summary record is collected too — it is just stored apart (`Meeting.kind`).
+    have = {
+        json.loads(line)["url"]
+        for path in (corpus, summary_path(corpus))
+        if path.exists()
+        for line in path.open(encoding="utf-8")
+        if line.strip()
+    }
 
     # Offline by construction: an audit reads the cache the crawl filled, and a
     # miss is a finding rather than a reason to ask someone's server again —

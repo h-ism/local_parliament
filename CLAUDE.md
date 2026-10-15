@@ -87,19 +87,27 @@ Modules under `src/prefectural_transcripts/`:
   exception to robots.txt, read from a site config's `[robots]` table. It cannot
   be constructed without a reason and an ISO date, and it covers only the URL
   prefixes it names.
-- `storage.py` — JSONL writer, one file per prefecture; `seen_keys()` drives resume.
+- `storage.py` — JSONL writer, one file per prefecture (and one under
+  `data/summary/` for records that are not verbatim); `seen_keys()` drives resume
+  and reads both.
   `SpeechCsvWriter` / `write_csv` render the same records as a flat CSV (one row
   per speech) for analysis; JSONL stays canonical.
 
 ## Conventions
 
-- **Verbatim only.** A 要点記録 summarises what was said in the third person and
-  lists remarks under 「［主な発言］」; 和歌山's committees and 秋田's 議会運営委員会
-  are both that. They are not collected (decided 2026-09-24). A summary
-  attributes words to a person without being that person's words, and mixing the
-  two makes every speech count and every who-spoke-how-much wrong. If that is
-  revisited, such records need a field saying what they are — not a place among
-  the speeches.
+- **What is not verbatim is kept as not verbatim** (researcher, 2026-10-15;
+  replaces "verbatim only" of 2026-09-24). A 要点筆記・要点記録・発言の概要
+  attributes words to a person without being that person's words, so it is never
+  a speech: `Speech.kind = "summary"` marks the passage, `Meeting.kind` (derived:
+  summary when every passage is) marks the record, and `TranscriptStore` writes a
+  summary record to **`data/summary/<pref>.jsonl`**, never beside the transcripts
+  — every count this project publishes is taken over `data/*.jsonl`. A transcript
+  with a few summarised passages (兵庫's chair reading 「発言の概要」) stays a
+  transcript with those passages marked in place. **Any count of speeches,
+  speakers or characters must filter `kind == "verbatim"`.** Held now: 和歌山's
+  committees (160), 兵庫's 議会運営委員会 etc. (340 + 1,083 passages in place),
+  秋田's 議会運営委員会 (531), 神奈川's 議会運営委員会 etc. (223). 滋賀・石川's
+  committee 「議事の経過概要」 belong here too, once configured.
 - **Crawl politely.** Defaults (2s per host, robots respected, everything cached)
   are a deliberate choice about small public-sector servers, not a placeholder.
   Don't lower them to make a run faster. SSP runs at **5s**, which is part of the
@@ -142,10 +150,10 @@ collect", with the cost of each target. `docs/prefecture-survey.md` still maps a
 
 | | 本会議 | 委員会 | Range |
 | --- | --- | --- | --- |
-| **和歌山** | 1,168 / 67,356 | 163 / 7,814 | 本会議 1989-02-27〜, 委員会 2023-05-19〜 |
+| **和歌山** | 1,168 / 67,356 | 3 / 337 (+160 summary) | 本会議 1989-02-27〜, 委員会 2023-05-19〜 |
 | **三重** | 1,059 / 62,940 | 426 / 39,530 | 本会議 1989-02-28〜, 委員会 2023-01-18〜 |
 | **愛媛** | 909 / 53,631 | 2,214 / 154,702 | 本会議 1991-06-27〜, 委員会 2007-05-11〜 |
-| **兵庫** | 1,020 / 55,035 | 4,378 / 219,787 | both from **1986** |
+| **兵庫** | 1,020 / 55,035 | 4,038 / 217,422 (+340 summary) | both from **1986** |
 | **静岡** | **14,030 / 62,780** | **18,245 / 156,645** | 本会議 1999-05-19〜, 委員会 2007-05-18〜 |
 
 **SSP, all 17 tenants, complete 2026-09-23: 45,082 documents, 4,345,822
@@ -153,8 +161,11 @@ speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every lis
 reconciles item by item against its corpus, 0 missing on all seventeen.
 `docs/ssp.md` has the protocol and the traps.
 
-**The corpus is 25 prefectures, 93,459 documents, 5,772,918 speeches,
-2,257,919,010 characters** (2026-10-01, counted from `data/`).
+**The corpus is 26 prefectures, 93,112 transcripts, 5,829,575 speeches,
+2,314,265,222 characters** (2026-10-15, counted from `data/*.jsonl`, `kind ==
+"verbatim"` only). Beside it, **1,254 summary records** in `data/summary/`
+(和歌山・兵庫・秋田・神奈川) and 1,083 summarised passages inside 兵庫's
+transcripts: 11,523 passages, 3,064,771 characters, none of them speech.
 
 **岩手 and 茨城, complete (2026-09-29/30)** — each listing reconciles item by item:
 
@@ -315,8 +326,10 @@ from the 10/10–11 cache, offline. `ACT=203` — named after one speech — is 
 speech list on 107/107 cached sittings, so a sitting is two requests and the
 speech boundaries are the vendor's. First collection: **Sat 2026-10-17 20:00**
 by `pt-voices-collect.timer`, ~80 and ~60 minutes. Committees are 「会議要録」/
-「会議記録」 — 「議事の経過概要」, first person but condensed — and **not
-configured until the researcher decides** whether that is verbatim.
+「会議記録」 — 「議事の経過概要」, first person but condensed. **Decided
+2026-10-15: not verbatim, kept as summary** — but not configured, because the
+cache holds one committee-year per site and their markers are a new shape
+(「◆重田剛　委員」); a spread sample comes first (`docs/shiga.md`).
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 
@@ -443,6 +456,16 @@ rather than treating them as local quirks.
   office from it corroborated by a name from it. Where neither matches, keep the
   title whole and **count it** — 埼玉's roster is a scanned image, so 100% of its
   committee speakers are unsplit, and a number is the only honest way to say so.
+- **A pooled vocabulary inherits every corpus's defects.** `split_titles.py`
+  learns offices from the roles in *all* of `data/`, so when 茨城 arrived with
+  surnames in `role` (「鈴木」 role, 「義」 speaker — roughly 14,000 committee
+  speeches in 846 sittings, **not yet fixed**), 「細谷」「小川」「金子」 became
+  offices and 神奈川's next split invented speakers. Found 2026-10-15 only because
+  `finish_ssp.sh` ran again and the "invented ending in an office" line went
+  0 → 5; 神奈川 kept its 9/24 split wherever its text was unchanged. **Re-running
+  a finished pass is a check on everything that joined the pool since** — compare
+  it with the last run in `data/logs/ssp/finish.log`, and do not re-run the split
+  over SSP until 茨城 is fixed.
 - **A POST API needs the request body in the cache key.** SSP's three endpoints are
   three URLs and everything else is in the body; keying the cache on the URL would
   serve one sitting's transcript for the whole archive.

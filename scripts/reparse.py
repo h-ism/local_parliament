@@ -16,9 +16,15 @@ speeches and report it as a diff. Records are routed by URL to the site whose
 `start_urls` they came from, and a record no named site claims stops the run
 before anything is written.
 
+**The summary file is part of the corpus.** A record that is summary throughout
+(`Meeting.kind`) lives in `data/summary/<prefecture>.jsonl`; both files are read,
+and every record is written back to the one its re-parsed kind belongs in — so a
+rule that starts or stops calling something a summary moves it, and says how
+many moved.
+
 The previous contents are copied to the backup path first (default: the corpus
-with a `.bak` suffix). What it prints is the diff that matters: how many speeches
-before and after, and which sittings changed.
+with a `.bak` suffix, and the same beside the summary file). What it prints is the
+diff that matters: how many speeches before and after, and which sittings changed.
 """
 
 from __future__ import annotations
@@ -32,6 +38,7 @@ from prefectural_transcripts.config import Settings
 from prefectural_transcripts.http import PoliteClient
 from prefectural_transcripts.models import MeetingRef
 from prefectural_transcripts.scrapers import load_scraper
+from prefectural_transcripts.storage import summary_path
 
 
 def main(argv: list[str]) -> int:
@@ -45,7 +52,14 @@ def main(argv: list[str]) -> int:
     routes = [(prefix, name) for name in names for prefix in scrapers[name].url_prefixes()]
     routes.sort(key=lambda pair: len(pair[0]), reverse=True)
 
-    records = [json.loads(line) for line in corpus.open(encoding="utf-8") if line.strip()]
+    summaries = summary_path(corpus)
+    records = [
+        json.loads(line)
+        for path in (corpus, summaries)
+        if path.exists()
+        for line in path.open(encoding="utf-8")
+        if line.strip()
+    ]
 
     def route(url: str) -> str | None:
         return next((name for prefix, name in routes if url.startswith(prefix)), None)
@@ -60,7 +74,10 @@ def main(argv: list[str]) -> int:
         return 1
 
     shutil.copy(corpus, backup)
-    out: list[str] = []
+    if summaries.exists():
+        shutil.copy(summaries, summary_path(backup))
+    out: dict[str, list[str]] = {"verbatim": [], "summary": []}
+    moved = {"to summary": 0, "to transcripts": 0}
     before = after = changed = 0
     per_site: dict[str, int] = dict.fromkeys(names, 0)
     # Offline, like `audit.py`: a re-parse reads the cache the crawl filled, and
@@ -95,12 +112,21 @@ def main(argv: list[str]) -> int:
                     f"  {(record.get('title') or record['url'])[:48]}: "
                     f"{len(record['speeches'])} -> {len(meeting.speeches)}"
                 )
-            out.append(meeting.model_dump_json())
-    corpus.write_text("\n".join(out) + "\n", encoding="utf-8")
+            if meeting.kind != record.get("kind", "verbatim"):
+                moved["to summary" if meeting.kind == "summary" else "to transcripts"] += 1
+            out[meeting.kind].append(meeting.model_dump_json())
+    corpus.write_text("".join(line + "\n" for line in out["verbatim"]), encoding="utf-8")
+    if out["summary"] or summaries.exists():
+        summaries.parent.mkdir(parents=True, exist_ok=True)
+        summaries.write_text("".join(line + "\n" for line in out["summary"]), encoding="utf-8")
     print(
         f"{'+'.join(f'{n}:{c}' for n, c in per_site.items())}; "
         f"{len(records)} records rewritten; speeches {before} -> {after} "
         f"({after - before:+d}); {changed} sittings changed. Backup at {backup}"
+    )
+    print(
+        f"kinds: {len(out['verbatim'])} transcripts, {len(out['summary'])} summary records "
+        f"({moved['to summary']} moved to summary, {moved['to transcripts']} back)"
     )
     return 0
 

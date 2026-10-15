@@ -6,7 +6,8 @@
 # record that is not a transcript at all.
 #
 # It writes into the same `data/和歌山県.jsonl`, where `committee` is what tells
-# the two apart.
+# the two apart — except that a 要点筆記 sitting is a summary record and the
+# store files it under `data/summary/和歌山県.jsonl` (see `summary` below).
 #
 # Coverage: **令和5年 (2023) 〜 令和8年** — 17 sessions, 157 sittings. That is the
 # whole of what the index offers; the 本会議 archive reaches 平成2年 and the
@@ -114,6 +115,14 @@ speech_split = '''(?xm)
       | (?P<role2>[ＱＡ]) [^\S\n]+ (?P<speaker2>[^\n]{1,30}?) (?:（(?:年長委員|委員外議員)）)? $
       | ○  (?P<speaker3>[^\n 　]{1,20}?) (?:（(?:年長委員|委員外議員)）)? [ 　]
     )'''
+
+# **要点筆記 is kept as what it is** (researcher, 2026-10-15). 「●」 and 「Ｑ／Ａ」
+# are the secretariat's account of the meeting, not anyone's words, so those
+# passages are marked `summary` and the 160 sittings made of nothing else are
+# stored under data/summary/, apart from the transcripts. The three 令和8年2月
+# 予算特別委員会 sittings are 「○」 throughout and stay transcripts — checked
+# from the cache over all 163: no sitting mixes the two forms.
+summary = '^[●ＱＡ]'
 
 [detail.patterns]
 # 「１　日時　　令和7年６月24日（火）午前10時０分～」. Two differences from the

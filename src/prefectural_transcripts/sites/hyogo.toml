@@ -131,3 +131,10 @@ speech_split = '''(?xm)
           (?P<role3>(?:議員|委員長|副委員長|委員|議長|副議長) (?:発言の概要)?) ） $
     | (?P<speaker4>[^（(\n0-9０-９][^（(\n]{0,19}?) (?=[ 　]+\S)
   )'''
+
+# 「○（内藤兵衛委員長発言の概要）」 is what the record says it is: the gist of
+# what the chair said, not the words. Kept, and marked as a summary rather than a
+# speech (researcher, 2026-10-15) — 2,365 passages, nearly all in 議会運営委員会,
+# where 340 sittings consist of nothing else and are therefore stored under
+# data/summary/. The role keeps 「発言の概要」 as printed.
+summary = '発言の概要'

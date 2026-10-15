@@ -162,7 +162,9 @@ def scrape(
                 csv_writer.write(meeting)
             written += 1
             typer.echo(f"[{written}] {meeting.date} {meeting.title or meeting.url}")
-    typer.echo(f"Wrote {written} meetings to {store.path}")
+    typer.echo(f"Wrote {store.written['verbatim']} meetings to {store.path}")
+    if store.written["summary"]:
+        typer.echo(f"Wrote {store.written['summary']} summary records to {store.summary}")
     for line in scraper.report():
         typer.echo(line)
     if csv_out:
@@ -303,11 +305,20 @@ def stats(
         typer.echo("empty corpus")
         raise typer.Exit(1)
     dates = sorted(m.date for m in meetings if m.date)
-    speeches = sum(len(m.speeches) for m in meetings)
-    chars = sum(len(s.text) for m in meetings for s in m.speeches)
-    typer.echo(f"meetings : {len(meetings)}")
-    typer.echo(f"speeches : {speeches}")
-    typer.echo(f"chars    : {chars:,}")
+    # A summarised passage is not a speech (`models.Kind`): counted apart, so
+    # the speech and character totals mean the same thing in every file.
+    passages = [s for m in meetings for s in m.speeches]
+    speeches = [s for s in passages if s.kind == "verbatim"]
+    summaries = [s for s in passages if s.kind == "summary"]
+    records = sum(1 for m in meetings if m.kind == "summary")
+    typer.echo(f"meetings : {len(meetings)}" + (f" ({records} summary records)" if records else ""))
+    typer.echo(f"speeches : {len(speeches)}")
+    typer.echo(f"chars    : {sum(len(s.text) for s in speeches):,}")
+    if summaries:
+        typer.echo(
+            f"summary  : {len(summaries)} passages, "
+            f"{sum(len(s.text) for s in summaries):,} chars — not speeches"
+        )
     if dates:
         typer.echo(f"range    : {dates[0]} .. {dates[-1]}")
     empty = [m for m in meetings if not m.speeches]
