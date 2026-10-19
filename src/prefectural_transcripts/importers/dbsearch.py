@@ -108,9 +108,23 @@ _RULE = re.compile(r"^[\s\u3000]*─{5,}[\s\u3000]*$")
 # The bare form is bounded at 60, not 40: 茨城 has a 43-character office,
 # 「木名瀬グローバル戦略チームリーダー兼Ｇ20貿易・デジタル経済大臣会合推進チームリーダー」.
 # A bound is a claim about the data; 岩手 needed 60 for the same reason.
+#
+# And 茨城's committees tell two members of one surname apart in the marker:
+# 「◯山口（伸）委員長　」「◯中村（は）委員　」. Read by the first branch that is
+# role 「山口」, name 「伸」, and 「委員長」 left at the head of the speech — 38,027
+# speeches in 1,763 sittings until 2026-10-19, and the role vocabulary
+# `split_titles.py` pools from every corpus learned 「鈴木」「細谷」 as offices from
+# it. So that shape comes first and is kept whole, as the site prints it: a
+# short bracket with no honorific in it, then an office, then the space. A
+# plenary marker 「◯議長（田山東湖君）」 has 君 inside and nothing after.
 _MARKER = re.compile(
     r"^[◯○〇]"  # ◯ ○ 〇
     r"(?:"
+    r"(?P<name4>[^（）　\s、。，,「」0-9０-９]{1,8}"
+    r"（[^（）　\s君]{1,4}）"
+    r"[^（）　\s、。，,「」]{1,12})"
+    r"(?=[　\s]|$)"
+    r"|"
     r"(?P<role>[^（）　]{1,40}?)（(?P<name>[^（）]{1,40})）"
     r"|"
     r"(?P<name2>[^（）　、。，,「」]{1,15}(?:　[^（）　、。，,「」]{1,15})?(?:君|さん|氏))"
@@ -250,7 +264,7 @@ def _speaker_of(line: str) -> tuple[str, str | None, str]:
     match = _MARKER.match(line)
     if not match:
         return "", None, line
-    raw_name = match["name"] or match["name2"] or match["name3"] or ""
+    raw_name = match["name4"] or match["name"] or match["name2"] or match["name3"] or ""
     speaker = _clean_speaker(raw_name)
     if not speaker or _NOT_A_NAME.match(speaker):
         return "", None, line

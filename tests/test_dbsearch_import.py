@@ -258,6 +258,24 @@ def test_a_marker_with_no_space_costs_a_name_rather_than_inventing_one():
     assert len(result.unattributed) == 1
 
 
+def test_a_surname_told_apart_in_brackets_is_one_speaker_not_a_role() -> None:
+    # 茨城's committees: 「◯山口（伸）委員長　」. Read as role 山口, name 伸, it
+    # left 「委員長」 at the head of the speech and taught split_titles that 山口
+    # is an office (2026-10-19: 13,944 speeches in 844 sittings).
+    from prefectural_transcripts.importers.dbsearch import _speaker_of
+
+    assert _speaker_of("◯山口（伸）委員長　それでは開会します。") == (
+        "山口(伸)委員長",
+        None,
+        "　それでは開会します。",
+    )
+    assert _speaker_of("◯中村（は）委員　わかりました。")[:2] == ("中村(は)委員", None)
+    assert _speaker_of("◯細谷（典男）委員")[:2] == ("細谷(典男)委員", None)
+    # The plenary shape keeps its office: the bracket holds 君, nothing follows it.
+    assert _speaker_of("◯議長（田山東湖君）　これより")[:2] == ("田山東湖", "議長")
+    assert _speaker_of("◯29番（西野一君）　自由民主党")[:2] == ("西野一", "29番")
+
+
 def test_a_long_office_is_not_cut_off_by_a_length_bound():
     office = "木名瀬グローバル戦略チームリーダー兼Ｇ20貿易・デジタル経済大臣会合推進チームリーダー"
     page = IBARAKI_PAGE.replace("◯小野瀬書記<br/>", f"◯{office}　説明します。<br/>")

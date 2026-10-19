@@ -2,6 +2,28 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-19 — 茨城: a surname told apart in brackets is a speaker, not a role (`fix/ibaraki-roles`)
+
+茨城's committees write 「◯山口（伸）委員長　」「◯中村（は）委員　」 to tell two
+members of one surname apart. `importers/dbsearch.py`'s first branch read that as
+role 「山口」, name 「伸」, and left 「委員長　」 at the head of the speech.
+`split_titles.py` then pooled 「鈴木」「細谷」「小川」 as offices and invented
+speakers in 神奈川 (2026-10-15).
+
+- New first branch `name4`: a bracket of ≤4 characters with no 君 in it, then an
+  office, then a space or the line end — kept whole, 「山口(伸)委員長」. The
+  plenary 「◯議長（田山東湖君）」 has 君 inside and nothing after, so it is
+  untouched.
+- Re-parsed from cache: **13,944 speeches in 844 sittings** get a whole speaker
+  and lose the stray office from their text; speech count unchanged
+  (367,261), 0 plenary sittings touched. 山梨's files: 0 lines take the branch.
+  CSV re-exported.
+- Left: 352 speeches in 89 sittings of 「◯新井病院局付（県立こども病院長）」, an
+  officer's second post in the bracket — role holds the name. Not this shape.
+- `split_titles.py` dry run over SSP afterwards: 茨城's invented speakers gone,
+  but 山口 gets 2 (「刑事部参事官」「農林水産部」) and 5,723 more speeches would
+  split (神奈川 3,620, 高知 1,756). **Not applied.**
+
 ## 2026-10-19 — 鳥取 委員会: a scraper and a config, from the cache (`feat/tottori-committee`)
 
 `scrapers/tottori.py` + `sites/tottori_committee.toml`, written offline from the

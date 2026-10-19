@@ -460,14 +460,17 @@ rather than treating them as local quirks.
   committee speakers are unsplit, and a number is the only honest way to say so.
 - **A pooled vocabulary inherits every corpus's defects.** `split_titles.py`
   learns offices from the roles in *all* of `data/`, so when 茨城 arrived with
-  surnames in `role` (「鈴木」 role, 「義」 speaker — roughly 14,000 committee
-  speeches in 846 sittings, **not yet fixed**), 「細谷」「小川」「金子」 became
+  surnames in `role` (「鈴木」 role, 「義」 speaker), 「細谷」「小川」「金子」 became
   offices and 神奈川's next split invented speakers. Found 2026-10-15 only because
   `finish_ssp.sh` ran again and the "invented ending in an office" line went
   0 → 5; 神奈川 kept its 9/24 split wherever its text was unchanged. **Re-running
   a finished pass is a check on everything that joined the pool since** — compare
-  it with the last run in `data/logs/ssp/finish.log`, and do not re-run the split
-  over SSP until 茨城 is fixed.
+  it with the last run in `data/logs/ssp/finish.log`. The cause was 茨城's
+  「◯山口（伸）委員長」, a surname told apart in brackets, read as role（name）:
+  **fixed 2026-10-19**, 13,944 speeches in 844 sittings. A dry run of the split
+  afterwards invents 0 from 茨城 but **2 in 山口** (「刑事部参事官」「農林水産部」)
+  and would split 5,723 more speeches, from offices the week's new corpora
+  added — so it is still **not applied**; look at those first.
 - **A POST API needs the request body in the cache key.** SSP's three endpoints are
   three URLs and everything else is in the body; keying the cache on the URL would
   serve one sitting's transcript for the whole archive.
