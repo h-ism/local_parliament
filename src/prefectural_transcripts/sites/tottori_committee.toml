@@ -1,0 +1,38 @@
+# 鳥取県議会 — 委員会会議録, on とりネット (the prefecture's own site)
+#
+# 本会議 is not here: it comes from the secretariat as files (`importers/tottori.py`).
+# とりネット is run by the prefecture's 広報課, which asked to know the method
+# before any automated access and answered through the secretariat on 2026-10-05:
+# 「基本的には問題ない」, on the two conditions below. robots.txt is **obeyed as it
+# stands** — nobody was asked about it, so there is no `[robots]` table.
+#
+# Why a scraper: the walk is chosen by link text (年度 → 委員会 → 会議録) because
+# the site is every page the prefecture has, and a 速報版 is dropped where the
+# same committee has a 確定版 (researcher, 2026-10-13). See `scrapers/tottori.py`.
+#
+# Written 2026-10-19 from the survey cache of 10/10–11 and 10/17–18, offline:
+# 113 minutes, 平成22〜令和8. 平成18〜21年度 are listed but no minute of theirs
+# was cached, so the first run is their check. `docs/tottori.md`.
+
+prefecture = "鳥取県"
+name = "tottori_committee"
+scraper = "tottori"
+
+[tottori]
+index_url = "https://www.pref.tottori.lg.jp/88112.htm"
+
+# 広報課情報センター (2026-10-05): not weekdays 06:00-20:00, not Thursday
+# 01:00-04:00, and 「可能であれば休日（土日）」. Followed as written: Saturday and
+# Sunday, all day — which keeps clear of Thursday without having to say so.
+# 5 s between requests is what we told them (collect_voices.sh passes it).
+[fetch_window]
+days = ["sat", "sun"]
+start = "00:00"
+end = "00:00"
+reason = "鳥取県議会事務局経由、広報課情報センターの回答 (2026-10-05): 平日日中帯（6時～20時）と毎週水曜深夜（木曜1時～4時）は避け、可能であれば休日（土日）に実施すること。ホーム・議会の動き・議会・議員・開かれた議会・議会その他は対象外"
+decided_on = "2026-10-05"
+
+# The enquiry was 共同研究者A's; that is the address the secretariat has.
+[contact]
+ref = "collaborator_a"  # the address is in contacts.toml, not in git
+note = "照会は共同研究者Aが行った"

@@ -80,6 +80,33 @@ title alone — 令和4年8月19日 has two 確定版 from two committees. A 速
 kept is marked as such in the record's title, so it can be replaced when its
 確定版 appears.
 
+## 委員会 configured (2026-10-19), from the cache
+
+`scrapers/tottori.py`, `sites/tottori_committee.toml`. Written offline from the
+surveys of 10/10–11 and 10/17–18: 153 pages, 113 of them minutes, 平成22〜令和8.
+
+- **Three levels by link text.** Index: 「…年度委員会会議録・活動報告」 (21 years,
+  平成18〜令和8). Year: links naming a 委員会 or 協議会. Committee: `/item/N.htm`
+  links, and 「次のページへ」 (`dd.aspx?moduleid=…&pfromid=15`) — 令和4年度
+  総務教育 has two pages at 15 a page. Only `#Middle` is read: the header
+  breadcrumbs up to every level, and from 88112.htm to the excluded pages.
+- **Speakers.** Every marker line in the cache is ◎/●/○ (◯ in a few) followed by
+  name+office and nothing else; the speech starts on the next line. Kept whole
+  (「松田総務部長」, 「伊藤（美）委員長」). 「○（　　　）委員」 is a name the site
+  blanked and is kept as printed.
+- **Not minutes, listed with them**: 「…・所管事項に係る県内調査／県外調査」 — the
+  ○ lines are the places visited. 26 in the cache. Skipped and counted.
+- **速報版**: dropped where the same committee lists a 確定版 under the same
+  label (NFKC — 「平成31年２月13日」 against 「2月13日」). Several cached 速報版
+  have their 確定版 on a list page the survey never opened; the run will pair them.
+- Dry run over the cache: 108 minutes, 8,605 speeches, 2,939,544 characters,
+  702 speakers, 0 undated, 0 swallowed markers.
+
+**Not seen, and checked by the first run**: any 平成18〜21 minute (平成18's
+labels are 「平成19年3月6(火)（開会中）」 — no 日, dated from the page then), the
+paginated lists, and whether 平成18・22's 議会運営委員会 and 決算審査特別委員会
+exist — their year pages do not list them, the committee menus do.
+
 ## 本会議 received and imported (2026-10-14)
 
 963 files, a zip extracted into `data/` with its Shift_JIS names read as cp437

@@ -2,6 +2,34 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-19 — 鳥取 委員会: a scraper and a config, from the cache (`feat/tottori-committee`)
+
+`scrapers/tottori.py` + `sites/tottori_committee.toml`, written offline from the
+two weekends' surveys (113 minutes cached, 平成22〜令和8). No request was made.
+
+- **The walk is by link text**, as the survey's: 「…年度委員会会議録…」 → a
+  committee (委員会|協議会) → `/item/` links on its list, following 「次のページへ」.
+  Only `#Middle` is read, because the header breadcrumbs up to every level and
+  to the excluded pages. The five URLs 広報課 excluded are refused by name too.
+- **Marker**: ◎/●/○ (and ◯) alone on its line, the speech on the next; a line
+  with 。 or 、 is speech. Over the cache: 108 minutes, 8,605 speeches, 702
+  speakers, 0 swallowed markers, 0 speakers with digits or punctuation, 0
+  undated, 0 date disagreements. Speaker is name+office as printed
+  (「松田総務部長」); not split.
+- **確定版 first** (2026-10-13): a 速報版 is dropped where the same committee
+  lists a 確定版 under the same label, NFKC-compared (「２月13日」/「2月13日」).
+  Kept 速報版 are reported by URL, to be replaced when their 確定版 appears.
+- **Visit reports** (「…所管事項に係る県内／県外調査」, 平成18's 「…～18日(水)」)
+  are listed beside the minutes and skipped, counted: their ○ lines are places.
+- Window: 土日 all day; 5 s via `collect_voices.sh`, which already lists the
+  site. The survey stops on its own now that the config exists.
+
+**Unchecked until the first run (Sat 10/24):** 平成18〜21年度 — listed, no
+minute of theirs cached; the 「次のページへ」 pages — none cached; and 平成18・22
+年度's year pages name no 議会運営委員会 or 決算審査特別委員会, though the
+committees' own menus do (`87995.htm`, `87999.htm`). The run's report and a
+re-parse from cache are the check.
+
 ## 2026-10-15 — What is not verbatim, kept as what it is (`feat/record-kind`)
 
 The researcher: 「逐語ではないものは、あくまで逐語ではないものとして、置いてください」.

@@ -253,9 +253,11 @@ described before any automated access. Committee minutes are verbatim HTML
 (◎/●/○ markers), ~2,000 since 平成18年度. **Permitted 2026-10-05**: 土日 only
 (weekdays 06–20 and Thu 01–04 forbidden, weekends asked for), and five navigation
 pages excluded by URL — the survey follows only 年度 → 委員会 → 会議録 by link text.
-First window Sat 2026-10-10. `docs/tottori.md`. **No config yet** (2026-10-13):
-the survey reached no minute before 令和4, because 平成 committee pages label a
-minute by its date alone; the walk now follows that, and 10/17 samples them.
+First window Sat 2026-10-10. `docs/tottori.md`. **Configured 2026-10-19**
+(`scraper = "tottori"`, `sites/tottori_committee.toml`) from 113 cached minutes,
+平成22〜令和8; first collection **Sat 10/24** by `pt-voices-collect.timer`, ~3 h
+at 5 s. 平成18〜21 and the 「次のページへ」 list pages were never cached, so that
+run is their check — read its report before believing the count.
 **確定版 first, 速報版 only where no 確定版 exists** for that committee and day
 (researcher, 2026-10-13) — both are published for some days.
 
