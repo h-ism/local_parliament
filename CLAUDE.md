@@ -161,9 +161,9 @@ speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every lis
 reconciles item by item against its corpus, 0 missing on all seventeen.
 `docs/ssp.md` has the protocol and the traps.
 
-**The corpus is 26 prefectures, 93,112 transcripts, 5,829,575 speeches,
-2,314,265,222 characters** (2026-10-15, counted from `data/*.jsonl`, `kind ==
-"verbatim"` only). Beside it, **1,254 summary records** in `data/summary/`
+**The corpus is 28 prefectures, 95,081 transcripts, 5,984,805 speeches,
+2,425,011,357 characters** (2026-10-19, counted from `data/*.jsonl`, `kind ==
+"verbatim"` only; 滋賀・石川 本会議 added, 茨城's stray 「委員長　」 removed). Beside it, **1,254 summary records** in `data/summary/`
 (和歌山・兵庫・秋田・神奈川) and 1,083 summarised passages inside 兵庫's
 transcripts: 11,523 passages, 3,064,771 characters, none of them speech.
 
@@ -323,7 +323,10 @@ A site config can name its own `[contact]` (`Contact`), which replaces
 `PT_CONTACT` for that site and prints at the start of the run — 共同研究者A for both. See `docs/shiga.md`, `docs/ishikawa.md`.
 
 **Configured 2026-10-13, 本会議 only** (`scraper = "voices"`, `scrapers/voices.py`),
-from the 10/10–11 cache, offline. `ACT=203` — named after one speech — is the
+from the 10/10–11 cache, offline. **Collected Sat 2026-10-17**: 滋賀 1,182
+sittings / 104,643 speeches (1987-02-24〜2026-08-10), 石川 787 / 50,587
+(1991-05-09〜2026-06-18); both listings reconcile, 0 undated; one 滋賀 sitting
+(平成20年12月22日 第7号) has an empty speech list on the site itself. `ACT=203` — named after one speech — is the
 **whole sitting**, one `<A NAME="HUID…">` per speech; the anchors equal the
 speech list on 107/107 cached sittings, so a sitting is two requests and the
 speech boundaries are the vendor's. First collection: **Sat 2026-10-17 20:00**
