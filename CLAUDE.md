@@ -331,7 +331,8 @@ by `pt-voices-collect.timer`, ~80 and ~60 minutes. Committees are 「会議要�
 「会議記録」 — 「議事の経過概要」, first person but condensed. **Decided
 2026-10-15: not verbatim, kept as summary** — but not configured, because the
 cache holds one committee-year per site and their markers are a new shape
-(「◆重田剛　委員」); a spread sample comes first (`docs/shiga.md`).
+(「◆重田剛　委員」); a spread sample comes first (`docs/shiga.md`) — `scripts/sample_committees.py`,
+run once by `collect_voices.sh` from Sat 2026-10-24, 2 sittings a year into the cache.
 
 **山梨 is the first to answer, and the answer made a third category (2026-09-17)**
 

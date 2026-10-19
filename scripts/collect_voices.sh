@@ -54,6 +54,14 @@ if ! flock -n 9; then
   exit 0
 fi
 
+# 滋賀・石川's committees: a spread sample into the cache, once, before the
+# collection — their window is the short one (20-24). Writes no corpus; the
+# config is written from it offline. A marker file ends it (scripts/sample_committees.py).
+if [ ${#wanted[@]} -eq 0 ]; then
+  echo "$(date -Is) committee sample (滋賀・石川)" | tee -a "$LOGS/run.log"
+  uv run python scripts/sample_committees.py shiga ishikawa 2>&1 | tail -n 4 | tee -a "$LOGS/run.log"
+fi
+
 today=$(date +%Y-%m-%d)
 ran=0
 for entry in "${SITES_ALL[@]}"; do

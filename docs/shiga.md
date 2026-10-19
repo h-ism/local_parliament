@@ -259,3 +259,8 @@ sittings per site: 滋賀's all from 令和7年12月〜令和8年3月, 石川's 
 平成29年 環境農林建設委員会. A rule verified on one committee-year says nothing
 about the others (静岡 needed five marker shapes). Next: a committee sample
 spread over years and committees, in a weekend window, after 本会議 is collected.
+
+**Scheduled (2026-10-19)**: `scripts/sample_committees.py shiga ishikawa`, run by
+`collect_voices.sh` before the collection from Sat 10/24 — the committee listing,
+then 2 sittings a year rotating through the committees, into the cache only.
+The rule is written from that, offline.

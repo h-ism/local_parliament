@@ -2,6 +2,23 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-19 — 滋賀・石川 committees: a spread sample, scheduled (`feat/voices-committee-sample`)
+
+The committee side is decided (summary) and not configured, because the cache
+holds one committee-year per site. `scripts/sample_committees.py` takes the
+sample a rule can be written from: the committee listing (`g08v_views.asp`,
+walked by `VoicesScraper` with its index swapped), then **2 sittings a year,
+rotating through the committees** — deterministic, so a run the window cuts
+short resumes the same sample. Fetched into the cache only; no corpus write.
+Conditions from each site's own config via `cli.client_for` (window, robots
+exemption, contact); refuses outside the hours before any request (checked
+today, a Monday: both refuse). A `data/logs/<site>/committee-sample.done`
+marker ends it.
+
+`collect_voices.sh` runs it first, before the collection, since 滋賀・石川's
+window is the short one. First run **Sat 10/24 20:00**; ~300 requests a site at
+2 s, ~10 minutes each. Then the rule is written offline.
+
 ## 2026-10-19 — `pt scrape` hands the client the window, not only the exemption (`fix/scrape-window`)
 
 Found while writing the committee sampler: `scrape` built its `PoliteClient`
