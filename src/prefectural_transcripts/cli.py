@@ -15,6 +15,7 @@ from prefectural_transcripts.http import PoliteClient, current_time
 from prefectural_transcripts.importers import tottori
 from prefectural_transcripts.importers.dbsearch import DbSearchImporter, find_downloads
 from prefectural_transcripts.scrapers import (
+    BaseScraper,
     GenericScraper,
     available_sites,
     load_scraper,
@@ -58,6 +59,21 @@ def list_sites() -> None:
         raise typer.Exit(1)
     for name, path in sites.items():
         typer.echo(f"{name:<20} {path}")
+
+
+def client_for(scraper: BaseScraper, settings: Settings) -> PoliteClient:
+    """A client carrying every condition the site's config puts on a request.
+
+    Until 2026-10-19 `scrape` passed the robots exemption and not the window, so
+    the hours were checked once, before the first request, and a run that
+    outlasted them would have carried on: nothing had yet, by the cache's own
+    timestamps (0 of 13,852 responses outside their windows), because every
+    run so far finished in time. 鳥取's weekend, opened Sunday evening, would
+    have been the first to cross into a weekday.
+    """
+    return PoliteClient(
+        settings, robots_exempt=scraper.robots_exempt, fetch_window=scraper.fetch_window
+    )
 
 
 @app.command()
@@ -149,7 +165,7 @@ def scrape(
                 typer.echo(
                     "Note: --csv only appends the new meetings; `pt export` rebuilds it all."
                 )
-        client = stack.enter_context(PoliteClient(settings, robots_exempt=scraper.robots_exempt))
+        client = stack.enter_context(client_for(scraper, settings))
         for meeting in scraper.scrape(
             client,
             since=_parse_date(since),
@@ -193,8 +209,10 @@ def inspect(
     # has to be able to reach the same URLs a run does — including the ones a
     # site config has an exemption for. Naming the site is how the exemption is
     # borrowed; there is deliberately no flag that switches robots off here.
-    exemption = load_scraper(as_site).robots_exempt if as_site else None
-    with PoliteClient(Settings(), robots_exempt=exemption) as client:
+    # And its hours: a page looked at by hand is still a request to their server.
+    with (
+        client_for(load_scraper(as_site), Settings()) if as_site else PoliteClient(Settings())
+    ) as client:
         page = client.get(url)
 
     typer.echo(f"status={page.status} encoding={page.encoding} cached={page.from_cache}")

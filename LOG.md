@@ -2,6 +2,21 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-19 — `pt scrape` hands the client the window, not only the exemption (`fix/scrape-window`)
+
+Found while writing the committee sampler: `scrape` built its `PoliteClient`
+with `robots_exempt` and no `fetch_window`, so the hours were checked once,
+before the first request. The per-request refusal (`OutsideFetchWindow`) that
+`collect_voices.sh` and CLAUDE.md describe existed in the client and was never
+switched on by the CLI. `inspect --as-site` had the same gap.
+
+- `cli.client_for(scraper, settings)` builds the client for both commands, with
+  every condition the config carries. Test: all five windowed sites.
+- **Nothing was fetched outside a window**: every cached response's
+  `fetched_at` checked against its site's window — 滋賀 2,875, 石川 2,137, 岩手
+  4,373, 茨城 4,314, 鳥取 153 — 0 outside. Every run so far ended in time.
+  鳥取 (土日 only) would have been the first to cross into a weekday.
+
 ## 2026-10-19 — 茨城: a surname told apart in brackets is a speaker, not a role (`fix/ibaraki-roles`)
 
 茨城's committees write 「◯山口（伸）委員長　」「◯中村（は）委員　」 to tell two

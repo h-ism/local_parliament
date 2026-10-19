@@ -396,3 +396,18 @@ def test_a_missing_contact_refuses_rather_than_falling_back(
     monkeypatch.setenv("PT_CONTACTS", str(f))
     with pytest.raises(ValueError, match="has no address"):
         Contact.from_toml({"ref": "collaborator_b"})
+
+
+def test_a_scrape_carries_the_window_on_every_request_not_only_the_first() -> None:
+    # Until 2026-10-19 `pt scrape` checked the hours before starting and handed
+    # the client only the robots exemption — so a run outlasting its window
+    # would have carried on. The client is what refuses mid-run; it has to have
+    # been given the window.
+    from prefectural_transcripts.cli import client_for
+    from prefectural_transcripts.scrapers import load_scraper
+
+    for site in ("shiga", "ishikawa", "iwate", "ibaraki", "tottori_committee"):
+        scraper = load_scraper(site)
+        with client_for(scraper, Settings()) as client:
+            assert client.fetch_window is scraper.fetch_window is not None, site
+            assert client.robots_exempt is scraper.robots_exempt, site

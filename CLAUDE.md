@@ -699,6 +699,13 @@ rather than treating them as local quirks.
   still running on the next. Wait on a pid (`until ! kill -0 <pid>`) or on a
   sentinel the job itself writes.
 
+- **A condition checked once is a condition on the start time.** `pt scrape`
+  checked the window before its first request and gave the client only the
+  robots exemption, so the per-request refusal everything here described was
+  never on (fixed 2026-10-19, `cli.client_for`). Nothing crossed a window —
+  every run had ended in time — and that is what made it invisible. **When a
+  safeguard is "enforced per request", find the line that hands it over.**
+
 - **A survey that follows only `<a href>` cannot see a frame.** VOICES serves
   every listing and transcript inside `<iframe src="cgi/voiweb.exe?…">`; two
   weekends of reconnaissance on 滋賀 and 石川 cached 270 wrapper pages and no
