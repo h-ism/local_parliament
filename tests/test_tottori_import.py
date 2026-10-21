@@ -11,7 +11,12 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from prefectural_transcripts.importers.tottori import import_tree, speaker_of, split_speeches
+from prefectural_transcripts.importers.tottori import (
+    import_tree,
+    rtf_text,
+    speaker_of,
+    split_speeches,
+)
 
 EXPORT = """2007年02月19日：平成19年２月定例会（第２号）　本文
 
@@ -86,6 +91,33 @@ WRAPPED = (
 )
 
 
+def _cocoa_rtf(paragraphs: list[str]) -> bytes:
+    """What TextEdit saves: \\uN for every non-ASCII character, U+2028 inside a paragraph."""
+
+    def esc(t: str) -> str:
+        return "".join(c if ord(c) < 128 else f"\\u{ord(c)} " for c in t)
+
+    head = (
+        "{\\rtf1\\ansi\\ansicpg932\\cocoartf2869\n"
+        "{\\fonttbl\\f0\\froman\\fcharset0 Times-Roman;}\n"
+        "{\\colortbl;\\red255\\green255\\blue255;}\n"
+        "{\\*\\expandedcolortbl;;\\cssrgb\\c0\\c0\\c0;}\n"
+        "\\pard\\pardeftab720\\partightenfactor0\n\n\\f0\\fs24 \\cf0 \\uc0"
+    )
+    body = "\\\n\\pard\\pardeftab720\\partightenfactor0\n\\cf3 \\strokec3 \\\n\\cf0 ".join(
+        esc(x) for x in paragraphs
+    )
+    return (head + body + "\\\n}").encode("ascii")
+
+
+RTF = [
+    "午前10時00分開会\u2028◯議長（野田修君）ただいまから開会いたします。",
+    "◯知事（平井伸治君）（登壇）本定例県議会に提案いたしました。\u2028\u3000よろしくお願いします。",
+    "◯議長（野田修君）これをもって散会いたします。\u2028\u3000\u3000午前10時19分散会"
+    "\u2028\u3000\u3000\u3000────────────────",
+]
+
+
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.replace("\n", "\r\n").encode("cp932"))
@@ -113,7 +145,21 @@ def _tree(tmp_path: Path) -> Path:
         root / "H15-H18" / "H17" / "H17.06定例会議事録" / "鳥取県議会６月定例会　校正後_170621.TXT",
         "午前10時04分開議\n○議長（前田宏君）ただいまから本日の会議を開きます。\n\x1a",
     )
+    rtf = root / "rtf"
+    rtf.mkdir()
+    (rtf / "鳥取県議会H27年2月定例会_1_270212.rtf").write_bytes(_cocoa_rtf(RTF))
+    (rtf / "鳥取県議会H17年6月定例会_170616.rtf").write_bytes(_cocoa_rtf(RTF))
     return root
+
+
+def test_rtf_text_reads_what_textedit_writes() -> None:
+    lines = rtf_text(_cocoa_rtf(RTF)).split("\n")
+    assert lines[:3] == ["午前10時00分開会", "◯議長（野田修君）ただいまから開会いたします。", ""]
+    assert "　よろしくお願いします。" in lines
+    # \\'hh bytes are the code page's, two to a cp932 character.
+    assert rtf_text(b"{\\rtf1\\ansi\\ansicpg932 \\'8e\\'73}") == "市"
+    # With \\uc1 the character after \\uN is a fallback for readers without Unicode.
+    assert rtf_text(b"{\\rtf1\\uc1 \\u24066 ?x}") == "市x"
 
 
 def test_export_speeches_and_what_a_rule_ends() -> None:
@@ -176,7 +222,7 @@ def test_the_tree(tmp_path: Path) -> None:
     assert wrapped.speeches[0].text.startswith("ただいま、御紹介にあずかりました浜崎でございます。")
 
     # No printed date: the file name's, and no 号 is invented.
-    h17 = next(m for m in out.meetings if m.session == "平成17年6月定例会")
+    h17 = next(m for m in out.meetings if m.source_file.endswith("_170621.TXT"))
     assert (h17.date, h17.title) == (dt.date(2005, 6, 21), "平成17年6月定例会")
     assert h17.speeches[-1].text == "ただいまから本日の会議を開きます。"
 
@@ -186,7 +232,19 @@ def test_the_tree(tmp_path: Path) -> None:
     assert [s.speaker for s in nov29.speeches] == ["片山善博", "鉄永幸紀"]
     assert out.duplicates and out.duplicates[0].startswith("2006-11-27: kept ")
     assert sum(m.date == dt.date(2006, 11, 27) for m in out.meetings) == 1
-    assert any("平成17年6月定例会: 1 sitting(s) with no 号" in n for n in out.numbering)
+    assert any("平成17年6月定例会: 2 sitting(s) with no 号" in n for n in out.numbering)
+
+    # Re-sent as RTF: dated and numbered by the file name alone.
+    rtf = by_file["rtf/鳥取県議会H27年2月定例会_1_270212.rtf"]
+    assert (rtf.date, rtf.title) == (dt.date(2015, 2, 12), "平成27年2月定例会（第1号）")
+    assert [(s.speaker, s.role) for s in rtf.speeches] == [
+        ("野田修", "議長"),
+        ("平井伸治", "知事"),
+        ("野田修", "議長"),
+    ]
+    assert rtf.speeches[1].text.endswith("提案いたしました。\nよろしくお願いします。")
+    opening = by_file["rtf/鳥取県議会H17年6月定例会_170616.rtf"]
+    assert (opening.date, opening.title) == (dt.date(2005, 6, 16), "平成17年6月定例会")
 
 
 def test_a_record_already_written_is_skipped(tmp_path: Path) -> None:

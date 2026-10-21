@@ -161,9 +161,10 @@ speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every lis
 reconciles item by item against its corpus, 0 missing on all seventeen.
 `docs/ssp.md` has the protocol and the traps.
 
-**The corpus is 28 prefectures, 95,081 transcripts, 5,984,805 speeches,
-2,425,011,357 characters** (2026-10-19, counted from `data/*.jsonl`, `kind ==
-"verbatim"` only; 滋賀・石川 本会議 added, 茨城's stray 「委員長　」 removed). Beside it, **1,254 summary records** in `data/summary/`
+**The corpus is 28 prefectures, 95,085 transcripts, 5,984,907 speeches,
+2,425,095,926 characters** (2026-10-22, counted from `data/*.jsonl`, `kind ==
+"verbatim"` only; 鳥取's four re-sent sittings added; on 10-19 滋賀・石川 本会議
+added, 茨城's stray 「委員長　」 removed). Beside it, **1,254 summary records** in `data/summary/`
 (和歌山・兵庫・秋田・神奈川) and 1,083 summarised passages inside 兵庫's
 transcripts: 11,523 passages, 3,064,771 characters, none of them speech.
 
@@ -243,9 +244,10 @@ researcher's call, not ours, and when it is made it gets written down in a confi
 **本会議 received and imported 2026-10-14**: 907 sittings, 66,484 speeches,
 58,204,604 characters, 2003-05-09〜2025-06-30 (`importers/tottori.py`,
 `pt import manual/鳥取県 --prefecture 鳥取県 --format tottori`; the delivery is
-filed by `scripts/tottori_receive.py`). Three empty exports, nothing after
-令和7年6月, 平成17年6月's 開会日 and 平成15年2月 are asked of the secretariat
-(`docs/inquiries/tottori-files.md`, unsent).
+filed by `scripts/tottori_receive.py`). **The three empty exports and
+平成17年6月's 開会日 (6/16) arrived as RTF on 2026-10-22** (`manual/鳥取県/rtf/`,
+`read_rtf`): +4 sittings, 102 speeches — 911 / 66,586 / 58,289,173 now. Nothing
+after 令和7年6月 and 平成15年2月 are still open (`docs/inquiries/tottori-files.md`).
 
 The secretariat will send 本会議 (平成15年〜 now, 平成7〜14年 when the media turn
 up); 委員会 are on the prefecture's own site, whose 広報課 wants our method

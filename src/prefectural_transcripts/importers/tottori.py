@@ -25,6 +25,13 @@ folder per session (「H15.06定例会議事録」), named by hand, in four shap
 - 平成18年11月定例会: 「第1～4号」 and 「第5～7号」 hold several sittings each,
   split at the printed date, and 第1号 also arrives on its own.
 
+**``rtf/`` — sittings sent again, one per file, as RTF.** The three empty
+exports and 平成17年6月定例会's 開会日 (6/16), which the zip lacked, arrived
+later as Cocoa RTF named 「鳥取県議会H20年5月定例会_4_200605.rtf」: era, session,
+号 (absent on the 平成17年 file) and YYMMDD. The text is the export's body with
+no header line — one paragraph per speech, U+2028 between its lines — so the
+file name is the only date it carries. They keep their names, bytes unchanged.
+
 Front matter, 目次 and 付録 are not speech. A file whose name says it is one of
 those is skipped by name and counted.
 
@@ -92,6 +99,15 @@ NOT_TRANSCRIPT = re.compile(
 )
 
 HEISEI = 1988
+REIWA = 2018
+
+_RTF_NAME = re.compile(
+    r"^鳥取県議会(?P<era>[HR])(?P<y>\d{1,2})年(?P<m>\d{1,2})月(?P<kind>定例会|臨時会)"
+    r"(?:_(?P<n>\d{1,2}))?_(?P<yy>\d\d)(?P<mm>\d\d)(?P<dd>\d\d)$"
+)
+_RTF_TOKEN = re.compile(r"\\(?:([a-z]+)(-?\d+)? ?|'([0-9a-f]{2})|(.))|([{}])|([^\\{}]+)", re.S)
+# Groups whose content is formatting, not text.
+_RTF_SKIP = {"fonttbl", "colortbl", "expandedcolortbl", "stylesheet", "info", "*"}
 
 
 def _int(s: str) -> int:
@@ -246,6 +262,81 @@ def read_export(path: Path, source_file: str) -> Sitting | str:
         date=dt.date(int(m["y"]), int(m["m"]), int(m["d"])),
         number=_int(m["number"][1:-1]),
         lines=lines[1:],
+    )
+
+
+def rtf_text(data: bytes) -> str:
+    """The text of a Cocoa RTF: \\uN escapes, \\'hh bytes, and a backslash-newline per paragraph.
+
+    Only what TextEdit writes is handled; a group of formatting (font and colour
+    tables, anything marked \\*) is skipped whole. U+2028 becomes a newline.
+    """
+    raw = data.decode("latin-1")
+    m = re.search(r"\\ansicpg(\d+)", raw)
+    codepage = f"cp{m[1]}" if m else "cp1252"
+    out: list[str] = []
+    pending = bytearray()  # \'hh bytes, decoded together (cp932 is two bytes a character)
+    stack: list[bool] = []
+    skipping = False
+    uc, drop = 1, 0
+
+    def flush() -> None:
+        if pending:
+            out.append(pending.decode(codepage, errors="replace"))
+            pending.clear()
+
+    for word, arg, hexbyte, sym, brace, text in _RTF_TOKEN.findall(raw):
+        if brace == "{":
+            stack.append(skipping)
+            continue
+        if brace == "}":
+            flush()
+            skipping = stack.pop() if stack else False
+            continue
+        if word in _RTF_SKIP or sym == "*":
+            skipping = True
+        if skipping:
+            continue
+        if hexbyte:
+            if drop:
+                drop -= 1
+            else:
+                pending += bytes([int(hexbyte, 16)])
+            continue
+        flush()
+        if word == "uc":
+            uc = int(arg or 1)
+        elif word == "u":
+            out.append(chr(int(arg) % 0x10000))
+            drop = uc
+        elif word in {"par", "line"} or sym == "\n":
+            out.append("\n")
+        elif sym in {"\\", "{", "}"}:
+            out.append(sym)
+        elif text:
+            text = text.replace("\r", "").replace("\n", "")
+            if drop:
+                text, drop = text[drop:], max(0, drop - len(text))
+            out.append(text)
+    flush()
+    return "".join(out).replace("\u2028", "\n")
+
+
+def read_rtf(path: Path, source_file: str) -> Sitting | str:
+    """A sitting from one re-sent RTF, dated by its name."""
+    m = _RTF_NAME.match(path.stem)
+    if not m:
+        return f"rtf name not understood: {path.name!r}"
+    base, era = (HEISEI, "平成") if m["era"] == "H" else (REIWA, "令和")
+    if int(m["yy"]) != int(m["y"]):
+        return f"rtf name gives two years: {path.name!r}"
+    lines = rtf_text(path.read_bytes()).split("\n")
+    return Sitting(
+        source_file=source_file,
+        session=f"{era}{int(m['y'])}年{int(m['m'])}月{m['kind']}",
+        date=dt.date(base + int(m["yy"]), int(m["mm"]), int(m["dd"])),
+        number=int(m["n"]) if m["n"] else None,
+        lines=lines,
     )
 
 
@@ -421,13 +512,20 @@ def _meeting(s: Sitting, split: Split, retrieved_at: dt.datetime) -> Meeting:
 
 
 def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
-    """Everything under ``manual/鳥取県``: ``export/`` and ``H15-H18/``."""
+    """Everything under ``manual/鳥取県``: ``export/``, ``rtf/`` and ``H15-H18/``."""
     skip = skip or set()
     out = TottoriOutcome()
     sittings: list[Sitting] = []
     for path in sorted((root / "export").glob("*.txt")):
         rel = path.relative_to(root).as_posix()
         got = read_export(path, rel)
+        if isinstance(got, str):
+            out.skipped[got].append(rel)
+        else:
+            sittings.append(got)
+    for path in sorted((root / "rtf").glob("*.rtf")):
+        rel = path.relative_to(root).as_posix()
+        got = read_rtf(path, rel)
         if isinstance(got, str):
             out.skipped[got].append(rel)
         else:

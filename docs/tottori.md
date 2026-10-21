@@ -5,7 +5,7 @@
 
 | | where | route | status |
 | --- | --- | --- | --- |
-| 本会議 平成15年〜 | DB-Search (`pref.tottori.dbsr.jp`) | **files from the secretariat** | **received 2026-10-14, imported**: 907 sittings, 2003-05-09〜2025-06-30 |
+| 本会議 平成15年〜 | DB-Search (`pref.tottori.dbsr.jp`) | **files from the secretariat** | **received 2026-10-14, imported**: 911 sittings (4 re-sent 2026-10-22), 2003-05-09〜2025-06-30 |
 | 本会議 平成7〜14年 | same | files, once the old media (DVD/USB) are found — or via the vendor, which we will not ask for | waiting |
 | 委員会 平成18年度〜 | **とりネット** (`www.pref.tottori.lg.jp/88112.htm`), not DB-Search | **fetch it ourselves**, once 広報課情報センター has approved the method we describe | **permitted 2026-10-05**, weekends; verbatim |
 
@@ -162,6 +162,19 @@ and the speech goes on after it.
    its 開会日. The files carry no 号, so this is asked, not asserted.
 4. 平成15年2月定例会 — the delivery starts at the 5月臨時会 after the election;
    asked whether it is with the 平成7〜14年 media.
+
+**Items 1 and 3 answered (2026-10-22).** Four RTFs arrived in a folder named
+「鳥取県議会抜け」: the three empty sittings and 平成17年6月定例会's 開会日,
+**6月16日** — so 3. was right, and that session now starts where the others do.
+Cocoa RTF (TextEdit, `\ansicpg932`, every character a `\uN`), one paragraph per
+speech with U+2028 inside it, **no header line**: the name 「鳥取県議会H20年5月
+定例会_4_200605.rtf」 is the only date and 号 the file carries (the 平成17年 one has
+no 号, like its session). Filed unchanged in `manual/鳥取県/rtf/` and read by
+`read_rtf`. **4 sittings, 102 speeches, 84,569 characters**; 0 unreadable
+markers, no speaker the corpus did not already have, and the 号 of 平成20年5月・
+平成27年2月・令和6年6月 now run 1..N. The three empty exports stay in `export/`
+and are still reported as skipped — the RTF beside each is what is written.
+Total **911 sittings, 66,586 speeches, 58,289,173 characters**. 2. and 4. remain.
 
 `importers/tottori.py` reports all of this on every run (`numbering`,
 `duplicate`, `no speaker`, `skipped`), so the re-sent files are checked the
