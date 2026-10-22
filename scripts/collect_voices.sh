@@ -60,6 +60,15 @@ fi
 if [ ${#wanted[@]} -eq 0 ]; then
   echo "$(date -Is) committee sample (滋賀・石川)" | tee -a "$LOGS/run.log"
   uv run python scripts/sample_committees.py shiga ishikawa 2>&1 | tail -n 4 | tee -a "$LOGS/run.log"
+
+  # The survey of sites with no config yet (栃木 from 2026-10-24), under this
+  # lock rather than from its own timer at the same minute: 栃木, 石川 and 滋賀
+  # resolve to one address (223.29.123.21), so two processes would be two
+  # crawlers on one server — the thing the SSP rule forbids. recon_sites.py skips
+  # a site with a config, a hold, or no notice, and refuses outside its window.
+  echo "$(date -Is) survey (sites with no config yet)" | tee -a "$LOGS/run.log"
+  uv run python scripts/recon_sites.py >> data/logs/voices-recon.log 2>&1
+  tail -n 4 data/logs/voices-recon.log | tee -a "$LOGS/run.log"
 fi
 
 today=$(date +%Y-%m-%d)

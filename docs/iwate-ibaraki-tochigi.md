@@ -90,7 +90,16 @@ a Tuesday afternoon with nothing to show for it.
 
 **The notice was sent on 2026-09-30** (recorded 2026-10-07). Its end date is not
 on file; `recon_sites.py` records **10/13** (the 会期's last day) as the
-researcher's provisional figure — check it against the sent mail. The
+researcher's provisional figure — check it against the sent mail.
+
+**They replied** (received by 2026-10-22): 「日程のご配慮感謝致します。取得の件、
+承知しました。」 — thanks for keeping to the weekend nights, and the collection
+acknowledged. It does not answer whether weekday nights are acceptable now that
+the 会期 is over, so the window stays 土日. The researcher confirmed the same day
+that what was sent covers **10/24–25**, and the notice is recorded through
+**10/26** (Sunday's night ends at 07:00 that Monday; `covers` reads the calendar
+date). The sent text's own end date is still not on file. Anything after that
+weekend needs another notice first. The
 draft is `docs/inquiries/tochigi-notice.md`; three things it is careful about:
 
 * the dates in the letter and the dates in `[notice]` must be **the same**, or we

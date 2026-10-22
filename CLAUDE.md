@@ -290,7 +290,11 @@ those needed building:
   covers, and `pt scrape` stops before fetching anything outside that. The notice
   went out on **2026-09-30** with 北海道's; it is recorded as covering until
   **10/13, provisionally** — the sent text's end date is not on file yet.
-  **Held 2026-10-09** with 北海道 until they reply.
+  **Held 2026-10-09** with 北海道 until they reply. **栃木 replied
+  (「取得の件、承知しました」, by 2026-10-22)**: hold lifted, notice recorded
+  through 10/26 (the researcher confirmed it covers 10/24–25). Its survey runs
+  inside `collect_voices.sh` now, under the collector's lock — 栃木・石川・滋賀
+  are one address — and `pt-voices-recon.timer` is disabled. No config yet.
 - 栃木 wrote again the same day, relaying its **system vendor**: 会期中
   (9/17–10/13) につき **土日夜間** での実施を推奨. A second condition from the
   same operator is **ANDed with the first, not a replacement** — the letter gave

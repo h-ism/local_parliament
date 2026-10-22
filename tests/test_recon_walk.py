@@ -5,6 +5,7 @@ Offline — `FakeClient` serves the pages, so nothing here touches a server.
 
 from __future__ import annotations
 
+import logging
 import sys
 from dataclasses import replace
 from datetime import datetime
@@ -193,10 +194,32 @@ def test_a_site_on_hold_is_skipped_inside_its_window(
     # 2026-10-09: 栃木 and 北海道 were told on 9/30 and had not replied; the
     # researcher held both. Inside the window, with the notice covering the
     # night, the hold alone has to stop it — and stopping is not a failure.
+    # (栃木 replied and was released on 2026-10-22; 北海道 is still held.)
     saturday = datetime(2026, 10, 10, 21, 0, tzinfo=JST)
-    for key in ("tochigi", "hokkaido"):
-        assert SITES[key].hold
-        caplog.clear()
-        assert _run(monkeypatch, saturday, key) == 0
-        assert "held by the researcher" in caplog.text
-        assert "inside the window" not in caplog.text
+    assert SITES["hokkaido"].hold
+    assert _run(monkeypatch, saturday, "hokkaido") == 0
+    assert "held by the researcher" in caplog.text
+    assert "inside the window" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("when", "runs"),
+    [
+        (datetime(2026, 10, 24, 20, 30, tzinfo=JST), True),
+        (datetime(2026, 10, 26, 6, 30, tzinfo=JST), True),  # Sunday's night, Monday's date
+        (datetime(2026, 10, 26, 20, 30, tzinfo=JST), False),  # a weekday
+        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), False),  # past what they were told
+    ],
+)
+def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    when: datetime,
+    runs: bool,
+) -> None:
+    # 2026-10-22: 「取得の件、承知しました」, and the researcher confirmed the
+    # notice covers 10/24-25. Nothing after it, until another notice is recorded.
+    assert not SITES["tochigi"].hold
+    caplog.set_level(logging.INFO, logger="recon")
+    _run(monkeypatch, when, "tochigi")
+    assert ("inside the window" in caplog.text) is runs

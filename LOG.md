@@ -2,6 +2,28 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-22 — 栃木: they replied; surveyed this weekend (`tochigi-weekend`)
+
+栃木県議会事務局 answered the 9/30 notice: 「日程のご配慮感謝致します。取得の件、
+承知しました。」 The researcher confirmed the notice covers 10/24–25 and asked for
+it to run this weekend. So `recon_sites.py` drops 栃木's hold and records the
+notice through **2026-10-26** (Sunday's window ends 07:00 Monday; `covers` reads
+the calendar date) — the sent text's own end date is still not on file. The
+window stays 土日 20:00–07:00: the reply does not say weekday nights are fine
+after the 会期. The survey starts at `g08v_viewh.asp`, as 滋賀・石川・北海道, with
+`/voices/` as the fallback; nothing of this install is cached yet.
+
+`pref-tochigi.gijiroku.com`, `pref-ishikawa.gijiroku.com` and
+`www.shigaken-gikai.jp` resolve to **one address**, and the recon and collect
+timers both fire at 20:00 — on Saturday that would have been two crawlers on one
+server. The survey now runs inside `collect_voices.sh`, under its lock, after the
+committee sample; `pt-voices-recon.timer` is disabled (local systemd, not in git).
+
+Verified: a dry run at 10/24 20:30, 10/25 03:00, 10/25 21:00 and 10/26 06:30 is
+inside the window; 10/26 20:30 is outside it; 10/31 is refused for want of a
+notice (now a test). 259 tests pass; ruff, mypy clean. **No config yet** — it is
+written from Saturday's cache, offline, before Sunday 20:00.
+
 ## 2026-10-22 — 鳥取 本会議: four sittings downloaded by hand, as RTF (`feat/tottori-rtf`)
 
 A collaborator downloaded four sittings by hand, as RTFs in 「鳥取県議会抜け/」:

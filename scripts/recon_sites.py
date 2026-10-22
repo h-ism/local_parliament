@@ -364,26 +364,34 @@ SITES: dict[str, Site] = {
             contact=COLLABORATOR_B,
             hours=WEEKEND_NIGHTS,
             requires_notice=True,
-            # Sent 2026-09-30 with 北海道's (the researcher, 2026-10-07). The
-            # letter's end date is not on file; 10/13, the 会期's last day, is
-            # the researcher's provisional figure until the sent text is checked.
+            # Sent 2026-09-30 with 北海道's (the researcher, 2026-10-07). Their
+            # reply arrived by 2026-10-22: 「日程のご配慮感謝致します。取得の件、
+            # 承知しました。」 The researcher confirmed the same day that what they
+            # were told covers the weekend of 10/24-25, and asked for it to run.
+            # The sent text's own end date is still not on file, so this records
+            # what is confirmed — through Monday 10/26, because Sunday's window
+            # closes at 07:00 that morning and `covers` reads the calendar date.
             notice=Notice(
                 who="栃木県議会事務局",
                 last_sent="2026-09-30",
-                covers_until="2026-10-13",
+                covers_until="2026-10-26",
                 what=(
                     "土日 20時〜翌7時（会期中のベンダー推奨）。初回は下見、以降は会議録本文。"
-                    "1件2秒以上・直列。終了日 10/13 は暫定（送信文面で未確認）"
+                    "1件2秒以上・直列。先方は承知と返信（2026-10-22 までに受領）。"
+                    "10/24〜25 の週末を含むことを研究者が確認（2026-10-22）。"
+                    "送信文面の終了日そのものは未確認"
                 ),
             ),
-            hold=(
-                "2026-10-09 研究者の判断で保留: 9/30 の通知に先方の返事がまだ無いため。"
-                "返事を確認してから外す"
-            ),
             answered_on="2026-09-24",
+            # The 本会議 listing, as 滋賀・石川・北海道: from the directory a
+            # transcript is past MAX_DEPTH. Not yet seen on this install, so the
+            # directory is the fallback if the listing turns out not to be there.
+            start="https://pref-tochigi.gijiroku.com/voices/g08v_viewh.asp",
+            discover=("https://pref-tochigi.gijiroku.com/voices/",),
             note=(
                 "**実行のタイミングを事前に知らせること**（先方の指示）。通知は"
-                "2026-09-30 送信済み、記録上の期間は 10/13 まで（暫定）。それ以降は"
+                "2026-09-30 送信済み、先方は承知と返信。記録上の期間は 10/26 朝まで"
+                "（10/24〜25 の週末、研究者確認）。それ以降は"
                 "新しい通知を送り、ここと sites/tochigi.toml の [notice] に記録する。"
                 " また 2026-09-24 の追報により、会期中（9/17〜10/13）は"
                 "**土日夜間**に限定する。会期後に平日夜間へ戻すかどうかは、"
