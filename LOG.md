@@ -2,15 +2,17 @@
 
 Newest first. One entry per branch of work.
 
-## 2026-10-22 — 鳥取 本会議: four re-sent sittings, as RTF (`feat/tottori-rtf`)
+## 2026-10-22 — 鳥取 本会議: four sittings downloaded by hand, as RTF (`feat/tottori-rtf`)
 
-「鳥取県議会抜け/」 held four RTFs: the three exports that were only
+A collaborator downloaded four sittings by hand, as RTFs in 「鳥取県議会抜け/」:
+the three exports that were only
 「発言が指定されていません。」 (平成20年6月5日, 平成27年2月12日, 令和6年7月3日) and
-平成17年6月定例会's 開会日, 6月16日 — items 1 and 3 of the inquiry. Cocoa RTF,
+平成17年6月定例会's 開会日, 6月16日 — items 1 and 3 of the inquiry, which no
+longer need asking. Cocoa RTF,
 every character a `\uN`, one paragraph per speech with U+2028 inside, and no
 header: the file name is the only date and 号.
 
-Filed unchanged (`cmp`) in `manual/鳥取県/rtf/`; `importers/tottori.py` gains
+Filed unchanged (`cmp`) in `manual/鳥取県/rtf/`, the folder then deleted; `importers/tottori.py` gains
 `rtf_text` (a reader for what TextEdit writes — \uN, \'hh as the code page's
 bytes, formatting groups skipped) and `read_rtf` (dated by the name, which must
 agree with itself on the year). The speeches go through the same

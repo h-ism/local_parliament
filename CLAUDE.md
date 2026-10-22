@@ -245,7 +245,8 @@ researcher's call, not ours, and when it is made it gets written down in a confi
 58,204,604 characters, 2003-05-09〜2025-06-30 (`importers/tottori.py`,
 `pt import manual/鳥取県 --prefecture 鳥取県 --format tottori`; the delivery is
 filed by `scripts/tottori_receive.py`). **The three empty exports and
-平成17年6月's 開会日 (6/16) arrived as RTF on 2026-10-22** (`manual/鳥取県/rtf/`,
+平成17年6月's 開会日 (6/16) were downloaded by hand by a collaborator, as RTF, on
+2026-10-22** (`manual/鳥取県/rtf/`,
 `read_rtf`): +4 sittings, 102 speeches — 911 / 66,586 / 58,289,173 now. Nothing
 after 令和7年6月 and 平成15年2月 are still open (`docs/inquiries/tottori-files.md`).
 
