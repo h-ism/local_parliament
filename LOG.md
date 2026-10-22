@@ -2,6 +2,15 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-22 — 栃木: the notice runs until the collection is done (`tochigi-notice-until-done`)
+
+The researcher, later the same day: 栃木 agrees to collection running until it is
+complete. `Notice.covers` needs a date, so `covers_until` is **2026-11-30** — our
+bound, not theirs, and the `what` says so: completion ends the agreement whatever
+the date, and an update run afterwards is a new notice. The window is unchanged
+(土日 20:00–07:00). Verified: 10/31 20:30 now runs, 12/5 is refused; 260 tests
+pass, ruff and mypy clean.
+
 ## 2026-10-22 — 栃木: they replied; surveyed this weekend (`tochigi-weekend`)
 
 栃木県議会事務局 answered the 9/30 notice: 「日程のご配慮感謝致します。取得の件、

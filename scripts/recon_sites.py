@@ -368,18 +368,22 @@ SITES: dict[str, Site] = {
             # reply arrived by 2026-10-22: 「日程のご配慮感謝致します。取得の件、
             # 承知しました。」 The researcher confirmed the same day that what they
             # were told covers the weekend of 10/24-25, and asked for it to run.
-            # The sent text's own end date is still not on file, so this records
-            # what is confirmed — through Monday 10/26, because Sunday's window
-            # closes at 07:00 that morning and `covers` reads the calendar date.
+            # Later the same day the researcher added that 栃木 agrees to it
+            # running **until the collection is complete**. `covers` needs a
+            # date, so 11/30 is ours, not theirs: room for a few weekends, and a
+            # point where this stops by itself. Once the archive is collected the
+            # agreement is spent, whatever the date — a later update run is a
+            # new notice.
             notice=Notice(
                 who="栃木県議会事務局",
                 last_sent="2026-09-30",
-                covers_until="2026-10-26",
+                covers_until="2026-11-30",
                 what=(
                     "土日 20時〜翌7時（会期中のベンダー推奨）。初回は下見、以降は会議録本文。"
                     "1件2秒以上・直列。先方は承知と返信（2026-10-22 までに受領）。"
-                    "10/24〜25 の週末を含むことを研究者が確認（2026-10-22）。"
-                    "送信文面の終了日そのものは未確認"
+                    "収集が完了するまでの実施に先方が同意（研究者確認 2026-10-22）。"
+                    "11/30 はこちらで置いた区切りで、先方の期限ではない。"
+                    "完了後の更新取得は新たな通知が必要"
                 ),
             ),
             answered_on="2026-09-24",
@@ -390,8 +394,8 @@ SITES: dict[str, Site] = {
             discover=("https://pref-tochigi.gijiroku.com/voices/",),
             note=(
                 "**実行のタイミングを事前に知らせること**（先方の指示）。通知は"
-                "2026-09-30 送信済み、先方は承知と返信。記録上の期間は 10/26 朝まで"
-                "（10/24〜25 の週末、研究者確認）。それ以降は"
+                "2026-09-30 送信済み、先方は承知と返信。収集完了までの実施に同意"
+                "（研究者確認 2026-10-22）、記録上の区切りは 11/30。完了後や区切り以降は"
                 "新しい通知を送り、ここと sites/tochigi.toml の [notice] に記録する。"
                 " また 2026-09-24 の追報により、会期中（9/17〜10/13）は"
                 "**土日夜間**に限定する。会期後に平日夜間へ戻すかどうかは、"

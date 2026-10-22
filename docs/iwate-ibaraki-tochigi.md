@@ -96,10 +96,10 @@ researcher's provisional figure — check it against the sent mail.
 承知しました。」 — thanks for keeping to the weekend nights, and the collection
 acknowledged. It does not answer whether weekday nights are acceptable now that
 the 会期 is over, so the window stays 土日. The researcher confirmed the same day
-that what was sent covers **10/24–25**, and the notice is recorded through
-**10/26** (Sunday's night ends at 07:00 that Monday; `covers` reads the calendar
-date). The sent text's own end date is still not on file. Anything after that
-weekend needs another notice first. The
+that **栃木 agrees to collection running until it is complete**. `covers_until`
+needs a date, so it says **2026-11-30** — our bound, not theirs. Once the archive
+is collected the agreement is spent regardless of the date; a later update run
+needs a new notice. The
 draft is `docs/inquiries/tochigi-notice.md`; three things it is careful about:
 
 * the dates in the letter and the dates in `[notice]` must be **the same**, or we

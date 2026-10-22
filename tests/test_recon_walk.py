@@ -208,7 +208,8 @@ def test_a_site_on_hold_is_skipped_inside_its_window(
         (datetime(2026, 10, 24, 20, 30, tzinfo=JST), True),
         (datetime(2026, 10, 26, 6, 30, tzinfo=JST), True),  # Sunday's night, Monday's date
         (datetime(2026, 10, 26, 20, 30, tzinfo=JST), False),  # a weekday
-        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), False),  # past what they were told
+        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), True),  # until the collection is done
+        (datetime(2026, 12, 5, 20, 30, tzinfo=JST), False),  # past the date we set on that
     ],
 )
 def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
@@ -217,8 +218,8 @@ def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
     when: datetime,
     runs: bool,
 ) -> None:
-    # 2026-10-22: 「取得の件、承知しました」, and the researcher confirmed the
-    # notice covers 10/24-25. Nothing after it, until another notice is recorded.
+    # 2026-10-22: 「取得の件、承知しました」, and 栃木 agrees to it running until
+    # the collection is complete; 11/30 is the date we put on that.
     assert not SITES["tochigi"].hold
     caplog.set_level(logging.INFO, logger="recon")
     _run(monkeypatch, when, "tochigi")
