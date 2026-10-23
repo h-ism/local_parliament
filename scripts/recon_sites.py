@@ -467,9 +467,18 @@ SITES: dict[str, Site] = {
                     "以降は会議録本文。1件2秒以上・直列。連絡先は collaborator_b"
                 ),
             ),
+            # 2026-10-23, from 北海道議会事務局議事課 via their vendor: not this
+            # weekend (10/24-25). The VOICES system does not use PHP, but the
+            # vendor's engineers are busy with PHP work on other systems and
+            # could not respond if something went wrong. From next week they
+            # will re-arrange — on dates we send again. So the 9/30 schedule no
+            # longer stands by itself, and the hold is what says so; the notice
+            # stays a record of what was sent.
             hold=(
-                "2026-10-09 研究者の判断で保留: 9/30 の通知に先方の返事がまだ無いため。"
-                "返事を確認してから外す"
+                "2026-10-23 先方の依頼で保留: 今週末（10/24〜25）は避けてほしい"
+                "（ベンダーの技術者が他システムの PHP 対応中で、不測の事態に対応できない"
+                "恐れ）。来週以降は希望日時を改めて連絡し、先方の再調整の返事を得て"
+                "notice に記録してから外す。（2026-10-09 からの保留を引き継ぐ）"
             ),
             answered_on="2026-09-30",
             # The 本会議 listing, as 滋賀 and 石川: from the search form a

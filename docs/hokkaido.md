@@ -10,6 +10,20 @@ one is disallowed by `robots.txt`, the other is PDF-only. Details below, along
 with a draft config that becomes runnable the moment the first blocker is lifted.
 
 
+## 2026-10-23 — not this weekend; dates to be sent again
+
+北海道議会事務局議事課, relaying its vendor: please avoid **this weekend
+(10/24–25)**. The 会議録検索システム does not use PHP and is not affected, but
+the vendor's engineers are busy with PHP work on other systems, so if something
+went wrong during collection they might not be able to respond. **If we want to
+collect from next week on, they will re-arrange — send the dates and times we
+want again.**
+
+So the 9/30 schedule does not stand by itself any more. `recon_sites.py` keeps
+北海道 held (`hold=`, now giving this reason), and the hold comes off only once
+a new date request has been sent, answered, and recorded in `notice=`. Nothing
+has been fetched from this install — the hold has been on since 10/09.
+
 ## Answered 2026-09-30 — permitted, on three conditions
 
 北海道議会事務局, answering 共同研究者B's letter:

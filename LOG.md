@@ -2,6 +2,16 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-23 — 北海道: not this weekend (`hokkaido-not-this-weekend`)
+
+北海道議会事務局 wrote, relaying its vendor: avoid 10/24–25 — the system has no
+PHP, but the vendor's engineers are busy with PHP work elsewhere and could not
+handle an incident. From next week they will re-arrange on dates we send again.
+北海道 was already held (since 10/09), so nothing would have run; the `hold=`
+now carries this reason and the condition for lifting it (dates sent, answered,
+recorded). `docs/hokkaido.md` and CLAUDE.md say the same. 栃木・滋賀・石川 are
+unchanged — their operators have not said this. 260 tests pass; ruff, mypy clean.
+
 ## 2026-10-22 — 栃木: the notice runs until the collection is done (`tochigi-notice-until-done`)
 
 The researcher, later the same day: 栃木 agrees to collection running until it is

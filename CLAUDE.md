@@ -273,6 +273,10 @@ config cannot run unannounced by leaving the table out. The reply (the notice) w
 共同研究者B's name **on 2026-09-30** (recorded 2026-10-07), covering the whole
 period. **Held 2026-10-09** (the researcher: no reply to it yet) — `hold=` in
 `recon_sites.py`, separate from the notice, which stays a record of what was sent.
+**2026-10-23 they replied, via their vendor: not 10/24–25** — the vendor's
+engineers are tied up with PHP work on other systems and could not respond to
+an incident. From next week they will re-arrange **on dates we send again**, so
+the hold stays until a new date request is answered and recorded.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 
