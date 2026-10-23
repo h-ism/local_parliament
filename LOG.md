@@ -2,6 +2,13 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-23 — 北海道: their answer on dates, by phone (`hokkaido-phone-1023`)
+
+10/31–11/1 uncertain, 11/7–8 to be avoided (決算特別委員会 11/6–12), 11/14–15 or
+11/21–23 possible; 11/3 not mentioned. No date is confirmed, so 北海道 stays held;
+the `hold=` and `docs/hokkaido.md` record the answer. Docs and the hold string
+only; 260 tests pass.
+
 ## 2026-10-23 — 北海道: not this weekend (`hokkaido-not-this-weekend`)
 
 北海道議会事務局 wrote, relaying its vendor: avoid 10/24–25 — the system has no

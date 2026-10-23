@@ -24,6 +24,20 @@ So the 9/30 schedule does not stand by itself any more. `recon_sites.py` keeps
 a new date request has been sent, answered, and recorded in `notice=`. Nothing
 has been fetched from this install — the hold has been on since 10/09.
 
+**The same day, by telephone**, answering the dates we sent:
+
+| dates | their answer |
+| --- | --- |
+| 10/31（土）・11/1（日） | uncertain — cannot say yet |
+| 11/3（火・祝） | not mentioned |
+| 11/7（土）・8（日） | **avoid**: 決算特別委員会 sits 11/6–12 |
+| 11/14（土）・15（日） | possibly |
+| 11/21（土）・22（日）・23（月・祝） | possibly |
+
+Nothing is confirmed, so the hold stays. When dates are, record them — and if
+the notice's range spans 11/7–8, the window has to exclude those two days
+explicitly, because `Notice.covers` is one continuous range.
+
 ## Answered 2026-09-30 — permitted, on three conditions
 
 北海道議会事務局, answering 共同研究者B's letter:
