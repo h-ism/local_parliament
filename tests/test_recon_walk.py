@@ -215,12 +215,41 @@ def test_a_site_on_hold_is_skipped_inside_its_window(
 def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
+    tmp_path: Path,
     when: datetime,
     runs: bool,
 ) -> None:
     # 2026-10-22: 「取得の件、承知しました」, and 栃木 agrees to it running until
-    # the collection is complete; 11/30 is the date we put on that.
+    # the collection is complete; 11/30 is the date we put on that. Since 10/25
+    # it has a config, which hands it to the collector — so none here.
+    monkeypatch.setattr(recon_sites, "SITES_DIR", tmp_path)
     assert not SITES["tochigi"].hold
     caplog.set_level(logging.INFO, logger="recon")
     _run(monkeypatch, when, "tochigi")
     assert ("inside the window" in caplog.text) is runs
+
+
+@pytest.mark.parametrize(
+    ("when", "runs"),
+    [
+        (datetime(2026, 10, 25, 20, 30, tzinfo=JST), True),
+        (datetime(2026, 10, 26, 6, 30, tzinfo=JST), True),
+        (datetime(2026, 10, 26, 20, 30, tzinfo=JST), False),
+        (datetime(2026, 11, 29, 21, 0, tzinfo=JST), True),
+        (datetime(2026, 12, 5, 20, 30, tzinfo=JST), False),
+    ],
+)
+def test_tochigi_config_carries_the_same_terms_as_the_survey(when: datetime, runs: bool) -> None:
+    # The collector reads sites/tochigi.toml, not recon_sites.py: the two must agree.
+    from prefectural_transcripts.scrapers.voices import VoicesConfig
+
+    cfg = VoicesConfig.from_toml(recon_sites.SITES_DIR / "tochigi.toml")
+    site = SITES["tochigi"]
+    assert cfg.notice is not None and site.notice is not None
+    assert (cfg.notice.last_sent, cfg.notice.covers_until) == (
+        site.notice.last_sent,
+        site.notice.covers_until,
+    )
+    assert cfg.fetch_window is not None
+    allowed = cfg.fetch_window.allows(when) and cfg.notice.covers(when.date())
+    assert allowed is runs

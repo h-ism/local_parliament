@@ -1,0 +1,50 @@
+# 栃木県議会 — 本会議（通常会議・定例会・臨時会議等）, gijiroku VOICES
+#
+# Written 2026-10-25 from the reconnaissance cache of 2026-10-24, offline: 18
+# sittings whose whole text (`ACT=203`) is cached, 平成21年 and 令和6〜8年度.
+# The same product as 滋賀・石川, with a fiscal-year index, one calendar year per
+# list page and month-less session titles — `scrapers/voices.py` says how each
+# is handled. Nothing from 1999-2008 was in the sample, so the first collection
+# is that range's check: read its report (unread markers, undated sittings).
+#
+# 本会議 only, as 滋賀・石川.
+
+prefecture = "栃木県"
+name = "tochigi"
+scraper = "voices"
+
+[voices]
+# The 本会議 index: 通常会議 by fiscal year (Sflg=11) from 平成25年度, calendar
+# years 平成11〜25年 before it, and 臨時会議等 (Sflg=21).
+index_url = "https://pref-tochigi.gijiroku.com/voices/g08v_viewh.asp"
+
+# robots.txt disallows /voices/cgi/ — the vendor's file, the same on every VOICES
+# install. The assembly answered our letter about collecting these minutes.
+[robots]
+exempt = ["https://pref-tochigi.gijiroku.com/voices/"]
+reason = "栃木県議会事務局: 運営者本人の回答による許可（2026-09-24）。robots.txt の Disallow はベンダー標準で、回答が優先する。docs/iwate-ibaraki-tochigi.md"
+decided_on = "2026-09-24"
+
+# The letter's method (業務時間帯を避ける) ANDed with their vendor's 土日夜間 for
+# the 会期. Not widened after 10/13: nobody has said it may be.
+[fetch_window]
+days = ["sat", "sun"]
+start = "20:00"
+end = "07:00"
+reason = "栃木県議会事務局（2026-09-24）手紙に記載した方法（1件2秒以上・直列、既取得は再取得しない、User-Agent に研究目的と連絡先、業務時間帯を避ける、支障があれば即停止）であればスクレイピング可／同日の追報でシステムベンダーより会期中は土日夜間を推奨。合わせて土日の20時〜翌7時に限定する"
+decided_on = "2026-09-24"
+
+# The enquiry 栃木 answered was 共同研究者B's; that is the address they have.
+[contact]
+ref = "collaborator_b"  # the address is in contacts.toml, not in git
+note = "照会は共同研究者Bが行った — 岩手・茨城・栃木"
+
+# They asked to be told before we run. Sent 2026-09-30; they replied 「取得の件、
+# 承知しました」 and agree to collection running until it is complete (the
+# researcher, 2026-10-22). 11/30 is our bound, not theirs — and completion ends
+# the agreement whatever the date: an update run afterwards is a new notice.
+[notice]
+who = "栃木県議会事務局"
+last_sent = "2026-09-30"
+covers_until = "2026-11-30"
+what = "土日 20時〜翌7時。初回は下見、以降は会議録本文。1件2秒以上・直列。収集が完了するまでの実施に先方が同意（研究者確認 2026-10-22）。11/30 はこちらの区切り。完了後の更新取得は新たな通知が必要"

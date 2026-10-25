@@ -1,6 +1,7 @@
-"""gijiroku VOICES (滋賀・石川): frames, the whole-sitting page, and its markers.
+"""gijiroku VOICES (滋賀・石川・栃木): frames, the whole-sitting page, and its markers.
 
-Fixtures copy the shapes of the reconnaissance cache of 2026-10-10/11, trimmed.
+Fixtures copy the shapes of the reconnaissance caches of 2026-10-10/11 and (栃木)
+2026-10-24, trimmed.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from prefectural_transcripts.scrapers.voices import (
     VoicesConfig,
     VoicesScraper,
     rows_on,
+    shown_year,
     sitting_date,
     speaker_of,
     split_session,
@@ -204,3 +206,102 @@ def test_reparse_without_a_listing_keeps_the_ref_date() -> None:
     ref = MeetingRef(prefecture="滋賀県", url=SET_01, date=date(2020, 12, 10), title="x")  # type: ignore[arg-type]
     m = scraper.parse_meeting(ref, make_page(HAT_01, SITTING_HTML))
     assert m.date == date(2020, 12, 10)
+
+
+# 栃木: a fiscal-year wrapper, whose list shows one calendar year per page.
+TG_WRAP = BASE + "g08v_viewh.asp?Sflg=11&FYY=2015&FMM=4&TYY=2016&TMM=3"
+TG_LIST = BASE + "cgi/voiweb.exe?ACT=100&KTYP=0,1,2,3&FYY=2015&FMM=4&TYY=2016&TMM=3&KGTP=1"
+TG_2015 = BASE + "cgi/voiweb.exe?ACT=100&KGTP=1&FYY=2015&FMM=4&TYY=2016&TMM=3&YEAR=2015"
+TG_2016 = BASE + "cgi/voiweb.exe?ACT=100&KGTP=1&FYY=2015&FMM=4&TYY=2016&TMM=3&YEAR=2016"
+TG_TITLE = "平成２７年度栃木県議会第３３３回通常会議"
+
+
+def _bar(shown: str, linked: str, year: int) -> str:
+    return (
+        '<TABLE><TR><TD BGCOLOR="#E6E6FA">'
+        f'{shown} <A HREF="voiweb.exe?ACT=100&KGTP=1&FYY=2015&FMM=4&TYY=2016&TMM=3'
+        f'&YEAR={year}">{linked}</A> </TD></TR></TABLE>'
+    )
+
+
+def _bar_linked_first(linked: str, shown: str, year: int) -> str:
+    return (
+        '<TABLE><TR><TD BGCOLOR="#E6E6FA">'
+        f'<A HREF="voiweb.exe?ACT=100&KGTP=1&FYY=2015&FMM=4&TYY=2016&TMM=3'
+        f'&YEAR={year}">{linked}</A> {shown} </TD></TR></TABLE>'
+    )
+
+
+def _tochigi_client() -> FakeClient:
+    expand = (
+        '<A HREF="voiweb.exe?ACT=100&KGTP=1&FYY=2015&FMM=4&TYY=2016&TMM=3'
+        '&TITL_SUBT=x&YEAR=2015">平成　27年</A>'
+    )
+    return FakeClient(
+        {
+            INDEX: '<html><body><a href="g08v_viewh.asp?Sflg=11&FYY=2015&FMM=4&TYY=2016&TMM=3">'
+            "平成27年度</a></body></html>",
+            TG_WRAP: '<html><body><iframe src="cgi/voiweb.exe?ACT=100&amp;KTYP=0,1,2,3&amp;'
+            'FYY=2015&amp;FMM=4&amp;TYY=2016&amp;TMM=3&amp;KGTP=1"></iframe></body></html>',
+            TG_LIST: "<html><body><TABLE><TR><TD>2件の日程がヒットしました。</TD></TR></TABLE>"
+            + _bar("平成　28年", "平成　27年", 2015)
+            + "<TABLE>"
+            + _row(TG_TITLE, 1953, "T1", "03月24日-06号")
+            + "</TABLE>"
+            + expand
+            + "</body></html>",
+            TG_2015: "<html><body>"
+            + _bar_linked_first("平成　28年", "平成　27年", 2016)
+            + "<TABLE>"
+            + _row("平成２７年度栃木県議会第３３２回通常会議", 1900, "T2", "12月01日-02号")
+            + "</TABLE></body></html>",
+        }
+    )
+
+
+def test_tochigi_the_year_is_the_one_the_bar_does_not_link() -> None:
+    assert shown_year(_bar("平成　28年", "平成　27年", 2015)) == 2016
+    assert shown_year(_bar_linked_first("平成　28年", "平成　27年", 2016)) == 2015
+    assert shown_year(LIST_HTML) is None  # 滋賀・石川: no bar
+
+
+def test_tochigi_a_fiscal_year_is_two_pages_and_each_dates_its_rows() -> None:
+    scraper = VoicesScraper(VoicesConfig(prefecture="栃木県", index_url=INDEX))
+    client = _tochigi_client()
+    refs = list(scraper.list_meetings(client))  # type: ignore[arg-type]
+    assert [r.date for r in refs] == [date(2016, 3, 24), date(2015, 12, 1)]
+    # The year already read is not asked for again, and a session's expansion
+    # (TITL_SUBT=) lists speeches, not sittings.
+    assert TG_2016 not in client.requested
+    assert not any("TITL_SUBT" in u for u in client.requested)
+    assert not any("listed," in line for line in scraper.report())
+
+
+def test_tochigi_titles_have_no_month_so_the_page_year_dates_them() -> None:
+    assert sitting_date(TG_TITLE, "02月19日-01号") is None
+    assert sitting_date(TG_TITLE, "02月19日-01号", 2016) == date(2016, 2, 19)
+    assert sitting_date("平成２１年第３００回（第４号）定例会", "12月14日-05号", 2009) == date(
+        2009, 12, 14
+    )
+    # Where the title has a month (滋賀・石川) the page year changes nothing.
+    assert sitting_date("令和　７年１２月定例会議", "01月08日-05号", 2026) == date(2026, 1, 8)
+
+
+def test_tochigi_name_then_office_markers() -> None:
+    cases = {
+        "○関谷暢之　議長　ただいまから本日の会議を開きます。": ("関谷暢之", "議長"),
+        "◎小林基予子　事務局長　出席議員数を報告いたします。": ("小林基予子", "事務局長"),
+        "◎福田富一　知事": ("福田富一", "知事"),
+        "◆50番（螺良昭人議員）　とちぎ自民党議員会の": ("螺良昭人", "50番"),
+    }
+    for line, want in cases.items():
+        speaker, role, rest = speaker_of(line)
+        assert (speaker, role) == want, line
+    assert speaker_of("○関谷暢之　議長　ただいまから")[2] == "　ただいまから"
+
+
+def test_tochigi_a_bullet_before_the_printed_date_is_not_a_digit() -> None:
+    scraper = _scraper()
+    client = _client(SITTING_HTML.replace("令和２年12月10日（木曜日）", "〇十二月十日（木曜日）"))
+    list(scraper.scrape(client))  # type: ignore[arg-type]
+    assert not any("printed" in line for line in scraper.report())

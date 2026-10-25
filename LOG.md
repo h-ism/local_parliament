@@ -2,6 +2,46 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-25 — 栃木 本会議: configured from Saturday's survey (`tochigi-config`)
+
+Saturday 10/24's survey cached 150 pages, 20:14–20:19, inside the window and
+under the collector's lock: 18 sittings with their whole text (`ACT=203`),
+平成21年 and 令和6〜8年度. `sites/tochigi.toml` is written from them, offline,
+with the same `[robots]`, `[fetch_window]` (土日 20:00–07:00), `[contact]`
+(collaborator_b) and `[notice]` (2026-09-30 → 11/30) as `recon_sites.py`; a test
+holds the two to the same terms.
+
+Same product as 滋賀・石川, three quiet differences (`scrapers/voices.py`):
+
+* **One calendar year per list page.** The index is by fiscal year from
+  平成25年度, and the list shows one calendar year with the other behind a
+  `YEAR=` link: the existing route read 7 of FY2015's 20 sittings. The listing
+  now follows `YEAR=` links (not the `TITL_SUBT=` ones, which expand a session
+  into per-speech rows labelled 「P. 154」), and not a year it has already read.
+* **No month in the session title** (「平成２１年第３００回（第４号）定例会」,
+  「令和　７年度…通常会議」), so every sitting came out undated. The year is the
+  one the list page shows — its year bar's one unlinked entry (`shown_year`);
+  used only where the title gives no month, so 滋賀・石川 are dated as before.
+* **Officials as 「○関谷暢之　議長　」** — name and office closed by full-width
+  spaces; a last `_MARKER` branch, so it reads only lines the others decline.
+  Members are 「◆50番（螺良昭人議員）」, which already parsed.
+
+And one check that misfired: 「〇十二月十四日（月曜日）」 opens with a bullet that
+is also a kanji digit, read as 2/14; the date check strips it. Full-width printed
+dates (「６月４日（木曜日）」) are now checked too.
+
+Verified, offline: 18/18 cached sittings parse, **0 unread markers** in 2,378
+blocks (○ 1,336, ◎ 527, ◆ 515), all dated from the page year, 0 date
+mismatches; FY2015 lists 20 of 20 in two requests; longest speakers are names
+(「小林基予子」「岩佐景一郎」). 滋賀・石川 re-parsed on copies: 0 field changes
+besides `retrieved_at`, listings 1,182 / 787 with 0 missing. `pt scrape tochigi`
+refuses before any request on a Sunday morning. 270 tests; ruff, mypy clean.
+
+**Not seen: 1999–2008** (calendar-year 定例会, no sample) and the 臨時会議等
+lists. Sunday 20:00's collection is their check — read its report for unread
+markers, undated sittings and short lists. Seat numbers come as 「一番」 (2009)
+and 「1番」 (now): one column typed two ways, roles only, left as printed.
+
 ## 2026-10-23 — 北海道: their answer on dates, by phone (`hokkaido-phone-1023`)
 
 10/31–11/1 uncertain, 11/7–8 to be avoided (決算特別委員会 11/6–12), 11/14–15 or

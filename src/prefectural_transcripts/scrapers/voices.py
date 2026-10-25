@@ -1,4 +1,4 @@
-"""Scraper for gijiroku VOICES (`/voices/cgi/voiweb.exe`) — 滋賀 and 石川 so far.
+"""Scraper for gijiroku VOICES (`/voices/cgi/voiweb.exe`) — 滋賀, 石川 and 栃木.
 
 Worked out on 2026-10-13 from the reconnaissance cache of 2026-10-10/11, offline:
 375 + 359 pages, 107 sittings with both their speech list and their text.
@@ -29,6 +29,18 @@ What a block is, by its first character:
 * anything else — kept as a speech with no speaker, and counted.
 
 The 「目次」 documents are listed beside the sittings and are skipped by label.
+
+**栃木 (2026-10-25, from the survey of 10/24)** is the same product with three
+differences, each of which failed quietly until looked for:
+
+* Its index is by **fiscal year** (`FYY=2015&FMM=4&TYY=2016&TMM=3`), and the
+  list shows **one calendar year per page** — the other is behind a `YEAR=`
+  link in the year bar. Reading only the first page read 7 of FY2015's 20.
+* Its session titles carry **no month** — 「平成２１年第３００回（第４号）定例会」,
+  「令和　７年度栃木県議会第４０９回通常会議」 — so the year comes from the list
+  page instead: the year bar's one entry that is not a link.
+* Its officials are marked 「○関谷暢之　議長　ただいまから…」 — name, office, each
+  closed by a full-width space — beside the 「◆50番（螺良昭人議員）」 滋賀 also uses.
 
 **The committee side is not configured yet.** Both sites publish committees as
 会議要録 / 会議記録 whose body is 「議事の経過概要」 — first person, but condensed
@@ -73,6 +85,10 @@ _YEAR_TEXT = re.compile(r"(?:令和|平成|昭和)\s*[元0-9０-９]{1,2}\s*年"
 _WINOPEN = re.compile(r"winopen\('([^']*ACT=200[^']*)'\)")
 _HITS = re.compile(r"(\d+)件の日程がヒット")
 _PAGE_LINK = re.compile(r"[?&]PAGE=\d+")
+_YEAR_PAGE = re.compile(r"[?&]YEAR=(\d{4})")
+# The year bar above a list: 「平成　28年 <A …YEAR=2015>平成　27年</A>」 — the year
+# shown is the one that is not a link.
+_BAR_YEAR = re.compile(r"(令和|平成|昭和)\s*([元0-9０-９]{1,2})\s*年")
 _ANCHOR = re.compile(r'<A NAME="HUID(\d+)"></A>', re.I)
 
 # 「11月27日-01号」, 「05月28日-目次」 — the vendor's label for the document.
@@ -89,6 +105,8 @@ _PRINTED_FULL = re.compile(
     r"[0-9０-９〇一二三四五六七八九十]{1,3}月[0-9０-９〇一二三四五六七八九十]{1,3}日)\s*（"
 )
 _PRINTED_MD = re.compile(r"^([〇一二三四五六七八九十]{1,3})月([〇一二三四五六七八九十]{1,3})日（")
+# 栃木 prints 「６月４日（木曜日）」, in full-width figures.
+_PRINTED_MD_FIG = re.compile(r"^([0-9０-９]{1,2})月([0-9０-９]{1,2})日（")
 
 # 「○議長（細江正人）　」「◆11番（黄野瀬明子議員）　」「◎知事（三日月大造）　」
 # 「◎20番（総務企画常任委員長黒川治君）」 — 滋賀, every era.
@@ -105,6 +123,10 @@ _MARKER = re.compile(
     r"(?P<role>[^（）　\s]{1,60}?)（(?P<name>[^（）]{1,60})）"
     r"|（(?P<name0>[^（）]{1,40})）"
     r"|(?P<name2>[^（）　\s、。，「」]{1,20}?(?:君|さん|氏|議員))(?=[　\s]|$)"
+    # 栃木: 「○関谷暢之　議長　」「◎福田富一　知事　」 — the name and the office each
+    # closed by a full-width space (or the line's end). Last, so it can only read a
+    # line every branch above has already declined.
+    r"|(?P<name3>[^（）　\s、。，「」]{2,12})　(?P<office3>[^（）　\s、。，「」]{1,30})(?=　|$)"
     r")"
 )
 # 「総務企画常任委員長黒川治君」: a chair reporting, office and name in one bracket.
@@ -151,8 +173,8 @@ def speaker_of(line: str) -> tuple[str, str | None, str]:
     if not m:
         return "", None, line
     # 「４番」 and 「40番」 are one column of seat numbers typed two ways.
-    role = (m["role"] or "").strip().translate(_ASCII_DIGITS) or None
-    raw = m["name"] or m["name0"] or m["name2"] or ""
+    role = (m["role"] or m["office3"] or "").strip().translate(_ASCII_DIGITS) or None
+    raw = m["name"] or m["name0"] or m["name2"] or m["name3"] or ""
     office = _OFFICE_IN_NAME.match(raw.strip()) or _NAME_THEN_OFFICE.match(raw.strip())
     if office:
         role = f"{role}　{office['office']}" if role else office["office"]
@@ -179,22 +201,30 @@ def _body(first_rest: str, lines: list[str]) -> str:
     return "\n".join(kept).strip()
 
 
-def sitting_date(session: str, label: str) -> date | None:
+def sitting_date(session: str, label: str, year: int | None = None) -> date | None:
     """The year from the session title, the month and day from the vendor's label.
 
     A sitting whose month is earlier than its session's is in the next year — a
     December session that runs into January. Neither site has one in the sample;
     `report()` counts them if they appear.
+
+    Where the title has no month (栃木), `year` — the calendar year of the list
+    page the row was on — is the year instead.
     """
     s = _SESSION.match(session)
     lab = _LABEL.match(label)
+    if lab and not s and year is not None:
+        try:
+            return date(year, int(lab[1]), int(lab[2]))
+        except ValueError:
+            return None
     if not s or not lab:
         return None
-    year = parse_japanese_date(f"{s[1]}{_digits(s[2])}年1月1日")
-    if year is None:
+    first = parse_japanese_date(f"{s[1]}{_digits(s[2])}年1月1日")
+    if first is None:
         return None
     month, day = int(lab[1]), int(lab[2])
-    y = year.year + (1 if month < _digits(s[3]) else 0)
+    y = first.year + (1 if month < _digits(s[3]) else 0)
     try:
         return date(y, month, day)
     except ValueError:
@@ -218,6 +248,30 @@ class Row:
     title: str
     label: str
     url: str
+    year: int | None = None
+    """The calendar year of the list page it was read from, where the bar says."""
+
+
+def shown_year(list_html: str) -> int | None:
+    """The year a list page is showing: the year bar's one entry that is not a link.
+
+    None when the page has no bar (滋賀・石川 list one year at a time without one)
+    or when the bar does not single one out.
+    """
+    soup = BeautifulSoup(list_html, "lxml")
+    for td in soup.find_all("td"):
+        # The bar is a cell of era-years and nothing else; a row's cell carries
+        # its session title, which has a year too (「令和　２年１１月定例会議」).
+        if not _BAR_YEAR.search(td.get_text()) or _BAR_YEAR.sub("", td.get_text()).strip(" 　\n"):
+            continue
+        for a in td.find_all("a"):
+            a.extract()
+        plain = _BAR_YEAR.findall(td.get_text())
+        if len(plain) == 1:
+            era, n = plain[0]
+            d = parse_japanese_date(f"{era}{_digits(n)}年1月1日")
+            return d.year if d else None
+    return None
 
 
 def rows_on(list_html: str, base_url: str) -> list[Row]:
@@ -227,6 +281,7 @@ def rows_on(list_html: str, base_url: str) -> list[Row]:
     11月27日-01号</A>」 — the title is the text before the link.
     """
     soup = BeautifulSoup(list_html, "lxml")
+    year = shown_year(list_html)
     out: list[Row] = []
     for a in soup.find_all("a", onclick=True):
         m = _WINOPEN.search(str(a["onclick"]))
@@ -235,7 +290,12 @@ def rows_on(list_html: str, base_url: str) -> list[Row]:
         prev = a.previous_sibling
         title = str(prev).strip().rstrip(",") if prev is not None else ""
         out.append(
-            Row(title=title.strip(), label=a.get_text(strip=True), url=urljoin(base_url, m[1]))
+            Row(
+                title=title.strip(),
+                label=a.get_text(strip=True),
+                url=urljoin(base_url, m[1]),
+                year=year,
+            )
         )
     return out
 
@@ -298,7 +358,12 @@ class VoicesScraper(BaseScraper):
     # -- listing ---------------------------------------------------------------
 
     def _lists_of_year(self, client: PoliteClient, wrapper_url: str) -> Iterator[Page]:
-        """The year's `ACT=100` list, and any further page of it."""
+        """The year's `ACT=100` list, and any further page of it.
+
+        Further pages are `PAGE=` (滋賀・石川) and `YEAR=` (栃木: a fiscal year is
+        two calendar years, one per page). The `YEAR=` links that also carry
+        `TITL_SUBT=` open one session's speakers inline and list nothing new.
+        """
         wrapper = client.get(wrapper_url)
         frame = BeautifulSoup(wrapper.text, "lxml").find("iframe", src=True)
         if not isinstance(frame, Tag):
@@ -307,6 +372,7 @@ class VoicesScraper(BaseScraper):
             return
         todo = [urljoin(wrapper.url, str(frame["src"]))]
         seen: set[str] = set()
+        years_read: set[int] = set()
         while todo:
             url = todo.pop(0)
             if url in seen:
@@ -315,9 +381,15 @@ class VoicesScraper(BaseScraper):
             page = client.get(url)
             yield page
             soup = BeautifulSoup(page.text, "lxml")
+            showing = shown_year(page.text)
+            if showing is not None:
+                years_read.add(showing)
             for a in soup.find_all("a", href=True):
                 href = urljoin(page.url, str(a["href"]))
-                if "ACT=100" in href and _PAGE_LINK.search(href) and "FINO=" not in href:
+                if "ACT=100" not in href or "FINO=" in href or "TITL_SUBT=" in href:
+                    continue
+                year = _YEAR_PAGE.search(href)
+                if _PAGE_LINK.search(href) or (year and int(year[1]) not in years_read):
                     todo.append(href)
 
     def list_meetings(self, client: PoliteClient) -> Iterator[MeetingRef]:
@@ -350,7 +422,7 @@ class VoicesScraper(BaseScraper):
                 yield MeetingRef(
                     prefecture=self.prefecture,
                     url=row.url,  # type: ignore[arg-type]
-                    date=sitting_date(row.title, row.label),
+                    date=sitting_date(row.title, row.label, row.year),
                     title=f"{row.title} {row.label}",
                 )
 
@@ -378,7 +450,9 @@ class VoicesScraper(BaseScraper):
         if when is None:
             self._undated.append(f"{ref.url} {ref.title}")
             return
-        lines = [ln.strip("　 ") for ln in front.split("\n") if ln.strip("　 ")][:8]
+        # 栃木 opens the day with a bullet, 「〇十二月十四日（月曜日）」, and 〇 is
+        # also a kanji digit: read as one, that date is 2/14.
+        lines = [ln.strip("　 ").lstrip("〇○") for ln in front.split("\n") if ln.strip("　 ")][:8]
         printed: tuple[int, int] | None = None
         for ln in lines:
             full = _PRINTED_FULL.search(ln)
@@ -390,6 +464,10 @@ class VoicesScraper(BaseScraper):
             if md:
                 printed = (kanji_to_int(md[1]), kanji_to_int(md[2]))
                 break
+            fig = _PRINTED_MD_FIG.match(ln)
+            if fig:
+                printed = (_digits(fig[1]), _digits(fig[2]))
+                break
         if printed and printed != (when.month, when.day):
             self._date_mismatch.append(f"{ref.url}: label {when}, printed {printed}")
 
@@ -398,7 +476,7 @@ class VoicesScraper(BaseScraper):
         title = row.title if row else (ref.title or "")
         label = row.label if row else ""
         session = split_session(title) or None
-        when = sitting_date(title, label) if row else ref.date
+        when = sitting_date(title, label, row.year) if row else ref.date
         if when and _LABEL.match(label) and _SESSION.match(title):
             s = _SESSION.match(title)
             if s and when.month < _digits(s[3]):

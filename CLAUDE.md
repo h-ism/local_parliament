@@ -299,7 +299,12 @@ those needed building:
   through 11/30 — 栃木 agrees to it running until the collection is complete
   (the researcher, 10/22); the date is our bound, and completion ends it. Its survey runs
   inside `collect_voices.sh` now, under the collector's lock — 栃木・石川・滋賀
-  are one address — and `pt-voices-recon.timer` is disabled. No config yet.
+  are one address — and `pt-voices-recon.timer` is disabled. **Surveyed Sat
+  10/24, configured 10/25** (`sites/tochigi.toml`, `scraper = "voices"`): a
+  fiscal-year index with one calendar year per list page (`YEAR=`), session
+  titles with no month (the page's year dates the sitting), and officials
+  marked 「○関谷暢之　議長　」. First collection Sun 10/25 20:00; 1999–2008 were
+  not in the sample, so read that run's report before believing the count.
 - 栃木 wrote again the same day, relaying its **system vendor**: 会期中
   (9/17–10/13) につき **土日夜間** での実施を推奨. A second condition from the
   same operator is **ANDed with the first, not a replacement** — the letter gave
