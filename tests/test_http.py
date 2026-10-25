@@ -161,6 +161,40 @@ def test_no_cache_still_stores_what_it_fetched(tmp_path: Path) -> None:
     assert (stored.header_charset or "").lower() == "shift_jis"
 
 
+def test_a_redirected_page_is_found_again_by_the_url_asked_for(tmp_path: Path) -> None:
+    # 鳥取 sends https → http with a 302. Keyed on where it landed, the page was
+    # fetched again every run and an offline audit could not find it.
+    import httpx
+
+    from prefectural_transcripts.config import Settings
+    from prefectural_transcripts.http import PoliteClient
+
+    settings = Settings()
+    settings.cache_dir = tmp_path
+    settings.min_interval = 0.0
+    settings.respect_robots = False
+
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        if request.url.scheme == "https":
+            return httpx.Response(302, headers={"Location": "http://example.invalid/item/1.htm"})
+        return httpx.Response(200, content=b"<html>minutes</html>")
+
+    transport = httpx.MockTransport(handler)
+    with PoliteClient(
+        settings, client=httpx.Client(transport=transport, follow_redirects=True)
+    ) as c:
+        first = c.get("https://example.invalid/item/1.htm")
+        again = c.get("https://example.invalid/item/1.htm")
+
+    assert len(seen) == 2, "one redirect and one page, then the cache"
+    assert first.url == "http://example.invalid/item/1.htm"
+    assert again.from_cache and again.body == first.body
+    assert ResponseCache(tmp_path).get("http://example.invalid/item/1.htm") is not None
+
+
 # --- POST, and the robots exemption it exists for --------------------------
 
 

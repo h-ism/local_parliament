@@ -2,6 +2,34 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-25 — a redirected page is cached under the URL asked for (`tottori-redirect-cache`)
+
+`PoliteClient.get` wrote each response under `page.url` — where the request
+*landed* — and looked it up under the URL asked for. They differ only after a
+redirect, and とりネット redirects 257 pages https → http (302, same path; 35
+list pages, 222 minutes). Saturday's 鳥取 committee run fetched them all and
+cached every one where no lookup could find it, so:
+
+* `audit.py` stopped on the first, offline: `not cached … 328588.htm`.
+* Each later run would have fetched the 35 list pages again (×2 with the
+  redirect) — inside 土日, so within the terms, but requests we already had.
+
+The page is now stored under the URL asked for, and under the redirect's
+target as well. The 257 existing entries were copied to their https keys
+from the run log (local `cache/`, nothing fetched; every target was present).
+A test sees 2 requests and a cache hit where the old code made 4.
+
+Verified, offline: `audit.py tottori_committee` — listing 2,026, **0 listed but
+not collected** (its "corpus holds 2,027" counts the 911 imported 本会議 once,
+as `None`: they have no URL). `reparse.py` on a committee-only copy: 2,026
+rewritten, 209,638 → 209,638 speeches, 0 field diffs. 271 tests, ruff, mypy clean.
+
+Saturday's run itself: 2,026 minutes, 209,638 speeches, 67,278,679 characters,
+2006-04-21〜2026-10-13, one window. **Not yet looked at**: 8 with no speeches
+(one 「議事録は現在準備中です」, seven 平成19年前後 of 25–28 KB) and 13 undated
+(the site's own 「令和2年5年21日」 and 「（開会中）」 labels). `reparse.py` also
+stops on a corpus mixing URL-less imports with crawled records.
+
 ## 2026-10-25 — 栃木 本会議: configured from Saturday's survey (`tochigi-config`)
 
 Saturday 10/24's survey cached 150 pages, 20:14–20:19, inside the window and

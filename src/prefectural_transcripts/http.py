@@ -357,7 +357,14 @@ class PoliteClient:
         # means "don't hand me a stale copy", not "throw away what you just paid a
         # request for". Discarding it makes the next run re-fetch a page we already
         # have, which is the opposite of polite.
-        self.cache.put(page)
+        #
+        # Keyed on the URL asked for, which is the one the next run will look up;
+        # a redirect's target is kept as well. Keying on the target alone cached
+        # 257 of 鳥取's pages (https → http, 2026-10-24) where no lookup could
+        # find them: re-fetched every run, and invisible to an offline check.
+        self.cache.put(page, key=url)
+        if page.url != url:
+            self.cache.put(page)
         return page
 
     def post(
