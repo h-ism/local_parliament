@@ -373,16 +373,18 @@ SITES: dict[str, Site] = {
             # date, so 11/30 is ours, not theirs: room for a few weekends, and a
             # point where this stops by itself. Once the archive is collected the
             # agreement is spent, whatever the date — a later update run is a
-            # new notice.
+            # new notice. **Collected Sun 2026-10-25, 20:00–20:49** (657 sittings,
+            # audit 0 missing), so the notice now ends that day: a run after it
+            # refuses, rather than relying on someone remembering it is done.
             notice=Notice(
                 who="栃木県議会事務局",
                 last_sent="2026-09-30",
-                covers_until="2026-11-30",
+                covers_until="2026-10-25",
                 what=(
                     "土日 20時〜翌7時（会期中のベンダー推奨）。初回は下見、以降は会議録本文。"
                     "1件2秒以上・直列。先方は承知と返信（2026-10-22 までに受領）。"
                     "収集が完了するまでの実施に先方が同意（研究者確認 2026-10-22）。"
-                    "11/30 はこちらで置いた区切りで、先方の期限ではない。"
+                    "2026-10-25 に収集完了（657会議）、通知はその日で終わる。"
                     "完了後の更新取得は新たな通知が必要"
                 ),
             ),

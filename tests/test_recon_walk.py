@@ -206,10 +206,10 @@ def test_a_site_on_hold_is_skipped_inside_its_window(
     ("when", "runs"),
     [
         (datetime(2026, 10, 24, 20, 30, tzinfo=JST), True),
-        (datetime(2026, 10, 26, 6, 30, tzinfo=JST), True),  # Sunday's night, Monday's date
+        (datetime(2026, 10, 25, 20, 30, tzinfo=JST), True),  # the night it was collected
         (datetime(2026, 10, 26, 20, 30, tzinfo=JST), False),  # a weekday
-        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), True),  # until the collection is done
-        (datetime(2026, 12, 5, 20, 30, tzinfo=JST), False),  # past the date we set on that
+        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), False),  # done: a new run is a new notice
+        (datetime(2026, 11, 29, 21, 0, tzinfo=JST), False),  # inside the old 11/30 bound
     ],
 )
 def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
@@ -220,7 +220,8 @@ def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
     runs: bool,
 ) -> None:
     # 2026-10-22: 「取得の件、承知しました」, and 栃木 agrees to it running until
-    # the collection is complete; 11/30 is the date we put on that. Since 10/25
+    # the collection is complete, which it was on 10/25: the notice ends there
+    # (it said 11/30, our own bound, until then). Since 10/25
     # it has a config, which hands it to the collector — so none here.
     monkeypatch.setattr(recon_sites, "SITES_DIR", tmp_path)
     assert not SITES["tochigi"].hold
@@ -233,10 +234,9 @@ def test_tochigi_runs_the_weekend_it_was_told_of_and_no_other(
     ("when", "runs"),
     [
         (datetime(2026, 10, 25, 20, 30, tzinfo=JST), True),
-        (datetime(2026, 10, 26, 6, 30, tzinfo=JST), True),
         (datetime(2026, 10, 26, 20, 30, tzinfo=JST), False),
-        (datetime(2026, 11, 29, 21, 0, tzinfo=JST), True),
-        (datetime(2026, 12, 5, 20, 30, tzinfo=JST), False),
+        (datetime(2026, 10, 31, 20, 30, tzinfo=JST), False),
+        (datetime(2026, 11, 29, 21, 0, tzinfo=JST), False),
     ],
 )
 def test_tochigi_config_carries_the_same_terms_as_the_survey(when: datetime, runs: bool) -> None:

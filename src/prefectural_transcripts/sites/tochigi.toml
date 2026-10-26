@@ -41,10 +41,12 @@ note = "照会は共同研究者Bが行った — 岩手・茨城・栃木"
 
 # They asked to be told before we run. Sent 2026-09-30; they replied 「取得の件、
 # 承知しました」 and agree to collection running until it is complete (the
-# researcher, 2026-10-22). 11/30 is our bound, not theirs — and completion ends
-# the agreement whatever the date: an update run afterwards is a new notice.
+# researcher, 2026-10-22). Collected Sun 2026-10-25, 20:00–20:49: 657 sittings,
+# audit 0 missing. Completion ends the agreement, so `covers_until` is that day
+# (was 11/30, our bound) and `pt scrape tochigi` refuses from here on. An update
+# run is a new notice: send it, then move both dates.
 [notice]
 who = "栃木県議会事務局"
 last_sent = "2026-09-30"
-covers_until = "2026-11-30"
-what = "土日 20時〜翌7時。初回は下見、以降は会議録本文。1件2秒以上・直列。収集が完了するまでの実施に先方が同意（研究者確認 2026-10-22）。11/30 はこちらの区切り。完了後の更新取得は新たな通知が必要"
+covers_until = "2026-10-25"
+what = "土日 20時〜翌7時。初回は下見、以降は会議録本文。1件2秒以上・直列。収集が完了するまでの実施に先方が同意（研究者確認 2026-10-22）。2026-10-25 に収集完了（657会議）。完了後の更新取得は新たな通知が必要"

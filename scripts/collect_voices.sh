@@ -41,10 +41,10 @@ SITES_ALL=(
   "iwate::"
   "ibaraki::5"
   "tottori_committee::5"   # とりネット: 土日のみ終日 (2026-10-05); 5 s, as we told them
-  "tochigi::"     # also gated by [notice]: pt scrape refuses without one, and
-                  # by a 土日 window — their vendor asked for weekend nights
-                  # while the assembly sits (会期 9/17-10/13). A weekday firing
-                  # here is meant to refuse; that is the window doing its job.
+  # tochigi: collected 2026-10-25 (657 sittings) and taken out. 栃木 agreed to
+  # collection *until it was complete*; an update run needs a new notice first,
+  # and its [notice] now ends on 10/25, so `pt scrape tochigi` would refuse
+  # anyway. Put it back with the new notice, not before.
 )
 
 wanted=("$@")

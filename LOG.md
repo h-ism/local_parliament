@@ -2,6 +2,26 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-26 — 栃木: collected, so the notice ends and the collector stops (`tochigi-complete`)
+
+Sun 10/25 20:00:49–20:49:10, one window at 2 s: **657 sittings, 71,639
+speeches, 27,692,234 characters, 1999-02-22〜2026-06-22**. Offline: `audit.py`
+lists 657, **0 listed but not collected**; 21–31 sittings every year 1999–2025;
+0 undated, 0 empty, 0 speeches without a speaker; 357 speakers, none with
+digits or punctuation, no whitespace/NFKC splits, no PUA. Two parse defects
+found (115 swallowed vice-chair lines, 6 reversed committee reports) — fixed
+on the next branch.
+
+栃木 agreed to collection **until it is complete**, and an update run needs a
+new notice. It was still in `collect_voices.sh`, so Saturday would have
+re-listed the archive — an update nobody was told of. Now:
+
+* `[notice] covers_until` is **2026-10-25** in `sites/tochigi.toml` and
+  `recon_sites.py` (was 11/30, our own bound), so `pt scrape tochigi` refuses
+  from here on by itself — the condition is in the config, not in a memory.
+* `tochigi` is out of `SITES_ALL`, with a comment saying when to put it back.
+* Tests: 10/25 runs; 10/31 and 11/29 (inside the old bound) do not.
+
 ## 2026-10-25 — a redirected page is cached under the URL asked for (`tottori-redirect-cache`)
 
 `PoliteClient.get` wrote each response under `page.url` — where the request
