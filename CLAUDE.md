@@ -303,8 +303,10 @@ those needed building:
   10/24, configured 10/25** (`sites/tochigi.toml`, `scraper = "voices"`): a
   fiscal-year index with one calendar year per list page (`YEAR=`), session
   titles with no month (the page's year dates the sitting), and officials
-  marked 「○関谷暢之　議長　」. First collection Sun 10/25 20:00; 1999–2008 were
-  not in the sample, so read that run's report before believing the count.
+  marked 「○関谷暢之　議長　」. **Collected Sun 10/25** in one window: **657 sittings, 71,732 speeches,
+  27,691,304 characters, 1999-02-22〜2026-06-22**, audit 0 missing. Completion
+  ends the agreement: its `[notice]` now ends 10/25 and it is out of
+  `collect_voices.sh` — an update run is a new notice first.
 - 栃木 wrote again the same day, relaying its **system vendor**: 会期中
   (9/17–10/13) につき **土日夜間** での実施を推奨. A second condition from the
   same operator is **ANDed with the first, not a replacement** — the letter gave

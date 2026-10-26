@@ -2,6 +2,33 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-26 — 栃木: vice-chair turns with no anchor, committee reports read the right way round (`tochigi-parse-fixes`)
+
+Two defects in the 10/25 collection, both fixed from cache (`scrapers/voices.py`):
+
+* **93 speeches inside someone else's.** In three sittings (令和4年
+  2/24, 2/25, 3/18) the vendor put no `<A NAME="HUID…">` before the vice-chair's
+  turns, so 「○佐藤良　副議長　相馬政二議員。」 sat inside the member's speech
+  and was credited to them. A block is now split where a line opens with the
+  name-then-office marker (`_turns`) — that shape only: 「○県政経営委員会（定数
+  九人）」 opens committee rosters inside speeches (22 lines) and is text. The
+  report counts it as 「turn with no anchor」.
+* **Six committees as speakers.** 2014-11-27's reports are written
+  「○県政経営委員会　岩崎信委員長　」; now 岩崎信, role 県政経営委員会委員長.
+* A form's placeholder 「○○議会議長○○」 (2006-06-08) is not a name
+  (`_NOT_A_NAME`), found because the split first read it as one.
+
+Verified, offline, on copies first: 栃木 +93 speeches in 3 sittings and 6
+relabelled in 1, nothing else; text unchanged apart from the 93 markers moving
+from body to speaker. **滋賀・石川: 0 field diffs.** Then applied in place
+(`data/栃木県.jsonl.bak`): **657 sittings, 71,732 speeches, 27,691,304
+characters, 351 speakers**; 0 name-then-office markers left inside a speech, 0
+committee speakers; `audit.py` 657 / 0 missing. 272 tests (two new, both failing
+without the change), ruff, mypy clean.
+
+Open: one label/printed date disagreement (平成17年12月 第4号, label 12/9,
+printed 12/8), not yet read.
+
 ## 2026-10-26 — 栃木: collected, so the notice ends and the collector stops (`tochigi-complete`)
 
 Sun 10/25 20:00:49–20:49:10, one window at 2 s: **657 sittings, 71,639

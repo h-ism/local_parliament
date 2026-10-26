@@ -139,7 +139,13 @@ _NAME_THEN_OFFICE = re.compile(r"^(?P<name>[^［\[]+)[［\[](?P<office>[^］\]]+
 # 滋賀 writes members 「（黄野瀬明子議員）」 in recent years and 「（野村政夫君）」 before;
 # without this one member is two speakers along a line that is only the year.
 _GIIN = re.compile(r"議員$")
-_NOT_A_NAME = re.compile(r"^[0-9０-９]|^[0-9０-９\s　、。・]+$")
+# 栃木 reports a committee as 「○県政経営委員会　岩崎信委員長　」: the committee
+# where the name goes, the chair's name inside the office. Read as written, the
+# speaker would be a committee.
+_COMMITTEE_FIRST = re.compile(r"^(?P<office>.+委員会)$")
+_CHAIR_NAMED = re.compile(r"^(?P<name>[^委]{2,12})委員長$")
+# 「○○議会議長○○」 is a form's placeholder printed in a 栃木 sitting, not a name.
+_NOT_A_NAME = re.compile(r"^[0-9０-９]|^[0-9０-９\s　、。・]+$|[○〇◯]")
 
 _RULE_ONLY = re.compile(r"^[─━―\-‐ー\s　・]+$")
 
@@ -176,7 +182,11 @@ def speaker_of(line: str) -> tuple[str, str | None, str]:
     role = (m["role"] or m["office3"] or "").strip().translate(_ASCII_DIGITS) or None
     raw = m["name"] or m["name0"] or m["name2"] or m["name3"] or ""
     office = _OFFICE_IN_NAME.match(raw.strip()) or _NAME_THEN_OFFICE.match(raw.strip())
-    if office:
+    committee = _COMMITTEE_FIRST.match(raw.strip()) if m["name3"] else None
+    chair = _CHAIR_NAMED.match(role or "") if committee else None
+    if committee and chair:
+        role, raw = f"{committee['office']}委員長", chair["name"]
+    elif office:
         role = f"{role}　{office['office']}" if role else office["office"]
         raw = office["name"]
     speaker = _clean_speaker(_GIIN.sub("", _clean_speaker(raw)))
@@ -188,6 +198,24 @@ def speaker_of(line: str) -> tuple[str, str | None, str]:
 # Older sittings append the signatures to the chair's last words — 「午後４時３分
 # 閉会」「会議録署名議員」「議　長　黒　川　　　治」… — a roster, not speech.
 _SIGNATURES = "会議録署名議員"
+
+
+def _turns(lines: list[str]) -> list[list[str]]:
+    """Split one anchored block where a 栃木-shaped marker opens a line inside it.
+
+    The vendor's anchors are the speech boundaries — except in a few 栃木
+    sittings (令和4年2〜3月 most of all) where the vice-chair's turns carry none:
+    「○佐藤良　副議長　相馬政二議員。」 sits inside the member's speech before it.
+    Only the name-then-office shape splits: 「○県政経営委員会（定数九人）」 opens
+    lines of committee rosters inside speeches, and is not a speaker.
+    """
+    turns: list[list[str]] = [[]]
+    for ln in lines:
+        m = _MARKER.match(ln.strip())
+        if turns[-1] and m and m["name3"] and speaker_of(ln.strip())[0]:
+            turns.append([])
+        turns[-1].append(ln)
+    return turns
 
 
 def _body(first_rest: str, lines: list[str]) -> str:
@@ -489,27 +517,30 @@ class VoicesScraper(BaseScraper):
                 self._check_date(ref, when, text)
                 self._kinds["front matter"] += 1
                 continue
-            lines = text.strip().split("\n")
-            first = lines[0].strip() if lines else ""
-            if not first:
-                self._kinds["empty"] += 1
-                continue
-            if first.startswith("△"):
-                self._kinds["△ heading"] += 1
-                continue
-            speaker, role, rest = speaker_of(first)
-            marker = _MARKER.match(first)
-            inner = (marker["name"] or "").strip() if marker else ""
-            if _OFFICE_IN_NAME.match(inner) or _NAME_THEN_OFFICE.match(inner):
-                self._office_split += 1
-            body = _body(rest, lines[1:])
-            if not body:
-                self._kinds["no text"] += 1
-                continue
-            self._kinds[first[0] if speaker else "unattributed"] += 1
-            if not speaker:
-                self._unattributed.append(f"{ref.url} HUID{huid}: {first[:40]}")
-            speeches.append(Speech(order=len(speeches), speaker=speaker, role=role, text=body))
+            turns = _turns(text.strip().split("\n"))
+            if len(turns) > 1:
+                self._kinds["turn with no anchor"] += len(turns) - 1
+            for lines in turns:
+                first = lines[0].strip() if lines else ""
+                if not first:
+                    self._kinds["empty"] += 1
+                    continue
+                if first.startswith("△"):
+                    self._kinds["△ heading"] += 1
+                    continue
+                speaker, role, rest = speaker_of(first)
+                marker = _MARKER.match(first)
+                inner = (marker["name"] or "").strip() if marker else ""
+                if _OFFICE_IN_NAME.match(inner) or _NAME_THEN_OFFICE.match(inner):
+                    self._office_split += 1
+                body = _body(rest, lines[1:])
+                if not body:
+                    self._kinds["no text"] += 1
+                    continue
+                self._kinds[first[0] if speaker else "unattributed"] += 1
+                if not speaker:
+                    self._unattributed.append(f"{ref.url} HUID{huid}: {first[:40]}")
+                speeches.append(Speech(order=len(speeches), speaker=speaker, role=role, text=body))
 
         return Meeting(
             prefecture=self.prefecture,

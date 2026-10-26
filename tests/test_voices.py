@@ -305,3 +305,32 @@ def test_tochigi_a_bullet_before_the_printed_date_is_not_a_digit() -> None:
     client = _client(SITTING_HTML.replace("令和２年12月10日（木曜日）", "〇十二月十日（木曜日）"))
     list(scraper.scrape(client))  # type: ignore[arg-type]
     assert not any("printed" in line for line in scraper.report())
+
+
+def test_tochigi_a_committee_report_is_the_chair_not_the_committee() -> None:
+    # 2014-11-27: 「○県政経営委員会　岩崎信委員長　」, six times — six "speakers"
+    # that were committees.
+    line = "○県政経営委員会　岩崎信委員長　県政経営委員会が取り組みました"
+    assert speaker_of(line)[:2] == ("岩崎信", "県政経営委員会委員長")
+    # A roster line inside a speech keeps its old reading; it never opens a turn.
+    assert speaker_of("○県政経営委員会（定数九人）")[:2] == ("定数九人", "県政経営委員会")
+    # A form's placeholder is not a name.
+    assert speaker_of("○○議会議長○○　○○")[0] == ""
+
+
+def test_tochigi_a_turn_with_no_anchor_is_split_out() -> None:
+    # 令和4年2〜3月: the vice-chair's turns carry no anchor and sat inside the
+    # member's speech before them — 93 of them, credited to the member.
+    sitting = SITTING_HTML.replace(
+        "〇総務・企画常任委員会<BR>　早速ですけれども。<BR>",
+        "〇総務・企画常任委員会<BR>　早速ですけれども。<BR>"
+        "○佐藤良　副議長　福田富一知事。<BR>（福田富一知事登壇）<BR>"
+        "○県政経営委員会（定数九人）<BR>",
+    )
+    scraper = _scraper()
+    (m,) = list(scraper.scrape(_client(sitting)))  # type: ignore[arg-type]
+    got = [(s.speaker, s.role) for s in m.speeches]
+    assert got[1:3] == [("黄野瀬明子", "11番"), ("佐藤良", "副議長")]
+    assert m.speeches[1].text.endswith("早速ですけれども。")
+    assert m.speeches[2].text == "福田富一知事。\n（福田富一知事登壇）\n○県政経営委員会（定数九人）"
+    assert "turn with no anchor 1" in "\n".join(scraper.report())
