@@ -2,6 +2,16 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-26 — 佐賀・鹿児島: refused (`saga-kagoshima-refused`)
+
+Docs only. The researcher reported that both assemblies refused collection —
+the project's first refusals. Both are DB-Search, the product 茨城 permitted
+and 山梨 routed to its download button: three answers from one vendor's
+boilerplate. Recorded in `docs/inquiries/{saga,kagoshima}.md`, the index and
+CLAUDE.md (18 blocked → 16 unanswered, 2 refused). The scope of each refusal
+is not on file; until it is, nothing is taken from either, by any route.
+Neither had a config, so no code changes.
+
 ## 2026-10-26 — 栃木: vice-chair turns with no anchor, committee reports read the right way round (`tochigi-parse-fixes`)
 
 Two defects in the 10/25 collection, both fixed from cache (`scrapers/voices.py`):

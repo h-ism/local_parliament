@@ -33,7 +33,7 @@
 [青森](aomori.md) ・ [茨城](ibaraki.md) ・ [東京](tokyo.md) ・ [富山](toyama.md) ・
 [山梨](yamanashi.md) ・ [愛知](aichi.md) ・ [京都](kyoto.md) ・ [鳥取](tottori.md) ・
 [島根](shimane.md) ・ [広島](hiroshima.md) ・ [香川](kagawa.md) ・ [福井](fukui.md) ・
-[福岡](fukuoka.md) ・ [佐賀](saga.md) ・ [鹿児島](kagoshima.md)
+[福岡](fukuoka.md) ・ [佐賀](saga.md)（**拒否** 2026-10-26） ・ [鹿児島](kagoshima.md)（**拒否** 2026-10-26）
 
 ### gijiroku VOICES 系（会議録配信用の CGI ディレクトリが Disallow）
 

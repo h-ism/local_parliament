@@ -231,7 +231,10 @@ See `docs/kensakusystem.md`.
 
 24 assemblies forbade crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
 gijiroku VOICES' CGI directory) — **18 now**: 山梨 moved to hand collection, and
-滋賀・石川・岩手・茨城・栃木 answered. Every one of the three vendor products now
+滋賀・石川・岩手・茨城・栃木 answered. **佐賀 and 鹿児島 (both DB-Search) refused
+on 2026-10-26** — the first refusals; 16 are unanswered. What exactly they
+refused (automated access only, or 山梨's download route too) is not on file
+yet, so nothing is taken from either until it is. Every one of the three vendor products now
 has at least one assembly that has permitted collection, which means the verdict
 recorded against each of them in August was the vendor's boilerplate and not the
 assembly's position. No amount of selector work changes the rest; the way through is
@@ -317,9 +320,9 @@ those needed building:
 
 **茨城 is DB-Search — the same product as 山梨, which said the opposite.** 山梨:
 don't fetch it automatically, use the download button. 茨城: scraping is fine.
-Same vendor, same blanket `Disallow: /`, opposite intentions. 15 more DB-Search
-assemblies are unanswered and **their answers cannot be guessed from each
-other**. See `docs/iwate-ibaraki-tochigi.md`.
+Same vendor, same blanket `Disallow: /`, opposite intentions — and 佐賀・鹿児島
+refused outright (2026-10-26). 13 more DB-Search assemblies are unanswered and
+**their answers cannot be guessed from each other**. See `docs/iwate-ibaraki-tochigi.md`.
 
 **滋賀・石川 — permitted, inside agreed hours (2026-09-18)**
 
