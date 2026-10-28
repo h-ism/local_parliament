@@ -231,10 +231,15 @@ See `docs/kensakusystem.md`.
 
 24 assemblies forbade crawling in `robots.txt` (DB-Search's blanket `Disallow: /`,
 gijiroku VOICES' CGI directory) — **18 now**: 山梨 moved to hand collection, and
-滋賀・石川・岩手・茨城・栃木 answered. **佐賀 and 鹿児島 (both DB-Search) refused
-on 2026-10-26** — the first refusals; 16 are unanswered. What exactly they
-refused (automated access only, or 山梨's download route too) is not on file
-yet, so nothing is taken from either until it is. Every one of the three vendor products now
+滋賀・石川・岩手・茨城・栃木 answered. **Seven DB-Search assemblies have refused**:
+佐賀・鹿児島 (2026-10-26), 香川・福岡 (10/28), 愛知・富山・島根 (10/29; dates are
+when the researcher reported them). What exactly each refused (automated access
+only, or 山梨's download route too) is not on file yet, so nothing is taken from
+any of them until it is. **長野 (VOICES) said yes on condition (10/29)**; the
+conditions are not on file, so it has no config and gets no request — not even
+reconnaissance — until they are written into `[fetch_window]` / `[notice]`.
+10 are unanswered: 青森・東京・京都・広島・福井・群馬・宮崎・千葉, plus 鳥取 and
+北海道, which answered on other routes. Every one of the three vendor products now
 has at least one assembly that has permitted collection, which means the verdict
 recorded against each of them in August was the vendor's boilerplate and not the
 assembly's position. No amount of selector work changes the rest; the way through is
@@ -321,7 +326,8 @@ those needed building:
 **茨城 is DB-Search — the same product as 山梨, which said the opposite.** 山梨:
 don't fetch it automatically, use the download button. 茨城: scraping is fine.
 Same vendor, same blanket `Disallow: /`, opposite intentions — and 佐賀・鹿児島
-refused outright (2026-10-26). 13 more DB-Search assemblies are unanswered and
+refused outright (2026-10-26), then 香川・福岡・愛知・富山・島根: seven refusals.
+6 more DB-Search assemblies are unanswered (鳥取 among them, for the system itself) and
 **their answers cannot be guessed from each other**. See `docs/iwate-ibaraki-tochigi.md`.
 
 **滋賀・石川 — permitted, inside agreed hours (2026-09-18)**

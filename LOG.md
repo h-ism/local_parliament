@@ -2,6 +2,17 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-10-29 — 香川・福岡・愛知・富山・島根 refused; 長野 yes on condition (`refusals-and-nagano`)
+
+Docs only. The researcher reported five more refusals, all DB-Search — seven
+of the fifteen now, against 茨城's yes and 山梨's download route. 長野 (VOICES)
+permits collection if its conditions are kept; the conditions are not on file,
+so no config and no request until they can be written as `[fetch_window]` /
+`[notice]`. The scope of each refusal is likewise not on file, and nothing is
+taken from any of them by any route until it is. Recorded in each
+`docs/inquiries/*.md`, the index and CLAUDE.md (16 unanswered → 10).
+Dates are when the reports arrived, not when the assemblies answered.
+
 ## 2026-10-26 — 佐賀・鹿児島: refused (`saga-kagoshima-refused`)
 
 Docs only. The researcher reported that both assemblies refused collection —
