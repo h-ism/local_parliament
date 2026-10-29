@@ -30,6 +30,8 @@
 
 ### DB-Search 系（robots.txt が `Disallow: /`、トップページのみ許可）
 
+拒否はいずれも**自動取得の拒否**（2026-10-29 確認）。手作業でのダウンロードは断られていない。
+
 [青森](aomori.md) ・ [茨城](ibaraki.md) ・ [東京](tokyo.md) ・ [富山](toyama.md)（**拒否** 2026-10-29） ・
 [山梨](yamanashi.md) ・ [愛知](aichi.md)（**拒否** 2026-10-29） ・ [京都](kyoto.md) ・ [鳥取](tottori.md) ・
 [島根](shimane.md)（**拒否** 2026-10-29） ・ [広島](hiroshima.md) ・ [香川](kagawa.md)（**拒否** 2026-10-28） ・ [福井](fukui.md) ・
@@ -38,7 +40,7 @@
 ### gijiroku VOICES 系（会議録配信用の CGI ディレクトリが Disallow）
 
 [北海道](hokkaido.md) ・ [岩手](iwate.md) ・ [栃木](tochigi.md) ・ [群馬](gunma.md) ・
-[石川](ishikawa.md) ・ [長野](nagano.md)（**条件付きで可** 2026-10-29、条件未記録） ・ [滋賀](shiga.md) ・ [宮崎](miyazaki.md)
+[石川](ishikawa.md) ・ [長野](nagano.md)（**可** 2026-10-29、当方が示した方法で） ・ [滋賀](shiga.md) ・ [宮崎](miyazaki.md)
 
 ## 2. 設定の意図を確認する
 

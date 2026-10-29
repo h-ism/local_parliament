@@ -233,11 +233,13 @@ See `docs/kensakusystem.md`.
 gijiroku VOICES' CGI directory) — **18 now**: 山梨 moved to hand collection, and
 滋賀・石川・岩手・茨城・栃木 answered. **Seven DB-Search assemblies have refused**:
 佐賀・鹿児島 (2026-10-26), 香川・福岡 (10/28), 愛知・富山・島根 (10/29; dates are
-when the researcher reported them). What exactly each refused (automated access
-only, or 山梨's download route too) is not on file yet, so nothing is taken from
-any of them until it is. **長野 (VOICES) said yes on condition (10/29)**; the
-conditions are not on file, so it has no config and gets no request — not even
-reconnaissance — until they are written into `[fetch_window]` / `[notice]`.
+when the researcher reported them). **All seven refused automated access only**
+(confirmed 10/29): 山梨's route — the download button, by hand, `pt import` — was
+not refused, but unlike 山梨 nobody offered it either, so taking it is the
+researcher's call. No config, no reconnaissance, no request. **長野 (VOICES) said
+yes by the method we offered (10/29)** — 岩手・茨城's answer, so 岩手・茨城's terms:
+2 s, no parallelism, cache, contact in the UA, `[fetch_window]` 20:00–07:00 every
+day, no `[notice]`. Not configured yet; its markup gets checked inside that window first.
 10 are unanswered: 青森・東京・京都・広島・福井・群馬・宮崎・千葉, plus 鳥取 and
 北海道, which answered on other routes. Every one of the three vendor products now
 has at least one assembly that has permitted collection, which means the verdict

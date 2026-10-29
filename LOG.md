@@ -13,6 +13,12 @@ taken from any of them by any route until it is. Recorded in each
 `docs/inquiries/*.md`, the index and CLAUDE.md (16 unanswered → 10).
 Dates are when the reports arrived, not when the assemblies answered.
 
+Same day, the researcher filled in both gaps: all seven refusals are of
+**automated access** — the download button by hand was not refused, though
+none of them offered it as 山梨 did — and 長野's conditions are **the five
+undertakings in our letter**, so it is read exactly as 岩手・茨城 were:
+20:00–07:00 every day, no notice. 佐賀・鹿児島's entries updated to match.
+
 ## 2026-10-26 — 佐賀・鹿児島: refused (`saga-kagoshima-refused`)
 
 Docs only. The researcher reported that both assemblies refused collection —
