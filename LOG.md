@@ -27,6 +27,13 @@ survey for every site without a config, under its lock, at 20:00 daily.
 Verified: `--dry-run` refuses outside the window and passes the contact check;
 ruff and mypy clean. Nothing fetched yet — the first window is 10/30 20:00.
 
+And 北海道: on 10/30 the secretariat, relaying the vendor, confirmed the nights
+of 10/31 and 11/1 (20:00–06:00) and restated the 9/30 terms. The hold is
+replaced by a window narrowed to those two nights (`HOKKAIDO_FIRST_WEEKEND`:
+the 9/30 window with `first_day`/`last_day` 10/31–11/1), verified at every
+boundary; dry-run says next opening 10/31 20:00. `docs/hokkaido.md` has the
+answer and the weekend's plan. Names in the email stay out of git.
+
 ## 2026-10-26 — 佐賀・鹿児島: refused (`saga-kagoshima-refused`)
 
 Docs only. The researcher reported that both assemblies refused collection —

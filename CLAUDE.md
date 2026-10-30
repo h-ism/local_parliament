@@ -289,6 +289,10 @@ period. **Held 2026-10-09** (the researcher: no reply to it yet) — `hold=` in
 engineers are tied up with PHP work on other systems and could not respond to
 an incident. From next week they will re-arrange **on dates we send again**, so
 the hold stays until a new date request is answered and recorded.
+**2026-10-30 answered: the nights of 10/31 and 11/1 only** (20:00–06:00), the
+9/30 terms restated. Hold lifted; the window is narrowed to those two nights
+(`HOKKAIDO_FIRST_WEEKEND`), so a later weekend needs a new answer. Survey Sat,
+config Sun offline, collection Sun night.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 

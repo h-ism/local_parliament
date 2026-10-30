@@ -10,6 +10,29 @@ one is disallowed by `robots.txt`, the other is PDF-only. Details below, along
 with a draft config that becomes runnable the moment the first blocker is lifted.
 
 
+## 2026-10-30 — confirmed: the nights of 10/31 and 11/1
+
+北海道議会事務局議事課, by email to 共同研究者B, relaying its vendor:
+「今週末土日の夜間帯（１０月３１日（土）２０時～１１月１日（日）６時、
+１１月１日（日）２０時～１１月２日（月）６時）にデータ取得を実施して問題ありません」.
+They restated three terms: **2 s or more per request and no simultaneous
+access**; **keep what was fetched locally, never fetch it twice**; **keep to
+the period and hours (10/3〜11/24, 土日祝, 20:00–06:00)**. And: if the server is
+loaded they may ask us to stop.
+
+The hold is off. The window is `HOKKAIDO_FIRST_WEEKEND` in `recon_sites.py` —
+the 9/30 window narrowed to `first_day` 10/31, `last_day` 11/1 — so the two
+named nights are the only ones that open; checked at each boundary (10/31 19:59
+shut, 20:00 open; 11/1 06:00 shut, 20:00 open; 11/2 06:00 shut; 11/7 shut).
+**Only these two**: since 10/23 the vendor arranges dates request by request,
+so a later weekend inside the period is a new request and a new answer, not
+something the restated period grants.
+
+Plan: survey Saturday night (`collect_voices.sh` at 20:00, ~5 min); write
+`sites/hokkaido.toml` from the cache on Sunday, offline; collect Sunday night,
+with the same narrowed `[fetch_window]` in the config. Whatever is left at 06:00
+on 11/2 waits for the next confirmed dates.
+
 ## 2026-10-23 — not this weekend; dates to be sent again
 
 北海道議会事務局議事課, relaying its vendor: please avoid **this weekend

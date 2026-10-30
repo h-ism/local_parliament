@@ -121,6 +121,17 @@ HOKKAIDO_OFF_SESSION = dict(
     end=time(6, 0),
     decided_on="2026-09-30",
 )
+# 2026-10-30, 北海道議会事務局議事課 relaying the vendor: 「今週末土日の夜間帯
+# （10月31日（土）20時～11月1日（日）6時、11月1日（日）20時～11月2日（月）6時）に
+# データ取得を実施して問題ありません」. Two named nights, inside the 9/30 period
+# whose terms they restated. Only these two: after the 10/23 postponement the
+# vendor arranges dates one request at a time, so a later weekend is a new answer.
+HOKKAIDO_FIRST_WEEKEND = dict(
+    HOKKAIDO_OFF_SESSION,
+    first_day=date(2026, 10, 31),
+    last_day=date(2026, 11, 1),
+    decided_on="2026-10-30",
+)
 # The letters were not all sent by the same person, and the address an operator
 # sees has to be the one *that* assembly can reply to. A wrong address is worse
 # than none: it tells them who to complain to and the complaint never arrives.
@@ -476,9 +487,12 @@ SITES: dict[str, Site] = {
             "pref-hokkaido.gijiroku.com",
             "北海道議会事務局",
             "北海道議会事務局 (2026-09-30): 時期をずらして欲しい（閉会後の10月3日（土）から"
-            "第４回定例会が始まる11月24日（火）までの間の土日祝の夜間帯（20時～6時））",
+            "第４回定例会が始まる11月24日（火）までの間の土日祝の夜間帯（20時～6時））"
+            "／2026-10-30 ベンダー経由で確定: 10/31（土）20時～11/1 6時、11/1（日）20時～"
+            "11/2 6時は実施して問題なし。1件2秒以上・同時アクセス禁止・ローカル保存・"
+            "期間と時間帯の遵守を再確認。負荷がかかれば停止を求めることがある",
             contact=COLLABORATOR_B,
-            hours=HOKKAIDO_OFF_SESSION,
+            hours=HOKKAIDO_FIRST_WEEKEND,
             requires_notice=True,
             # Sent 2026-09-30, the day of their answer (the researcher,
             # 2026-10-07): the letter gave their whole period, so it covers
@@ -498,16 +512,12 @@ SITES: dict[str, Site] = {
             # could not respond if something went wrong. From next week they
             # will re-arrange — on dates we send again. So the 9/30 schedule no
             # longer stands by itself, and the hold is what says so; the notice
-            # stays a record of what was sent.
-            hold=(
-                "2026-10-23 先方の依頼で保留: 今週末（10/24〜25）は避けてほしい"
-                "（ベンダーの技術者が他システムの PHP 対応中で、不測の事態に対応できない"
-                "恐れ）。来週以降は希望日時を改めて連絡し、先方の再調整の返事を得て"
-                "notice に記録してから外す。（2026-10-09 からの保留を引き継ぐ）"
-                "／同日、希望日時を送ったところ電話で回答: 10/31・11/1 は不透明、"
-                "11/7・8 は決算特別委員会（11/6〜12）につき避けてほしい、"
-                "11/14・15 か 11/21〜23 になるかも。**確定した日はまだ無い**"
-            ),
+            # stays a record of what was sent. The same day, by phone: 10/31・11/1
+            # uncertain, 11/7・8 to be avoided (決算特別委員会 11/6〜12), perhaps
+            # 11/14・15 or 11/21〜23.
+            #
+            # Hold lifted 2026-10-30: the vendor confirmed 10/31 and 11/1 nights
+            # (HOKKAIDO_FIRST_WEEKEND). The window is what keeps it to those two.
             answered_on="2026-09-30",
             # The 本会議 listing, as 滋賀 and 石川: from the search form a
             # transcript is one level past MAX_DEPTH (docs/hokkaido.md).
