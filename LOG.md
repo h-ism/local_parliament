@@ -19,6 +19,14 @@ none of them offered it as 山梨 did — and 長野's conditions are **the five
 undertakings in our letter**, so it is read exactly as 岩手・茨城 were:
 20:00–07:00 every day, no notice. 佐賀・鹿児島's entries updated to match.
 
+Then the survey: `nagano` added to `scripts/recon_sites.py` — 共同研究者B's
+name (the researcher, 10/30), `OUTSIDE_BUSINESS_HOURS`, the robots exemption
+scoped to `/voices/` and dated 10/29, starting at the 本会議 listing with the
+directory as fallback. No new timer: `collect_voices.sh` already runs the
+survey for every site without a config, under its lock, at 20:00 daily.
+Verified: `--dry-run` refuses outside the window and passes the contact check;
+ruff and mypy clean. Nothing fetched yet — the first window is 10/30 20:00.
+
 ## 2026-10-26 — 佐賀・鹿児島: refused (`saga-kagoshima-refused`)
 
 Docs only. The researcher reported that both assemblies refused collection —

@@ -405,6 +405,29 @@ SITES: dict[str, Site] = {
             ),
         ),
         _voices(
+            "nagano",
+            "長野県",
+            "nagano.gijiroku.com",
+            "長野県議会事務局",
+            # Answered 2026-10-29 (the researcher): collection is fine if the
+            # conditions we sent are kept — 岩手・茨城's answer, so their reading:
+            # 20:00–07:00 every day, and no notice, because none was asked for.
+            "長野県議会事務局（2026-10-29）手紙に記載した方法（1件2秒以上・直列、"
+            "既取得は再取得しない、User-Agent に研究目的と連絡先、業務時間帯を避ける、"
+            "支障があれば即停止）であれば取得可、との回答",
+            contact=COLLABORATOR_B,
+            hours=OUTSIDE_BUSINESS_HOURS,
+            answered_on="2026-10-29",
+            # The 本会議 listing, as 滋賀・石川・栃木; not yet seen on this install,
+            # so the directory the letter named is the fallback.
+            start="https://nagano.gijiroku.com/voices/g08v_viewh.asp",
+            discover=("https://nagano.gijiroku.com/voices/",),
+            note=(
+                "手紙の5項目が条件（岩手・茨城と同じ答え方）。事前連絡は求められていない。"
+                "下見のあと、キャッシュからオフラインで sites/nagano.toml を書く。"
+            ),
+        ),
+        _voices(
             "iwate",
             "岩手県",
             # Not iwatekengikai.gijiroku.com, which the letter named: that host

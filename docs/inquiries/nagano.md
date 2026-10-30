@@ -6,6 +6,8 @@
 2秒以上・並列なし・キャッシュ・User-Agent に連絡先、そして「業務時間帯を避ける」は
 **毎日 20:00–07:00** の `[fetch_window]`。事前連絡は求められていないので `[notice]`
 は置かない。設定ファイルは、偵察（そのウィンドウ内）でマークアップを確かめてから書く。
+名義は共同研究者B（`collaborator_b`）。偵察は `scripts/recon_sites.py` の `nagano`、
+2026-10-30 20:00 から `pt-voices-collect.timer` 経由で実施。
 
 対象システム: 長野県議会 会議録検索システム
 <https://nagano.gijiroku.com/voices/>
