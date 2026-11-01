@@ -1,0 +1,36 @@
+# 長野県議会 — 本会議（定例会・臨時会）, gijiroku VOICES
+#
+# Written 2026-11-01 from the reconnaissance caches of 2026-10-30 and 10-31
+# (300 pages), offline. Same product and route as 滋賀・石川・栃木・北海道
+# (`scrapers/voices.py`); LOG.md records what the cached sittings showed.
+#
+# 本会議 only, as the others.
+
+prefecture = "長野県"
+name = "nagano"
+scraper = "voices"
+
+[voices]
+# Calendar years, 平成7年 to 令和8年.
+index_url = "https://nagano.gijiroku.com/voices/g08v_viewh.asp"
+
+# robots.txt disallows /voices/cgi/ — the vendor's file, the same on every VOICES
+# install. The assembly answered our letter about collecting these minutes.
+[robots]
+exempt = ["https://nagano.gijiroku.com/voices/"]
+reason = "長野県議会事務局: 運営者本人の回答による許可（2026-10-29）。robots.txt の Disallow はベンダー標準で、回答が優先する。docs/inquiries/nagano.md"
+decided_on = "2026-10-29"
+
+# They answered as 岩手・茨城 did — by the method our letter described — so the
+# same reading: 業務時間帯を避ける is 20:00–07:00, every day. No notice was asked for.
+[fetch_window]
+days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+start = "20:00"
+end = "07:00"
+reason = "長野県議会事務局（2026-10-29）手紙に記載した方法（1件2秒以上・直列、既取得は再取得しない、User-Agent に研究目的と連絡先、業務時間帯を避ける、支障があれば即停止）であれば取得可、との回答"
+decided_on = "2026-10-29"
+
+# The enquiry 長野 answered was 共同研究者B's; that is the address they have.
+[contact]
+ref = "collaborator_b"  # the address is in contacts.toml, not in git
+note = "照会は共同研究者Bが行った — 長野"

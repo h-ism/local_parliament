@@ -2,6 +2,21 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-11-01 — 長野 本会議: configured from the 10/30–31 surveys (`refusals-and-nagano`)
+
+Two nights of survey, 300 pages: the index (calendar years 平成7年〜令和8年, 32
+lists) and three year lists — 平成19年, 26年, 令和2年 (37 / 38 / 34 rows, each
+equal to its hit count) — with 21 sittings' whole text. `sites/nagano.toml`,
+offline, with `recon_sites.py`'s terms: `/voices/` exemption dated 10/29,
+20:00–07:00 every day, collaborator_b, no `[notice]`. No scraper change.
+
+Verified, offline, on all 21: **0 unread markers** in 1,654 speeches (○ 709,
+◎ 560, ◆ 385; 100 △ headings), 0 undated, 0 date mismatches, 0 swallowed
+markers, no odd speakers; longest are names (「小林東一郎」「長谷川朋弘」). A
+test holds the config to the survey's window. Collected after 北海道 in
+`collect_voices.sh`, from 20:00 tonight; what 07:00 leaves, the next evening
+resumes. **Not seen: 1995–2006, 臨時会 rows** — the first run's report is their check.
+
 ## 2026-11-01 — 北海道 本会議: configured from Saturday's survey (`refusals-and-nagano`)
 
 Saturday 10/31's survey cached 150 pages, 20:05–20:10, inside the first

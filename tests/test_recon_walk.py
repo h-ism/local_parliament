@@ -282,3 +282,22 @@ def test_hokkaido_config_opens_only_the_two_confirmed_nights(when: datetime, run
     assert cfg.fetch_window.allows(when) is runs
     assert site.window.allows(when) is runs
     assert cfg.notice.covers(when.date())
+
+
+@pytest.mark.parametrize(
+    ("when", "runs"),
+    [
+        (datetime(2026, 11, 2, 19, 59, tzinfo=JST), False),
+        (datetime(2026, 11, 2, 20, 0, tzinfo=JST), True),  # a Monday: every day, as 岩手・茨城
+        (datetime(2026, 11, 3, 6, 59, tzinfo=JST), True),
+        (datetime(2026, 11, 3, 7, 0, tzinfo=JST), False),
+        (datetime(2026, 11, 4, 12, 0, tzinfo=JST), False),
+    ],
+)
+def test_nagano_config_carries_the_same_terms_as_the_survey(when: datetime, runs: bool) -> None:
+    from prefectural_transcripts.scrapers.voices import VoicesConfig
+
+    cfg = VoicesConfig.from_toml(recon_sites.SITES_DIR / "nagano.toml")
+    assert cfg.fetch_window is not None and cfg.notice is None  # none was asked for
+    assert cfg.fetch_window.allows(when) is runs
+    assert SITES["nagano"].window.allows(when) is runs

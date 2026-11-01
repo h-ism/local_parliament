@@ -239,9 +239,9 @@ not refused, but unlike 山梨 nobody offered it either, so taking it is the
 researcher's call. No config, no reconnaissance, no request. **長野 (VOICES) said
 yes by the method we offered (10/29)** — 岩手・茨城's answer, so 岩手・茨城's terms:
 2 s, no parallelism, cache, contact in the UA, `[fetch_window]` 20:00–07:00 every
-day, no `[notice]`, in 共同研究者B's name. Not configured yet: surveyed by
-`recon_sites.py` (under `collect_voices.sh`'s lock) from Fri 10/30 20:00, and the
-config is written from that cache, offline.
+day, no `[notice]`, in 共同研究者B's name. Surveyed 10/30–31, **configured
+2026-11-01** (`sites/nagano.toml`, 21/21 cached sittings clean), collected by
+`collect_voices.sh` after 北海道 from that night.
 10 are unanswered: 青森・東京・京都・広島・福井・群馬・宮崎・千葉, plus 鳥取 and
 北海道, which answered on other routes. Every one of the three vendor products now
 has at least one assembly that has permitted collection, which means the verdict

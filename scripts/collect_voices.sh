@@ -42,6 +42,7 @@ SITES_ALL=(
   "ibaraki::5"
   "tottori_committee::5"   # とりネット: 土日のみ終日 (2026-10-05); 5 s, as we told them
   "hokkaido::"   # 10/31・11/1 の夜だけ (2026-10-30); the config's [fetch_window] holds it to them
+  "nagano::"     # 毎日 20:00–07:00, by our letter (2026-10-29); after 北海道, whose night ends at 06:00
   # tochigi: collected 2026-10-25 (657 sittings) and taken out. 栃木 agreed to
   # collection *until it was complete*; an update run needs a new notice first,
   # and its [notice] now ends on 10/25, so `pt scrape tochigi` would refuse
