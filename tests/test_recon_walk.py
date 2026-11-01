@@ -189,14 +189,16 @@ def test_what_a_person_must_fix_still_fails(
 
 
 def test_a_site_on_hold_is_skipped_inside_its_window(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, tmp_path: Path
 ) -> None:
     # 2026-10-09: 栃木 and 北海道 were told on 9/30 and had not replied; the
     # researcher held both. Inside the window, with the notice covering the
     # night, the hold alone has to stop it — and stopping is not a failure.
-    # (栃木 replied and was released on 2026-10-22; 北海道 is still held.)
-    saturday = datetime(2026, 10, 10, 21, 0, tzinfo=JST)
-    assert SITES["hokkaido"].hold
+    # Both are released now (栃木 10/22, 北海道 10/30), so the hold is put back
+    # on a copy, inside 北海道's first confirmed night.
+    monkeypatch.setitem(SITES, "hokkaido", replace(SITES["hokkaido"], hold="test"))
+    monkeypatch.setattr(recon_sites, "SITES_DIR", tmp_path)  # its config would skip it first
+    saturday = datetime(2026, 10, 31, 21, 0, tzinfo=JST)
     assert _run(monkeypatch, saturday, "hokkaido") == 0
     assert "held by the researcher" in caplog.text
     assert "inside the window" not in caplog.text
@@ -253,3 +255,30 @@ def test_tochigi_config_carries_the_same_terms_as_the_survey(when: datetime, run
     assert cfg.fetch_window is not None
     allowed = cfg.fetch_window.allows(when) and cfg.notice.covers(when.date())
     assert allowed is runs
+
+
+@pytest.mark.parametrize(
+    ("when", "runs"),
+    [
+        (datetime(2026, 10, 31, 19, 59, tzinfo=JST), False),
+        (datetime(2026, 10, 31, 20, 0, tzinfo=JST), True),
+        (datetime(2026, 11, 1, 5, 59, tzinfo=JST), True),
+        (datetime(2026, 11, 1, 12, 0, tzinfo=JST), False),
+        (datetime(2026, 11, 1, 20, 0, tzinfo=JST), True),
+        (datetime(2026, 11, 2, 5, 59, tzinfo=JST), True),
+        (datetime(2026, 11, 2, 6, 0, tzinfo=JST), False),
+        (datetime(2026, 11, 3, 21, 0, tzinfo=JST), False),  # a holiday in the period, not confirmed
+        (datetime(2026, 11, 7, 21, 0, tzinfo=JST), False),
+    ],
+)
+def test_hokkaido_config_opens_only_the_two_confirmed_nights(when: datetime, runs: bool) -> None:
+    # 2026-10-30: the vendor confirmed 10/31 and 11/1, 20:00-06:00, and nothing else.
+    from prefectural_transcripts.scrapers.voices import VoicesConfig
+
+    cfg = VoicesConfig.from_toml(recon_sites.SITES_DIR / "hokkaido.toml")
+    site = SITES["hokkaido"]
+    assert cfg.notice is not None and site.notice is not None
+    assert cfg.fetch_window is not None
+    assert cfg.fetch_window.allows(when) is runs
+    assert site.window.allows(when) is runs
+    assert cfg.notice.covers(when.date())

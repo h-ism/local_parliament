@@ -292,7 +292,7 @@ the hold stays until a new date request is answered and recorded.
 **2026-10-30 answered: the nights of 10/31 and 11/1 only** (20:00–06:00), the
 9/30 terms restated. Hold lifted; the window is narrowed to those two nights
 (`HOKKAIDO_FIRST_WEEKEND`), so a later weekend needs a new answer. Survey Sat,
-config Sun offline, collection Sun night.
+config Sun offline (`sites/hokkaido.toml`, 2026-11-01: 19/19 cached sittings clean), collection Sun night.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 

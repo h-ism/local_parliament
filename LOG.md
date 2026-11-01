@@ -2,6 +2,30 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-11-01 — 北海道 本会議: configured from Saturday's survey (`refusals-and-nagano`)
+
+Saturday 10/31's survey cached 150 pages, 20:05–20:10, inside the first
+confirmed night: the index (56 years, 1971〜2026, all `Sflg=11`) and three year
+lists — 平成6年, 17年, 29年 (38 / 35 / 34 rows, each equal to its hit count) —
+with 19 sittings' whole text. `sites/hokkaido.toml` is written from them,
+offline, with the same terms as `recon_sites.py`: `[robots]` scoped to
+`/voices/`, `[fetch_window]` narrowed to the nights of 10/31 and 11/1,
+`[contact]` collaborator_b, `[notice]` 9/30 → 11/24. No scraper change: the
+滋賀・石川・栃木 route and markers read it as it is.
+
+Verified, offline, on all 19: **0 unread markers** in 1,105 speeches (○ 669,
+◎ 327, ◆ 109; 172 △ headings), 0 undated, 0 date mismatches, 0 lines in any
+speech opening with a marker, no speaker with digits, brackets or an honorific;
+longest speakers are names (「佐々木恵美子」). A test holds the config and the
+survey to the two nights at every boundary; the hold test, broken by lifting
+北海道's hold on 10/30 and not run then, now holds a copy. 281 tests; ruff, mypy
+clean. `collect_voices.sh` already lists 北海道, so 20:00 tonight collects it.
+
+**Not seen: 1971–1993, 臨時会 rows, and 2018 on.** Tonight's run is their check —
+read its report (unread markers, undated sittings, short lists) before
+believing the count. About 2,000 sittings at 2 requests each fits the night;
+whatever 06:00 leaves waits for the next confirmed dates.
+
 ## 2026-10-29 — 香川・福岡・愛知・富山・島根 refused; 長野 yes on condition (`refusals-and-nagano`)
 
 Docs only. The researcher reported five more refusals, all DB-Search — seven
