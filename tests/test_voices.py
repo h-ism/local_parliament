@@ -334,3 +334,26 @@ def test_tochigi_a_turn_with_no_anchor_is_split_out() -> None:
     assert m.speeches[1].text.endswith("早速ですけれども。")
     assert m.speeches[2].text == "福田富一知事。\n（福田富一知事登壇）\n○県政経営委員会（定数九人）"
     assert "turn with no anchor 1" in "\n".join(scraper.report())
+
+
+def test_nagano_a_full_marker_with_no_anchor_is_split_out() -> None:
+    # 長野 drops two anchors in 75,081 speeches; the turn was the speaker's before.
+    sitting = SITTING_HTML.replace(
+        "〇総務・企画常任委員会<BR>　早速ですけれども。<BR>",
+        "〇総務・企画常任委員会<BR>　早速ですけれども。<BR>"
+        "○議長（向山公人　君）次に、花岡賢一議員。<BR>",
+    )
+    (m,) = list(_scraper().scrape(_client(sitting)))  # type: ignore[arg-type]
+    assert [(s.speaker, s.role) for s in m.speeches][2] == ("向山公人", "議長")
+    assert m.speeches[2].text == "次に、花岡賢一議員。"
+
+
+def test_nagano_an_office_typed_twice_is_read_once() -> None:
+    assert speaker_of("◎教育長（教育長原山隆一　君）まず、")[:2] == ("原山隆一", "教育長")
+    assert speaker_of("◎教育長（原山隆一　君）まず、")[:2] == ("原山隆一", "教育長")
+
+
+def test_a_placeholder_anywhere_in_the_name_is_not_a_speaker() -> None:
+    # 栃木 prints a petition form inside a speech: 「○○県議会議長（○○　○○君）」-like
+    # lines. 「○」 inside the name, not only at its start, marks the placeholder.
+    assert speaker_of("○○○県議会議長（議会議長○○　○○君）")[0] == ""

@@ -2,6 +2,42 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-11-02 — 北海道・長野: collected 11/1; two 長野 marker shapes (`refusals-and-nagano`)
+
+Both in the first night, inside their windows, one after the other under the
+collector's lock:
+
+| | sittings | speeches | characters | range | time |
+| --- | --- | --- | --- | --- | --- |
+| 北海道 | 2,225 | 90,679 | 85,481,470 | 1971-02-19〜2026-07-03 | 20:00–22:31 |
+| 長野 | 943 | 75,083 | 54,980,806 | 1995-02-14〜2026-07-03 | 22:31–23:34 |
+
+`audit.py`: 0 listed but not collected on either. 0 undated, 0 empty sittings,
+no odd speakers, no whitespace/NFKC splits, no PUA. One retried request (北海道),
+recovered. The 北海道 window closed at 06:00 with nothing left to fetch.
+
+Fixed from cache (`scrapers/voices.py`), each found by the post-collection checks:
+
+* **A full marker with no anchor** — 「○議長（向山公人　君）」 twice in 長野, inside
+  the previous speaker's text. `_turns` split only 栃木's name-then-office
+  shape; it now also splits a role（name）marker whose name ends in 「君」, which
+  a roster heading such as 「○県政経営委員会（定数九人）」 never does. +2 speeches.
+* **The office typed twice** — 「◎教育長（教育長原山隆一　君）」: the role is
+  stripped from the front of the name. 1 speaker.
+* The first fix also split a 栃木 petition form, 「…議会議長○○　○○君」:
+  `_NOT_A_NAME` looked for 「○」 only at the start of a name. Now anywhere.
+
+Re-parsed on copies first: 滋賀・石川・栃木・北海道 **0 sittings with any field
+changed**; 長野 the 3 above. Then 長野 in place, audit again 0 missing. Left as
+reported: 1 長野 speech whose marker lacks its closing bracket (「◆12番（山岸喜昭　
+君今、…」, kept unnamed), and 6 label/printed date disagreements (北海道 2, 長野 4)
+— in each the vendor's labels run in sequence with the session's other
+sittings, and the printed date repeats a neighbour's or slips a year, so the
+label stands. 289 tests; ruff, mypy clean.
+
+Corpus: 31 prefectures, 100,936 transcripts, 6,432,039 speeches,
+2,660,528,185 characters (verbatim).
+
 ## 2026-11-01 — 長野 本会議: configured from the 10/30–31 surveys (`refusals-and-nagano`)
 
 Two nights of survey, 300 pages: the index (calendar years 平成7年〜令和8年, 32

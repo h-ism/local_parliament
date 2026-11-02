@@ -161,10 +161,9 @@ speeches, 1,577,194,070 characters**, 宮城 and 新潟 from **1947**. Every lis
 reconciles item by item against its corpus, 0 missing on all seventeen.
 `docs/ssp.md` has the protocol and the traps.
 
-**The corpus is 28 prefectures, 95,085 transcripts, 5,984,907 speeches,
-2,425,095,926 characters** (2026-10-22, counted from `data/*.jsonl`, `kind ==
-"verbatim"` only; 鳥取's four re-sent sittings added; on 10-19 滋賀・石川 本会議
-added, 茨城's stray 「委員長　」 removed). Beside it, **1,254 summary records** in `data/summary/`
+**The corpus is 31 prefectures, 100,936 transcripts, 6,432,039 speeches,
+2,660,528,185 characters** (2026-11-02, counted from `data/*.jsonl`, `kind ==
+"verbatim"` only; 栃木 added 10/25, 北海道・長野 on the night of 11/1). Beside it, **1,254 summary records** in `data/summary/`
 (和歌山・兵庫・秋田・神奈川) and 1,083 summarised passages inside 兵庫's
 transcripts: 11,523 passages, 3,064,771 characters, none of them speech.
 
@@ -241,7 +240,9 @@ yes by the method we offered (10/29)** — 岩手・茨城's answer, so 岩手�
 2 s, no parallelism, cache, contact in the UA, `[fetch_window]` 20:00–07:00 every
 day, no `[notice]`, in 共同研究者B's name. Surveyed 10/30–31, **configured
 2026-11-01** (`sites/nagano.toml`, 21/21 cached sittings clean), collected by
-`collect_voices.sh` after 北海道 from that night.
+`collect_voices.sh` after 北海道 from that night. **Collected 11/1, 22:31–23:34:
+943 sittings, 75,083 speeches, 54,980,806 characters, 1995-02-14〜2026-07-03**,
+audit 0 missing.
 10 are unanswered: 青森・東京・京都・広島・福井・群馬・宮崎・千葉, plus 鳥取 and
 北海道, which answered on other routes. Every one of the three vendor products now
 has at least one assembly that has permitted collection, which means the verdict
@@ -293,6 +294,9 @@ the hold stays until a new date request is answered and recorded.
 9/30 terms restated. Hold lifted; the window is narrowed to those two nights
 (`HOKKAIDO_FIRST_WEEKEND`), so a later weekend needs a new answer. Survey Sat,
 config Sun offline (`sites/hokkaido.toml`, 2026-11-01: 19/19 cached sittings clean), collection Sun night.
+**Collected 11/1, 20:00–22:31: 2,225 sittings, 90,679 speeches, 85,481,470
+characters, 1971-02-19〜2026-07-03**, audit 0 missing — the whole 本会議 archive in the
+first night. Nothing more is owed; an update run is a new date request.
 
 **岩手・茨城・栃木 — permitted by the method we offered (2026-09-24)**
 

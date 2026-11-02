@@ -147,6 +147,8 @@ _CHAIR_NAMED = re.compile(r"^(?P<name>[^委]{2,12})委員長$")
 # 「○○議会議長○○」 is a form's placeholder printed in a 栃木 sitting, not a name.
 _NOT_A_NAME = re.compile(r"^[0-9０-９]|^[0-9０-９\s　、。・]+$|[○〇◯]")
 
+_KUN_END = re.compile(r"君[　\s]*$")
+
 _RULE_ONLY = re.compile(r"^[─━―\-‐ー\s　・]+$")
 
 
@@ -189,8 +191,11 @@ def speaker_of(line: str) -> tuple[str, str | None, str]:
     elif office:
         role = f"{role}　{office['office']}" if role else office["office"]
         raw = office["name"]
+    elif role and raw.startswith(role) and len(raw) - len(role) >= 2:
+        # 長野 types the office twice once: 「◎教育長（教育長原山隆一　君）」.
+        raw = raw[len(role) :]
     speaker = _clean_speaker(_GIIN.sub("", _clean_speaker(raw)))
-    if not speaker or _NOT_A_NAME.match(speaker):
+    if not speaker or _NOT_A_NAME.search(speaker):
         return "", None, line
     return speaker, role, line[m.end() :]
 
@@ -212,7 +217,10 @@ def _turns(lines: list[str]) -> list[list[str]]:
     turns: list[list[str]] = [[]]
     for ln in lines:
         m = _MARKER.match(ln.strip())
-        if turns[-1] and m and m["name3"] and speaker_of(ln.strip())[0]:
+        # 長野 drops an anchor twice in 75,081 speeches, before the full form
+        # 「○議長（向山公人　君）」. The 「君」 is what tells it from a roster heading.
+        full = m and m["name"] and _KUN_END.search(m["name"])
+        if turns[-1] and m and (m["name3"] or full) and speaker_of(ln.strip())[0]:
             turns.append([])
         turns[-1].append(ln)
     return turns
