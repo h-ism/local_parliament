@@ -2,6 +2,39 @@
 
 Newest first. One entry per branch of work.
 
+## 2026-11-09 — 鳥取 本会議: the second delivery, 令和7年9月〜令和8年6月 (`feat/tottori-second-delivery`)
+
+「追加送付.zip」 (files dated 10/27, received 11/9) answers items 1 and 2 of
+`docs/inquiries/tottori-files.md`: the three empty sittings again, and
+「R7(9~11)」「R8(2~6)」 — 令和7年9月・12月, 令和8年2月・6月定例会, 41 sittings,
+2025-09-11〜2026-06-29, 号 1..N in each session.
+
+**Not the October export's shape.** DB-Search's ダウンロード text, as 山梨's:
+「令和７年９月定例会（第２号）　本文 : 2025-09-16」, a hyphen rule, speeches
+numbered 「1:」. Neither `tottori_receive.py` nor the importer knew that header,
+and the receive script read only era folders (three files were loose at the
+top). Now:
+
+* `tottori_receive.py` files the shape as `download/<date>_<session>_<号>.txt`,
+  and takes loose top-level files whose first line is a known header.
+* `importers/tottori.py` reads `download/` with `read_download`: the numbers are
+  dropped, the markers split it by 鳥取's one rule, and the count of numbered
+  blocks is the check (`numbering` warns on a mismatch).
+* A day that arrives twice keeps the copy imported first — a `download/` copy
+  never displaces one already in the corpus, which would write the day again
+  under a new `source_file`.
+
+Prototyped first, offline: on all 44 files the marker split, the block count
+and `dbsearch.py`'s split agree, speaker and text (3,116 speeches), and the
+three re-sent sittings equal the RTFs in the corpus. Imported: **+41 sittings,
+3,018 speeches, 2,456,772 characters**; 鳥取 本会議 952 / 69,604 / 60,745,945.
+A second run imports 0. Checks on the new records: 0 swallowed markers, 0
+unnamed, 0 block/speech mismatches, no odd speakers, no whitespace/NFKC split,
+no PUA, no 本会議 date twice; the CSV export has 279,250 rows = 279,242
+speeches + the 8 committee sittings already known empty. 20 new names, all in
+ordinary markers (「氏良介」 is 水産振興局長 氏良介). Corpus: 100,977 / 6,435,057
+/ 2,662,984,957. Only 平成15年2月 is still asked. 290 tests; ruff, mypy clean.
+
 ## 2026-11-02 — 北海道・長野: collected 11/1; two 長野 marker shapes (`refusals-and-nagano`)
 
 Both in the first night, inside their windows, one after the other under the

@@ -12,6 +12,11 @@ Two shapes arrive, and they are filed differently:
   「2007年02月19日：平成19年２月定例会（第２号）　本文」. It is filed as
   ``export/20070219_平成19年2月定例会_第2号.txt``, so a file sent again replaces
   the old one instead of arriving as a second 「document (16).txt」.
+- **A later delivery in DB-Search's download shape** (received 2026-11-09) —
+  「download (N).txt」, first line 「令和７年９月定例会（第２号）　本文 :
+  2025-09-16」. Filed as ``download/20250916_令和7年9月定例会_第2号.txt``, beside
+  ``export/`` rather than in it, because the importer reads the shapes apart.
+  Such files may also sit at the top of the zip, outside any era folder.
 - **The secretariat's own files (H15〜H18)** — one folder per session, named by
   hand. They keep their folder and file names, with only the mojibake undone.
 
@@ -31,6 +36,9 @@ import unicodedata
 from pathlib import Path
 
 EXPORT_HEADER = re.compile(r"^(\d{4})年(\d\d)月(\d\d)日：(.+?)（(第.+?号)）[\s　]*本文\s*$")
+DOWNLOAD_HEADER = re.compile(
+    r"^(.+?)（(第.+?号)）[\s　]*本文[\s　]*:[\s　]*(\d{4})-(\d\d)-(\d\d)\s*$"
+)
 
 
 def unmangle(name: str) -> str:
@@ -54,6 +62,12 @@ def target_of(path: Path, source: Path) -> Path:
         session = unicodedata.normalize("NFKC", session)
         number = unicodedata.normalize("NFKC", number)
         return Path("export") / f"{y}{mo}{d}_{session}_{number}.txt"
+    m = DOWNLOAD_HEADER.match(first_line(path))
+    if m:
+        session, number, y, mo, d = m.groups()
+        session = unicodedata.normalize("NFKC", session)
+        number = unicodedata.normalize("NFKC", number)
+        return Path("download") / f"{y}{mo}{d}_{session}_{number}.txt"
     parts = [unmangle(p) for p in path.relative_to(source).parts]
     return Path("H15-H18", *parts)
 
@@ -70,6 +84,12 @@ def main() -> int:
         p for p in args.source.iterdir() if p.is_dir() and re.match(r"[HR]\d", unmangle(p.name))
     )
     files = sorted(f for r in roots for f in r.rglob("*") if f.is_file())
+    # Loose files at the top count only when their first line says what they are.
+    files += sorted(
+        f
+        for f in args.source.glob("*.txt")
+        if EXPORT_HEADER.match(first_line(f)) or DOWNLOAD_HEADER.match(first_line(f))
+    )
     seen: dict[Path, Path] = {}
     for f in files:
         target = target_of(f, args.source)
@@ -83,9 +103,9 @@ def main() -> int:
             continue
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(f, out)
-    exported = sum(1 for t in seen if t.parts[0] == "export")
+    kinds = {k: sum(1 for t in seen if t.parts[0] == k) for k in ("export", "download", "H15-H18")}
     verb = "would copy" if args.dry_run else "copied"
-    print(f"{verb} {len(seen)} files: {exported} export, {len(seen) - exported} H15-H18")
+    print(f"{verb} {len(seen)} files: " + ", ".join(f"{n} {k}" for k, n in kinds.items()))
     return 0
 
 

@@ -118,6 +118,22 @@ RTF = [
 ]
 
 
+DOWNLOAD = """令和７年９月定例会（第２号）　本文 : 2025-09-16
+----------------------------------------------------------------
+1:
+　　　　　　　午前10時00分開議
+◯議長（福田俊史君）ただいまから本日の会議を開きます。
+　11番鳥羽喜一議員
+
+2:
+◯11番（鳥羽喜一君）（登壇・演壇、拍手）おはようございます。
+　まず、参議院議員選挙を経てについてです。
+
+3:
+◯知事（平井伸治君）（登壇）鳥羽議員の御質問にお答え申し上げます。
+"""
+
+
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.replace("\n", "\r\n").encode("cp932"))
@@ -149,6 +165,14 @@ def _tree(tmp_path: Path) -> Path:
     rtf.mkdir()
     (rtf / "鳥取県議会H27年2月定例会_1_270212.rtf").write_bytes(_cocoa_rtf(RTF))
     (rtf / "鳥取県議会H17年6月定例会_170616.rtf").write_bytes(_cocoa_rtf(RTF))
+    download = root / "download"
+    _write(download / "20250916_令和7年9月定例会_第2号.txt", DOWNLOAD)
+    # The same day as an RTF already imported, sent again in the new shape.
+    _write(
+        download / "20150212_平成27年2月定例会_第1号.txt",
+        "平成27年２月定例会（第１号）　本文 : 2015-02-12\n" + "-" * 64 + "\n1:\n"
+        "◯議長（野田修君）ただいまから開会いたします。\n",
+    )
     return root
 
 
@@ -246,6 +270,37 @@ def test_the_tree(tmp_path: Path) -> None:
     opening = by_file["rtf/鳥取県議会H17年6月定例会_170616.rtf"]
     assert (opening.date, opening.title) == (dt.date(2005, 6, 16), "平成17年6月定例会")
 
+    # The download shape: 発言番号 dropped, markers split it, numbering checks it.
+    dl = by_file["download/20250916_令和7年9月定例会_第2号.txt"]
+    assert (dl.date, dl.session, dl.title) == (
+        dt.date(2025, 9, 16),
+        "令和7年9月定例会",
+        "令和7年9月定例会（第2号）",
+    )
+    assert [s.speaker for s in dl.speeches] == ["福田俊史", "鳥羽喜一", "平井伸治"]
+    assert dl.speeches[1].text.endswith("まず、参議院議員選挙を経てについてです。")
+    assert not any("1:" in s.text or "---" in s.text for s in dl.speeches)
+    assert not any("download/20250916" in n for n in out.numbering)
+
+    # Sent again: what was imported first stays, and the later copy is compared.
+    assert "download/20150212_平成27年2月定例会_第1号.txt" not in by_file
+    assert any(
+        d.startswith("2015-02-12: kept rtf/") and "TEXT DIFFERS" in d for d in out.duplicates
+    )
+
+
+def test_a_download_whose_blocks_and_markers_disagree_is_reported(tmp_path: Path) -> None:
+    root = tmp_path / "鳥取県"
+    # Block 2's marker lost its circle: two numbers, one speech.
+    _write(
+        root / "download" / "20250916_令和7年9月定例会_第2号.txt",
+        DOWNLOAD.replace("◯11番", "11番"),
+    )
+    out = import_tree(root)
+    assert "download/20250916_令和7年9月定例会_第2号.txt: 3 numbered blocks, 2 speeches" in (
+        out.numbering
+    )
+
 
 def test_a_record_already_written_is_skipped(tmp_path: Path) -> None:
     root = _tree(tmp_path)
@@ -277,6 +332,10 @@ def test_receive_undoes_the_mangled_names(tmp_path: Path) -> None:
         src / "H15" / "H15.06定例会議事録".encode("cp932").decode("cp437") / "x.txt", src
     )
     assert old == Path("H15-H18/H15/H15.06定例会議事録/x.txt")
+
+    _write(src / "R7(9~11)" / "download (1).txt", DOWNLOAD)
+    target = receive.target_of(src / "R7(9~11)" / "download (1).txt", src)
+    assert target == Path("download/20250916_令和7年9月定例会_第2号.txt")
 
 
 def test_a_file_wrapped_at_150_columns_is_rejoined() -> None:

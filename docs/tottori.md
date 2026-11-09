@@ -178,6 +178,30 @@ markers, no speaker the corpus did not already have, and the 号 of 平成20年5
 and are still reported as skipped — the RTF beside each is what is written.
 Total **911 sittings, 66,586 speeches, 58,289,173 characters**. 2. and 4. remain.
 
+**Items 1 and 2 answered by a second delivery (received 2026-11-09).**
+「追加送付.zip」, files dated 2026-10-27: 44 files — the three empty sittings
+again, at the top of the zip, and 「R7(9~11)」「R8(2~6)」 with 令和7年9月・12月
+and 令和8年2月・6月定例会, **41 sittings, 2025-09-11〜2026-06-29**, 号 1..N in each
+of the four (10, 10, 12, 9). (The 令和7年 late session is 「12月定例会」, not
+the 11月 the letter guessed.)
+**A different shape from the October export**: DB-Search's ダウンロード text,
+山梨's format — header 「令和７年９月定例会（第２号）　本文 : 2025-09-16」, a rule
+of hyphens, and every speech numbered 「1:」「2:」. Filed by `tottori_receive.py`
+as `manual/鳥取県/download/20250916_令和7年9月定例会_第2号.txt` and read by
+`read_download`: the numbers are dropped, the markers split it by the same rule
+as the rest of 鳥取, and the count of numbered blocks is the check. On all 44
+the two agreed, speaker and text, and agreed with `dbsearch.py`'s split too.
+The three re-sent sittings give **the same speeches as the RTFs** already in
+the corpus; the RTFs stay (a later copy is a check, not a replacement — it
+would be a second record of one day) and each is reported as a `duplicate`
+with 「same speeches」.
+**+41 sittings, +3,018 speeches, +2,456,772 characters**: 952 sittings, 69,604
+speeches, 60,745,945 characters, 2003-05-09〜2026-06-29. 0 swallowed markers,
+0 unnamed, no odd speakers, no whitespace/NFKC splits; 20 names new to the
+corpus, all officials or members in ordinary 「役職（氏名君）」 markers
+(「氏良介」 is 水産振興局長 氏良介 — a surname, not an honorific). Only 4.
+(平成15年2月定例会) remains.
+
 `importers/tottori.py` reports all of this on every run (`numbering`,
 `duplicate`, `no speaker`, `skipped`), so the re-sent files are checked the
 same way. 「山　●　陽　子」 in an attendance list is the secretariat's 外字

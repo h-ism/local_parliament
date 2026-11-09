@@ -32,6 +32,21 @@ later as Cocoa RTF named 「鳥取県議会H20年5月定例会_4_200605.rtf」: 
 no header line — one paragraph per speech, U+2028 between its lines — so the
 file name is the only date it carries. They keep their names, bytes unchanged.
 
+**``download/`` — sittings sent later, in DB-Search's download shape.** The
+second delivery (received 2026-11-09: 令和7年9月〜令和8年6月, and the three
+failed exports again) is not the export: the header is 「令和７年９月定例会
+（第２号）　本文 : 2025-09-16」 over a rule of hyphens, and every speech is
+numbered 「1:」「2:」 — 山梨's format (`dbsearch.py`). The numbers are dropped
+and the markers split it, by the same rule as the rest of 鳥取; the count of
+numbered blocks is the check, and a sitting where the two disagree is
+reported. On all 44 files of that delivery they agreed, speaker and text, and
+agreed with `dbsearch.py`'s split as well.
+
+A sitting that arrives twice keeps the copy imported first and reports whether
+the other agrees. A later delivery is a check on the corpus, not a replacement:
+replacing would write the day again under a new ``source_file``, which is a
+second record of one sitting.
+
 Front matter, 目次 and 付録 are not speech. A file whose name says it is one of
 those is skipped by name and counted.
 
@@ -66,6 +81,12 @@ _EXPORT_HEADER = re.compile(
     r"[\s　]*(?P<kind>\S+)\s*$"
 )
 _EXPORT_EMPTY = "発言が指定されていません。"
+_DOWNLOAD_HEADER = re.compile(
+    r"^(?P<session>.+?)（(?P<number>第.+?号)）[\s　]*(?P<kind>\S+)[\s　]*:[\s　]*"
+    r"(?P<y>\d{4})-(?P<m>\d\d)-(?P<d>\d\d)\s*$"
+)
+_DOWNLOAD_RULE = re.compile(r"^-{10,}\s*$")
+_DOWNLOAD_BLOCK = re.compile(r"^\d+:\s*$")
 
 # Both circles: ○ U+25CB in the secretariat's files, ◯ U+25EF in the export
 # (and 35 times in the H18 files). 「○３６番　（小谷茂君）」 puts a space before
@@ -236,6 +257,8 @@ class Sitting:
     date: dt.date | None
     number: int | None
     lines: list[str]
+    #: 発言番号 blocks in the file, where the source numbers its speeches.
+    blocks: int | None = None
 
     @property
     def title(self) -> str:
@@ -262,6 +285,25 @@ def read_export(path: Path, source_file: str) -> Sitting | str:
         date=dt.date(int(m["y"]), int(m["m"]), int(m["d"])),
         number=_int(m["number"][1:-1]),
         lines=lines[1:],
+    )
+
+
+def read_download(path: Path, source_file: str) -> Sitting | str:
+    """A sitting from a DB-Search download, or a reason the file is not one."""
+    lines = _decode(path)
+    m = _DOWNLOAD_HEADER.match(lines[0].lstrip("﻿"))
+    if not m:
+        return f"not a download header: {lines[0][:40]!r}"
+    if m["kind"] != "本文":
+        return f"kind {m['kind']}"
+    body = lines[2:] if len(lines) > 1 and _DOWNLOAD_RULE.match(lines[1]) else lines[1:]
+    return Sitting(
+        source_file=source_file,
+        session=_session(m["session"]),
+        date=dt.date(int(m["y"]), int(m["m"]), int(m["d"])),
+        number=_int(m["number"][1:-1]),
+        lines=[x for x in body if not _DOWNLOAD_BLOCK.match(x)],
+        blocks=sum(1 for x in body if _DOWNLOAD_BLOCK.match(x)),
     )
 
 
@@ -511,8 +553,13 @@ def _meeting(s: Sitting, split: Split, retrieved_at: dt.datetime) -> Meeting:
     )
 
 
+def _preference(s: Sitting) -> tuple[bool, bool, str]:
+    """Of one day's copies, the first is kept: not a later delivery, not one of several."""
+    return s.source_file.startswith("download/"), "#" in s.source_file, s.source_file
+
+
 def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
-    """Everything under ``manual/鳥取県``: ``export/``, ``rtf/`` and ``H15-H18/``."""
+    """Everything under ``manual/鳥取県``: ``export/``, ``rtf/``, ``download/``, ``H15-H18/``."""
     skip = skip or set()
     out = TottoriOutcome()
     sittings: list[Sitting] = []
@@ -530,6 +577,13 @@ def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
             out.skipped[got].append(rel)
         else:
             sittings.append(got)
+    for path in sorted((root / "download").glob("*.txt")):
+        rel = path.relative_to(root).as_posix()
+        got = read_download(path, rel)
+        if isinstance(got, str):
+            out.skipped[got].append(rel)
+        else:
+            sittings.append(got)
     for path in sorted(p for p in (root / "H15-H18").rglob("*") if p.is_file()):
         rel = path.relative_to(root).as_posix()
         if NOT_TRANSCRIPT.search(path.name):
@@ -542,8 +596,9 @@ def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
         else:
             sittings.extend(found)
 
-    # One sitting per date. Only H18.11's 第1号 arrives twice (on its own and
-    # inside 「第1～4号」); the file of its own is kept, and whether the two
+    # One sitting per date. H18.11's 第1号 arrives twice (on its own and inside
+    # 「第1～4号」) and the file of its own is kept; a later delivery
+    # (``download/``) never displaces what was imported before it. Whether the
     # texts agree is reported either way.
     by_date: dict[dt.date | None, list[Sitting]] = defaultdict(list)
     for s in sittings:
@@ -551,7 +606,7 @@ def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
     retrieved_at = dt.datetime.now(dt.UTC)
     numbers: dict[str, list[int | None]] = defaultdict(list)
     for date in sorted(by_date, key=lambda d: d or dt.date.min):
-        group = sorted(by_date[date], key=lambda s: ("#" in s.source_file, s.source_file))
+        group = sorted(by_date[date], key=_preference)
         splits = [split_speeches(s.lines) for s in group]
         if len(group) > 1:
             same = all(
@@ -565,6 +620,10 @@ def import_tree(root: Path, *, skip: set[str] | None = None) -> TottoriOutcome:
             )
         s, split = group[0], splits[0]
         numbers[s.session].append(s.number)
+        if s.blocks is not None and s.blocks != len(split.speeches) + split.silent:
+            out.numbering.append(
+                f"{s.source_file}: {s.blocks} numbered blocks, {len(split.speeches)} speeches"
+            )
         if s.date and not _in_session(s.session, s.date):
             out.date_out_of_session.append(f"{s.source_file}: {s.date} in {s.session}")
         if f"file:{s.source_file}" in skip:
